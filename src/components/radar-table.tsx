@@ -128,19 +128,39 @@ export function RadarTable({ initial }: { initial: RadarData }) {
           )}
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <label className="flex h-9 items-center gap-2 rounded-full bg-soft px-3 text-sm">
+        <label className="mt-4 flex h-10 items-center gap-2 rounded-full bg-soft px-3 text-sm sm:w-80">
             <Search size={15} strokeWidth={1.75} className="text-muted" />
             <input
               ref={inputRef}
               id="find"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Filter by name or ticker"
-              className="w-40 bg-transparent outline-none placeholder:text-muted sm:w-52"
+              placeholder="Find a stock"
+              className="w-full bg-transparent outline-none placeholder:text-muted"
               aria-label="Filter stocks"
             />
+            {q && (
+              <button type="button" onClick={() => setQ("")} aria-label="Clear" className="text-muted hover:text-ink text-xs">
+                clear
+              </button>
+            )}
           </label>
+
+        {/* While typing, the best matches sit right under the box, above the keyboard. */}
+        {q.trim() && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {rows.slice(0, 5).map((r) => (
+              <Link key={r.underlying} href={`/stock/${r.underlying}`} className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2">
+                <TickerBadge symbol={r.symbol} logo={r.logo} size={24} />
+                <span className="font-medium">{r.name}</span>
+                <span className={`num text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
+              </Link>
+            ))}
+            {rows.length === 0 && <span className="text-muted text-sm">No stock matches that.</span>}
+          </div>
+        )}
+
+        <div className={`mt-3 flex flex-wrap items-center gap-3 ${q.trim() ? "hidden sm:flex" : ""}`}>
           <div className="seg" role="group" aria-label="Issuer">
             {(["all", "xstocks", "backpack"] as Issuer[]).map((f) => (
               <button key={f} type="button" aria-pressed={issuer === f} onClick={() => setIssuer(f)}>
@@ -171,19 +191,6 @@ export function RadarTable({ initial }: { initial: RadarData }) {
             </select>
           </label>
         </div>
-
-        {/* While typing, the best matches sit right under the box, above the keyboard. */}
-        {q.trim() && rows.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {rows.slice(0, 5).map((r) => (
-              <Link key={r.underlying} href={`/stock/${r.underlying}`} className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2">
-                <TickerBadge symbol={r.symbol} logo={r.logo} size={24} />
-                <span className="font-medium">{r.name}</span>
-                <span className={`num text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* Phones: one compact row per stock, no sideways scrolling. */}
