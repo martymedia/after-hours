@@ -1,5 +1,5 @@
-// Mark: the sun sets behind the horizon, the price line keeps climbing.
-// Market closes, trading does not. One color, three shapes, reads at 24px.
+// Mark: three stacked crescent moons in the rhythm of the Solana stripes.
+// One color.
 // Wordmark: "After" plain, "Hours" in a slanted box.
 
 type Props = { size?: number; withWordmark?: boolean; className?: string; onDark?: boolean };
@@ -21,15 +21,25 @@ export function Logo({ size = 32, className = "", onDark = false, withWordmark =
   );
 }
 
+const MOONS = [6.5, 17.5, 28.5];
+
 export function LogoMark({ size = 32, className = "" }: { size?: number; className?: string }) {
+  // Three stacked crescents, bowls open to the sky: the Solana stripes, read
+  // as moons. Each crescent is a disc with a second disc cut out above it;
+  // every crescent has its own mask so the cutouts never touch a neighbour.
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className={className}>
-      {/* setting sun: a half disc on the horizon */}
-      <path d="M11 28 A9 9 0 0 1 29 28 Z" fill="currentColor" />
-      {/* horizon */}
-      <path d="M4 28 H36" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-      {/* the price line keeps going after the close */}
-      <path d="M8 21 L15 13 L21 18 L33 7" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+      <defs>
+        {MOONS.map((cy, i) => (
+          <mask key={i} id={`ah-moon-${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+            <rect width="40" height="40" fill="#fff" />
+            <circle cx="20" cy={cy - 4.9} r="9.2" fill="#000" />
+          </mask>
+        ))}
+      </defs>
+      {MOONS.map((cy, i) => (
+        <circle key={i} cx="20" cy={cy} r="9.6" fill="currentColor" mask={`url(#ah-moon-${i})`} />
+      ))}
     </svg>
   );
 }
