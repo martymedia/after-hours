@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { RadarRow } from "@/lib/radar-types";
-import { formatPct } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { CountUp } from "./count-up";
@@ -25,7 +24,7 @@ export function TrendCard({ row }: { row: RadarRow }) {
       <div>
         <div className="num text-xl font-semibold">{row.price == null ? "–" : <CountUp value={row.price} from={0.9} kind="usd" />}</div>
         <div className={`num text-xs ${cheaper ? "text-blue-light" : "text-down"}`}>
-          {formatPct(Math.abs(gap))} {cheaper ? "cheaper" : "pricier"} than close
+          {Math.abs(gap).toFixed(2)}% {cheaper ? "cheaper" : "pricier"} than close
         </div>
       </div>
     </Link>
