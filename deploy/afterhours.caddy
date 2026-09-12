@@ -1,0 +1,6 @@
+# Dropped into /opt/marty-media/deploy/conf.d/ on the server. The shared
+# Caddy imports conf.d/*.caddy. Replace the hostname before deploying.
+afterhours.example.com {
+	encode gzip
+	reverse_proxy after-hours-web-1:3000
+}

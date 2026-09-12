@@ -25,7 +25,7 @@ const SNAPSHOT_EVERY_MS = 60_000;
 const UNIVERSE_EVERY_MS = 6 * 3600_000;
 const CANDLES_EVERY_MS = 3600_000;
 const KEEP_SNAPSHOTS_MS = 14 * 86400_000;
-const GECKO_PACE_MS = 4000; // GeckoTerminal throttles hard; ~15 requests per minute is safe
+const GECKO_PACE_MS = 6000; // GeckoTerminal throttles hard; ~10 requests per minute is safe
 const GECKO_BACKOFF_MS = 65_000;
 
 const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);

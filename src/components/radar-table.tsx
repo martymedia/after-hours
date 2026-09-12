@@ -44,7 +44,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
     };
   }, []);
 
-  const referenceLabel = data.liveReference ? "Wall Street" : "Friday close";
+  const referenceLabel = data.reference.short;
 
   return (
     <>
@@ -75,7 +75,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         Onchain price is the last trade on Solana for the most liquid token of each stock.{" "}
         {data.liveReference
           ? "Wall Street is the live reference price from the exchange or the overnight venue."
-          : "Friday close is the last regular-session price; the difference shows how far the onchain market has moved since."}{" "}
+          : `${data.reference.short} is the last regular-session price; the difference shows how far the onchain market has moved since.`}{" "}
         Nothing here is investment advice.
       </p>
     </>

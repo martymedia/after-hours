@@ -2,7 +2,7 @@
 // No Node-only imports here: this file ends up in the browser bundle.
 
 import type { IssuerId } from "./issuers.ts";
-import type { PhaseInfo } from "./market-phase.ts";
+import type { PhaseInfo, ReferenceLabel } from "./market-phase.ts";
 
 export type Tradability = "easy" | "ok" | "thin" | "stale" | "none";
 
@@ -39,5 +39,6 @@ export type RadarData = {
   generatedAt: string;
   phase: PhaseInfo;
   liveReference: boolean;
+  reference: ReferenceLabel;
   rows: RadarRow[];
 };

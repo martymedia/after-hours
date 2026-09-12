@@ -3,7 +3,7 @@
 
 import { candlesSince, latestSnapshots, listTokens, sparkSeries, type SnapshotRow, type TokenRow } from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { getPhase, hasLiveReference } from "./market-phase.ts";
+import { getPhase, hasLiveReference, referenceLabel } from "./market-phase.ts";
 import { MIN_LIQUIDITY_USD } from "./universe.ts";
 import type { RadarData, RadarRow, Tradability } from "./radar-types.ts";
 
@@ -88,6 +88,7 @@ export function getRadar(): RadarData {
     generatedAt: new Date(now).toISOString(),
     phase,
     liveReference: hasLiveReference(phase.phase),
+    reference: referenceLabel(phase.phase, new Date(now)),
     rows,
   };
 }

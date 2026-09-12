@@ -172,3 +172,18 @@ export function getPhase(now: Date = new Date()): PhaseInfo {
 export function hasLiveReference(phase: Phase): boolean {
   return phase !== "closed";
 }
+
+export type ReferenceLabel = {
+  /** Column header, e.g. "Friday close". */
+  short: string;
+  /** Mid-sentence phrase, e.g. "Friday's close". */
+  phrase: string;
+};
+
+/** What the reference price is right now, in plain words. */
+export function referenceLabel(phase: Phase, now: Date = new Date()): ReferenceLabel {
+  if (phase !== "closed") return { short: "Wall Street", phrase: "the Wall Street price" };
+  const weekday = nyParts(now).weekday;
+  if (weekday === 6 || weekday === 0) return { short: "Friday close", phrase: "Friday's close" };
+  return { short: "Last close", phrase: "the last close" };
+}
