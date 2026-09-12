@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, CalendarDays, Clock, Layers, Scale } from "lucide-react";
 import { getStock } from "@/lib/stock";
-import { formatAgo, formatCompactUsd, formatUsd, gapTone, gapWords } from "@/lib/format";
+import { formatAgo, formatCompactUsd, formatUsd, gapSentence, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { PriceChart } from "@/components/price-chart";
 import { BuyPanel } from "@/components/buy-panel";
@@ -71,7 +71,7 @@ export default async function StockPage({ params }: Props) {
           value={formatUsd(p.price)}
           detail={
             <>
-              <span className={`num font-medium ${gapTone(p.gapPct)}`}>{gapWords(p.gapPct)}</span> than {stock.reference.phrase}
+              <span className={`num font-medium ${gapTone(p.gapPct)}`}>{gapSentence(p.gapPct, stock.reference.phrase)}</span>
             </>
           }
           hint="The last trade of the most liquid token for this stock on Solana."

@@ -6,7 +6,7 @@ import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
-import { formatDuration, formatPct, gapTone, gapWords } from "@/lib/format";
+import { formatDuration, formatPct, gapSentence, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +61,7 @@ export default function OverviewPage() {
           href={top ? `/stock/${top.underlying}` : "/stocks"}
           value={top ? top.name : "–"}
           badge={top && <span className={`pill ${(top.gapPct ?? 0) < 0 ? "pill-blue" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
-          detail={top ? `${gapWords(top.gapPct)} than ${data.reference.phrase}` : undefined}
+          detail={top ? gapSentence(top.gapPct, data.reference.phrase) : undefined}
         />
         <StatCard
           index={3}

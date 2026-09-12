@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ISSUERS, ISSUER_ORDER } from "@/lib/issuers";
 import { getRadar } from "@/lib/radar";
-import { formatAgo, formatUsd, gapTone, gapWords } from "@/lib/format";
+import { formatAgo, formatUsd, gapSentence, gapTone } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { SessionTimeline } from "@/components/session-timeline";
 import { TickerBadge } from "@/components/ticker-badge";
@@ -105,7 +105,7 @@ export default function HowPage() {
                 </div>
               </div>
               <div className={`num mt-3 text-sm font-medium ${gapTone(sample.gapPct)}`}>
-                {gapWords(sample.gapPct)} than {data.reference.phrase}. Live, right now.
+                {gapSentence(sample.gapPct, data.reference.phrase)}. Live, right now.
               </div>
             </div>
           )}

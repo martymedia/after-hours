@@ -5,7 +5,7 @@
 // A dot marks the time right now.
 
 import { useEffect, useState } from "react";
-import { nyParts } from "@/lib/market-phase";
+import { getPhase, nyParts } from "@/lib/market-phase";
 
 const OPEN = 9 * 60 + 30;
 const CLOSE = 16 * 60;
@@ -25,7 +25,9 @@ export function SessionTimeline() {
     };
   }, []);
   const minutes = now == null ? null : nyParts(new Date(now)).minutes;
-  const afterHours = minutes != null && (minutes < OPEN || minutes >= CLOSE);
+  const phase = now == null ? null : getPhase(new Date(now)).phase;
+  const afterHours = phase != null && phase !== "open";
+  const tradingDay = phase != null && (phase === "open" || getPhase(new Date(now!)).msUntilOpen < 16 * 3600_000);
 
   return (
     <div className="mt-8">
@@ -37,7 +39,7 @@ export function SessionTimeline() {
         <span>12 AM</span>
       </div>
       <div className="relative h-3 rounded-full bg-blue/80">
-        <div className="absolute inset-y-0 rounded-full bg-white" style={{ left: pct(OPEN), width: pct(CLOSE - OPEN) }} />
+        <div className={`absolute inset-y-0 rounded-full ${tradingDay ? "bg-white" : "bg-white/30"}`} style={{ left: pct(OPEN), width: pct(CLOSE - OPEN) }} />
         {minutes != null && (
           <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: pct(minutes) }}>
             <div className="h-5 w-5 rounded-full border-[3px] border-ink bg-white shadow" />
@@ -59,7 +61,9 @@ export function SessionTimeline() {
           <>
             <span className="num font-medium">{clock.format(new Date(now!))}</span> in New York:{" "}
             {afterHours ? (
-              <span className="text-blue-light font-medium">After Hours. Onchain is the only market open.</span>
+              <span className="text-blue-light font-medium">
+                After Hours. {phase === "closed" ? "Wall Street is closed today; onchain is the only market open." : "Onchain is the only market open."}
+              </span>
             ) : (
               <span className="font-medium">Wall Street is open. Onchain tracks the exchange closely.</span>
             )}

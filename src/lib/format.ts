@@ -68,3 +68,10 @@ export function formatDurationWords(ms: number): string {
   if (h > 0) return `${unit(h, "hour")} ${unit(m, "minute")}`;
   return unit(m, "minute");
 }
+
+/** "0.68% pricier than Friday's close" or "in line with Friday's close". */
+export function gapSentence(gap: number | null | undefined, phrase: string): string {
+  const words = gapWords(gap);
+  if (words === "–") return `no comparison to ${phrase}`;
+  return words === "in line" ? `in line with ${phrase}` : `${words} than ${phrase}`;
+}
