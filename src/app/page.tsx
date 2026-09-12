@@ -61,7 +61,7 @@ export default function OverviewPage() {
           href={top ? `/stock/${top.underlying}` : "/stocks"}
           value={top ? top.name : "–"}
           badge={top && <span className={`pill ${(top.gapPct ?? 0) < 0 ? "pill-blue" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
-          detail={top ? gapSentence(top.gapPct, data.reference.phrase) : undefined}
+          detail={top ? <span className={gapTone(top.gapPct)}>{gapSentence(top.gapPct, data.reference.phrase)}</span> : undefined}
         />
         <StatCard
           index={3}

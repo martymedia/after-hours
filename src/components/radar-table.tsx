@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
@@ -52,9 +52,15 @@ export function RadarTable({ initial }: { initial: RadarData }) {
   const [data, setData] = useState(initial);
   const [now, setNow] = useState(() => Date.parse(initial.generatedAt));
   const [issuer, setIssuer] = useState<Issuer>("all");
-  const [sort, setSort] = useState<Sort>("liquidity");
+  const [sort, setSort] = useState<Sort>("cheaper");
+  const inputRef = useRef<HTMLInputElement>(null);
   const [show, setShow] = useState<Show>("all");
   const [q, setQ] = useState("");
+
+  // The magnifier in the top bar links here with #find: put the cursor in the box.
+  useEffect(() => {
+    if (window.location.hash === "#find") inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -126,6 +132,8 @@ export function RadarTable({ initial }: { initial: RadarData }) {
           <label className="flex h-9 items-center gap-2 rounded-full bg-soft px-3 text-sm">
             <Search size={15} strokeWidth={1.75} className="text-muted" />
             <input
+              ref={inputRef}
+              id="find"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Filter by name or ticker"
@@ -163,6 +171,19 @@ export function RadarTable({ initial }: { initial: RadarData }) {
             </select>
           </label>
         </div>
+
+        {/* While typing, the best matches sit right under the box, above the keyboard. */}
+        {q.trim() && rows.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {rows.slice(0, 5).map((r) => (
+              <Link key={r.underlying} href={`/stock/${r.underlying}`} className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2">
+                <TickerBadge symbol={r.symbol} logo={r.logo} size={24} />
+                <span className="font-medium">{r.name}</span>
+                <span className={`num text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Phones: one compact row per stock, no sideways scrolling. */}
@@ -175,7 +196,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{row.name}</span>
                 <span className="text-muted block truncate text-xs">
-                  {row.symbol} · {TRADABILITY_LABEL[row.tradability].toLowerCase()} · {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
+                  {row.symbol} · {row.issuerName} · {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
                 </span>
               </span>
               <span className="text-right">

@@ -99,9 +99,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{title}</h1>
           <div className="flex items-center gap-3">
             <StockSearch />
-            <span className="icon-badge h-9 w-9 sm:hidden" aria-hidden="true">
+            <Link href="/stocks#find" className="icon-badge h-9 w-9 sm:hidden" aria-label="Search stocks">
               <Search size={16} strokeWidth={1.75} />
-            </span>
+            </Link>
           </div>
         </header>
 
