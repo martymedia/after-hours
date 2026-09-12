@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PhaseInfo } from "@/lib/market-phase";
 import { formatDuration } from "@/lib/format";
+import { SessionRing } from "./session-ring";
 
 const Globe = dynamic(() => import("./globe").then((m) => m.Globe), {
   ssr: false,
@@ -64,10 +65,16 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
               {phase.phase !== "open" && <span className="text-on-dark-muted"> Opens in {untilOpen}.</span>}
             </div>
             <div className="text-blue-light font-medium">{stockCount} stocks are trading onchain right now.</div>
+            <div className="text-on-dark-muted mt-2 text-xs">
+              Ring: white is Wall Street&apos;s session, blue is after hours. The dot is now, New York time.
+            </div>
           </div>
         </div>
         <div className="lg:col-span-6">
-          <Globe className="mx-auto max-w-[540px] lg:translate-x-8" />
+          <div className="relative mx-auto max-w-[540px] lg:translate-x-8">
+            <Globe />
+            <SessionRing now={now} tradingDay={phase.phase !== "closed" || phase.msUntilOpen < 16 * 3600_000} />
+          </div>
         </div>
       </div>
     </section>

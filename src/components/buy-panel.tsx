@@ -101,12 +101,13 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
         ) : estimate ? (
           <>
             {estimate.vsReferencePct != null && (
-              <div className={`mb-4 rounded-2xl p-4 ${estimate.vsReferencePct <= 0 ? "bg-blue text-white" : "bg-soft"}`}>
+              <div className={`mb-4 rounded-2xl p-4 ${estimate.vsReferencePct <= 0 ? "bg-blue text-white" : "bg-down text-white"}`}>
                 <div className="num text-2xl font-semibold">
-                  {formatPct(Math.abs(estimate.vsReferencePct))} {estimate.vsReferencePct <= 0 ? "cheaper" : "dearer"}
+                  {formatPct(Math.abs(estimate.vsReferencePct))} {estimate.vsReferencePct <= 0 ? "cheaper" : "more expensive"}
                 </div>
-                <div className={`mt-0.5 text-sm ${estimate.vsReferencePct <= 0 ? "text-white/80" : "text-muted"}`}>
+                <div className="mt-0.5 text-sm text-white/80">
                   than {referencePhrase}, for this amount and including price impact.
+                  {estimate.vsReferencePct > 0 ? " You would overpay right now." : ""}
                 </div>
               </div>
             )}
