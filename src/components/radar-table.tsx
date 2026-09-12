@@ -129,7 +129,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         </p>
 
         <div className="mt-4 flex items-center gap-3">
-        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-soft px-3 text-sm sm:max-w-80">
+        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-soft px-3 text-base sm:max-w-80 sm:text-sm">
             <Search size={15} strokeWidth={1.75} className="text-muted" />
             <input
               ref={inputRef}
