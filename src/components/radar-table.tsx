@@ -157,7 +157,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                   href={`/stock/${r.underlying}`}
                   title={`${r.name} · ${gapWords(r.gapPct)}`}
                   aria-label={`Open ${r.name}`}
-                  className="rounded-full ring-2 ring-card transition hover:z-10 hover:scale-110"
+                  className="flex h-10 w-10 shrink-0 rounded-full ring-2 ring-card transition hover:z-10 hover:scale-110"
                 >
                   <TickerBadge symbol={r.symbol} logo={r.logo} size={40} />
                 </Link>
