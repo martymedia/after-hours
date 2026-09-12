@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   turbopack: { root: projectRoot },
   reactStrictMode: true,
   poweredByHeader: false,
+  // Phones on the home network hit the dev server by LAN IP; without this
+  // Next blocks their requests for JS chunks and the page never hydrates.
+  allowedDevOrigins: ["192.168.178.20", "192.168.178.*", "*.local"],
 };
 
 export default nextConfig;

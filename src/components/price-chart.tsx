@@ -130,25 +130,34 @@ function Chart({
   const path = `M${linePts.join(" L")}`;
   const area = `M${x(visible[0].ts).toFixed(1)},${H - PAD.bottom} L${linePts.join(" L")} L${x(visible[visible.length - 1].ts).toFixed(1)},${H - PAD.bottom} Z`;
 
-  function onMove(e: React.MouseEvent<SVGSVGElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * W;
+  function pick(target: SVGSVGElement, clientX: number) {
+    const rect = target.getBoundingClientRect();
+    const px = ((clientX - rect.left) / rect.width) * W;
     const ts = from + ((px - PAD.left) / (W - PAD.left - PAD.right)) * (to - from);
     let best = visible[0];
     for (const c of visible) if (Math.abs(c.ts - ts) < Math.abs(best.ts - ts)) best = c;
     setHover(best);
   }
+  const onMove = (e: React.MouseEvent<SVGSVGElement>) => pick(e.currentTarget, e.clientX);
+  // Touch: a finger on the chart reads the nearest hour and the readout
+  // stays after lifting, so phones get the same information as a hover.
+  const onTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    const t = e.touches[0];
+    if (t) pick(e.currentTarget, t.clientX);
+  };
 
   const hoverLeft = hover ? x(hover.ts) > W * 0.68 : false;
 
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="h-auto w-full cursor-crosshair"
+      className="h-auto w-full cursor-crosshair touch-pan-y"
       role="img"
       aria-label="Price chart"
       onMouseMove={onMove}
       onMouseLeave={() => setHover(null)}
+      onTouchStart={onTouch}
+      onTouchMove={onTouch}
     >
       <defs>
         <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">

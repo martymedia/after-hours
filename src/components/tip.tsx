@@ -1,8 +1,9 @@
 "use client";
 
-// Hover/focus tooltip rendered through a portal at the body, so cards with
-// overflow clipping cannot cut it off. Flips above the trigger when there is
-// no room below and stays inside the viewport horizontally.
+// Hover, focus or tap tooltip rendered through a portal at the body, so
+// cards with overflow clipping cannot cut it off. Flips above the trigger
+// when there is no room below and stays inside the viewport horizontally.
+// On touch screens a tap toggles it; a tap anywhere else closes it.
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -36,8 +37,16 @@ export function Tip({ text, children, className = "", underline = true, tone = "
 
   useEffect(() => {
     if (!pos) return;
-    window.addEventListener("scroll", hide, true);
-    return () => window.removeEventListener("scroll", hide, true);
+    const onScroll = () => hide();
+    const onPointerDown = (e: PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) hide();
+    };
+    window.addEventListener("scroll", onScroll, true);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      window.removeEventListener("scroll", onScroll, true);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
   }, [pos]);
 
   return (
@@ -45,11 +54,19 @@ export function Tip({ text, children, className = "", underline = true, tone = "
       <span
         ref={ref}
         tabIndex={0}
+        role="button"
+        aria-label={text}
         onMouseEnter={show}
         onMouseLeave={hide}
         onFocus={show}
         onBlur={hide}
-        className={`inline-flex cursor-help outline-none ${
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (pos) hide();
+          else show();
+        }}
+        className={`inline-flex cursor-help touch-manipulation outline-none ${
           underline ? "underline decoration-dotted decoration-[color:var(--muted-2)] underline-offset-4" : ""
         } ${className}`}
       >

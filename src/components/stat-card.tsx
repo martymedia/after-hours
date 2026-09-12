@@ -9,7 +9,7 @@ type Props = {
   value: React.ReactNode;
   /** Small muted line under the value. */
   detail?: React.ReactNode;
-  /** Pill shown top right, next to the label row. Never moves the value. */
+  /** Pill shown top right on wide cards, under the value on narrow ones. */
   badge?: React.ReactNode;
   /** Plain-words explanation behind a small (?) icon in the label row. */
   hint?: string;
@@ -24,26 +24,31 @@ export function StatCard({ icon: Icon, label, value, detail, badge, hint, href, 
   const style = { "--i": index } as React.CSSProperties;
   const body = (
     <>
-      <div className="flex items-center gap-2 text-xs font-medium sm:gap-2.5 sm:text-sm">
-        <span className="icon-badge h-6 w-6 sm:h-7 sm:w-7">
+      <div className="flex min-w-0 items-center gap-2 text-xs font-medium sm:gap-2.5 sm:text-sm">
+        <span className="icon-badge h-6 w-6 shrink-0 sm:h-7 sm:w-7">
           <Icon size={14} strokeWidth={1.75} />
         </span>
-        <span className="flex-1">{label}</span>
+        <span className="min-w-0 flex-1 truncate">{label}</span>
         {hint && (
-          <Tip text={hint} underline={false} className="text-muted-2 hover:text-ink">
+          <Tip text={hint} underline={false} className="text-muted-2 hover:text-ink shrink-0">
             <HelpCircle size={15} strokeWidth={1.75} />
           </Tip>
         )}
-        {badge}
+        {badge && <span className="hidden shrink-0 sm:inline-flex">{badge}</span>}
         {href && (
-          <span className="text-muted-2 group-hover:text-ink transition" aria-hidden="true">
+          <span className="text-muted-2 group-hover:text-ink hidden shrink-0 transition sm:inline-flex" aria-hidden="true">
             <ArrowUpRight size={15} strokeWidth={1.75} />
           </span>
         )}
       </div>
       <div>
         <div className="num text-xl leading-none font-semibold sm:text-[1.75rem]">{value}</div>
-        {detail && <div className="text-muted mt-1.5 text-xs sm:text-sm">{detail}</div>}
+        {(detail || badge) && (
+          <div className="text-muted mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
+            {badge && <span className="sm:hidden">{badge}</span>}
+            {detail && <span>{detail}</span>}
+          </div>
+        )}
       </div>
     </>
   );
