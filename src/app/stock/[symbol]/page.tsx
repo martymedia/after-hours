@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, CalendarDays, Clock, Layers, Scale } from "lucide-react";
 import { getStock } from "@/lib/stock";
-import { formatAgo, formatCompactUsd, formatPct, formatUsd } from "@/lib/format";
+import { formatAgo, formatCompactUsd, formatUsd, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { PriceChart } from "@/components/price-chart";
 import { BuyPanel } from "@/components/buy-panel";
@@ -71,7 +71,7 @@ export default async function StockPage({ params }: Props) {
           value={formatUsd(p.price)}
           detail={
             <>
-              <span className={`num font-medium ${tone(p.gapPct)}`}>{formatPct(p.gapPct)}</span> vs {stock.reference.phrase}
+              <span className={`num font-medium ${gapTone(p.gapPct)}`}>{gapWords(p.gapPct)}</span> than {stock.reference.phrase}
             </>
           }
           hint="The last trade of the most liquid token for this stock on Solana."
@@ -118,8 +118,8 @@ export default async function StockPage({ params }: Props) {
               <span className="text-muted text-xs">last 48 hours</span>
             </div>
             <p className="text-muted mt-1 mb-3 text-sm">
-              How far the onchain price sits from {stock.reference.phrase}, every 15 minutes. Blue bars: onchain above.
-              Grey bars: onchain below, which is where a buy is cheaper than on Wall Street.
+              How far the onchain price sits from {stock.reference.phrase}, every 15 minutes. Blue bars below the
+              line: cheaper onchain. Red bars above: pricier.
             </p>
             <GapChart series={stock.gapSeries} referencePhrase={stock.reference.phrase} />
           </section>
@@ -148,7 +148,7 @@ export default async function StockPage({ params }: Props) {
                     ) : (
                       <span>
                         <span className="num block text-lg font-semibold">{formatUsd(t.price)}</span>
-                        <span className={`num text-xs ${tone(t.gapPct)}`}>{formatPct(t.gapPct)}</span>
+                        <span className={`num text-xs ${gapTone(t.gapPct)}`}>{gapWords(t.gapPct)}</span>
                       </span>
                     )}
                     <span className="text-right">
@@ -186,7 +186,7 @@ export default async function StockPage({ params }: Props) {
                       </span>
                       <span className="text-right">
                         <span className="num block text-sm font-semibold">{formatUsd(r.price)}</span>
-                        <span className={`num block text-xs ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
+                        <span className={`num block text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
                       </span>
                     </Link>
                   </li>
@@ -212,7 +212,3 @@ export default async function StockPage({ params }: Props) {
   );
 }
 
-function tone(gap: number | null): string {
-  if (gap == null || Math.abs(gap) < 0.25) return "text-muted";
-  return gap > 0 ? "text-up" : "text-down";
-}

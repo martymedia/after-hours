@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import type { RadarRow } from "@/lib/radar-types";
-import { formatPct } from "@/lib/format";
+import { gapTone, gapWords } from "@/lib/format";
 
 export function StockSearch() {
   const router = useRouter();
@@ -83,7 +83,7 @@ export function StockSearch() {
                   <span className="font-medium">{r.name}</span>
                   <span className="text-muted ml-2 text-xs">{r.symbol}</span>
                 </span>
-                <span className={`num text-xs ${(r.gapPct ?? 0) >= 0 ? "text-up" : "text-down"}`}>{formatPct(r.gapPct)}</span>
+                <span className={`num text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
               </button>
             </li>
           ))}

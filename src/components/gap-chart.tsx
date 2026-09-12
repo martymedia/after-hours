@@ -2,7 +2,7 @@
 // bars around a zero line. Blue above (onchain higher), grey below.
 
 import type { GapPoint } from "@/lib/stock-types";
-import { formatPct } from "@/lib/format";
+import { gapTone, gapWords } from "@/lib/format";
 
 const W = 600;
 const H = 120;
@@ -44,7 +44,7 @@ export function GapChart({ series, referencePhrase }: { series: GapPoint[]; refe
               width={barW}
               height={Math.max(1, h)}
               rx={1}
-              fill={up ? "var(--blue)" : "var(--muted-2)"}
+              fill={up ? "var(--down)" : "var(--blue)"}
             />
           );
         })}
@@ -61,8 +61,8 @@ export function GapChart({ series, referencePhrase }: { series: GapPoint[]; refe
         ))}
       </svg>
       <p className="text-muted mt-2 text-sm">
-        Right now <span className={`num font-medium ${last.gapPct >= 0 ? "text-blue" : "text-ink"}`}>{formatPct(last.gapPct)}</span>{" "}
-        vs {referencePhrase}, averaging <span className="num">{formatPct(avg)}</span> over the last two days.
+        Right now <span className={`num font-medium ${gapTone(last.gapPct)}`}>{gapWords(last.gapPct)}</span> than{" "}
+        {referencePhrase}; on average <span className={`num ${gapTone(avg)}`}>{gapWords(avg)}</span> over the last two days.
       </p>
     </div>
   );

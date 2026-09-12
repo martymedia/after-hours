@@ -42,3 +42,17 @@ export function formatDuration(ms: number): string {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
+
+/** Color class for a gap: cheaper onchain is blue, pricier is red, tiny is muted. */
+export function gapTone(gap: number | null | undefined): string {
+  if (gap == null || !Number.isFinite(gap) || Math.abs(gap) < 0.25) return "text-muted";
+  return gap < 0 ? "text-blue" : "text-down";
+}
+
+/** "0.68% pricier", "2.4% cheaper", "in line". */
+export function gapWords(gap: number | null | undefined): string {
+  if (gap == null || !Number.isFinite(gap)) return "–";
+  const abs = Math.abs(gap);
+  if (abs < 0.25) return "in line";
+  return `${abs.toFixed(2)}% ${gap < 0 ? "cheaper" : "pricier"}`;
+}

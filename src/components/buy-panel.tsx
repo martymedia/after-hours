@@ -179,16 +179,16 @@ function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquid
     const abs = Math.abs(e.vsReferencePct);
     const dir = e.vsReferencePct >= 0 ? "above" : "below";
     if (abs < 0.5) {
-      checks.push({ label: "Price", detail: `Your effective price is ${formatPct(abs)} ${dir} ${ref}. That is in line.`, level: "good" });
+      checks.push({ label: "Price", detail: `Your effective price is ${abs.toFixed(2)}% ${dir} ${ref}. That is in line.`, level: "good" });
     } else if (e.vsReferencePct > 0) {
-      checks.push({ label: "Price", detail: `You would pay ${formatPct(abs)} above ${ref}. Waiting may be cheaper.`, level: abs > 2 ? "warn" : "ok" });
+      checks.push({ label: "Price", detail: `You would pay ${abs.toFixed(2)}% above ${ref}. Waiting may be cheaper.`, level: abs > 2 ? "warn" : "ok" });
     } else {
       checks.push({
         label: "Price",
         detail:
           phase === "closed"
-            ? `Onchain is ${formatPct(abs)} below ${ref}. Could be news, could be thin weekend liquidity.`
-            : `Onchain is ${formatPct(abs)} below ${ref}. Cheaper than the exchange right now.`,
+            ? `Onchain is ${abs.toFixed(2)}% below ${ref}. Could be news, could be thin weekend liquidity.`
+            : `Onchain is ${abs.toFixed(2)}% below ${ref}. Cheaper than the exchange right now.`,
         level: phase === "closed" ? "ok" : "good",
       });
     }

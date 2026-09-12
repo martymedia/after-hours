@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
 import { TRADABILITY_LABEL } from "@/lib/radar-types";
-import { formatAgo, formatDuration, formatPct, formatUsd } from "@/lib/format";
+import { formatAgo, formatDuration, formatPct, formatUsd, gapTone } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { Tip } from "./tip";
@@ -180,7 +180,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                   </Tip>
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  <Tip text={`Onchain price versus ${ref.phrase}. Small differences are normal; a few percent means the onchain market has moved on its own.`}>
+                  <Tip text={`Onchain price versus ${ref.phrase}. Blue and negative: cheaper onchain than on Wall Street. Red and positive: pricier. Within a quarter percent counts as in line.`}>
                     Difference
                   </Tip>
                 </th>
@@ -232,7 +232,7 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
       </td>
       <td className="num px-4 py-3 text-right font-medium">{formatUsd(row.price)}</td>
       <td className="num text-muted px-4 py-3 text-right">{formatUsd(row.reference)}</td>
-      <td className={`num px-4 py-3 text-right font-medium ${gapClass(row.gapPct)}`}>{formatPct(row.gapPct)}</td>
+      <td className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}>{formatPct(row.gapPct)}</td>
       <td className="hidden px-4 py-3 md:table-cell">
         <Sparkline values={row.spark} color="var(--blue)" />
       </td>
@@ -246,7 +246,3 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
   );
 }
 
-function gapClass(gap: number | null): string {
-  if (gap == null || Math.abs(gap) < 0.25) return "text-muted";
-  return gap > 0 ? "text-up" : "text-down";
-}

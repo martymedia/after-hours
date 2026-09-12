@@ -6,7 +6,7 @@ import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
-import { formatDuration, formatPct } from "@/lib/format";
+import { formatDuration, formatPct, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";
@@ -60,8 +60,8 @@ export default function OverviewPage() {
           label="Biggest move"
           href={top ? `/stock/${top.underlying}` : "/stocks"}
           value={top ? top.name : "–"}
-          badge={top && <span className={`pill ${(top.gapPct ?? 0) >= 0 ? "pill-dark" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
-          detail={top ? `vs ${data.reference.phrase}` : undefined}
+          badge={top && <span className={`pill ${(top.gapPct ?? 0) < 0 ? "pill-blue" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
+          detail={top ? `${gapWords(top.gapPct)} than ${data.reference.phrase}` : undefined}
         />
         <StatCard
           index={3}
@@ -82,20 +82,20 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        <section className="card rise self-start p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
+        <section className="card rise flex flex-col p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Where the gap is</h2>
             <span className="text-muted text-xs">vs {data.reference.phrase}</span>
           </div>
           <p className="text-blue mb-2 text-xs font-medium">Cheaper onchain than on Wall Street</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3">
             {cheaper.map((m) => (
               <TrendCard key={m.underlying} row={m} />
             ))}
             {cheaper.length === 0 && <p className="text-muted col-span-full text-sm">Nothing trades at a discount right now.</p>}
           </div>
           <p className="text-down mt-5 mb-2 text-xs font-medium">Pricier onchain than on Wall Street</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-3 sm:grid-cols-3">
             {pricier.map((m) => (
               <TrendCard key={m.underlying} row={m} />
             ))}
@@ -130,7 +130,7 @@ export default function OverviewPage() {
                     <span className="num block text-sm font-semibold">
                       {r.price == null ? "–" : <CountUp value={r.price} from={0.9} kind="usd" />}
                     </span>
-                    <span className={`num block text-xs ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
+                    <span className={`num block text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
                   </span>
                 </Link>
               </li>
@@ -142,7 +142,3 @@ export default function OverviewPage() {
   );
 }
 
-function tone(gap: number | null): string {
-  if (gap == null || Math.abs(gap) < 0.25) return "text-muted";
-  return gap > 0 ? "text-up" : "text-down";
-}
