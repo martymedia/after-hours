@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* One light theme, on purpose. Paper background, ink text, three signal
+   colors. Numbers in a monospace face so columns line up. */
+:root {
+  --paper: #fafaf7;
+  --surface: #ffffff;
+  --ink: #161616;
+  --muted: #6f6e68;
+  --line: #e6e4dd;
+  --up: #1b7f4c;
+  --down: #c0392b;
+  --warn: #b7791f;
+  --soft-up: #e8f5ec;
+  --soft-down: #fbeae7;
+  --soft-warn: #fbf1df;
+  --soft: #f1f0ea;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-warn: var(--warn);
+  --color-soft-up: var(--soft-up);
+  --color-soft-down: var(--soft-down);
+  --color-soft-warn: var(--soft-warn);
+  --color-soft: var(--soft);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
