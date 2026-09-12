@@ -22,7 +22,7 @@ export function TrendCard({ row }: { row: RadarRow }) {
       </div>
       <div>
         <div className="num text-xl font-semibold">
-          {row.price == null ? "–" : <CountUp value={row.price} from={0.9} format={(n) => formatUsd(n)} />}
+          {row.price == null ? "–" : <CountUp value={row.price} from={0.9} kind="usd" />}
         </div>
         <div className={`num text-xs ${up ? "text-blue-light" : "text-down"}`}>{formatPct(row.gapPct)} vs close</div>
       </div>

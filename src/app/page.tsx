@@ -50,7 +50,7 @@ export default function OverviewPage() {
           icon={Activity}
           label="Trading onchain"
           href="/stocks"
-          value={<CountUp value={data.rows.length} format={(n) => String(Math.round(n))} />}
+          value={<CountUp value={data.rows.length} kind="int" />}
           detail="stocks with real liquidity"
           badge={<span className="pill pill-blue">24/7</span>}
           hint="We list a stock only when at least 50k USD sits in its onchain pools. Thin tokens are hidden, not decorated."
@@ -116,7 +116,7 @@ export default function OverviewPage() {
                   <span className={`pill hidden sm:inline-flex ${PILL[r.tradability]}`}>{TRADABILITY_LABEL[r.tradability]}</span>
                   <span className="text-right">
                     <span className="num block text-sm font-semibold">
-                      {r.price == null ? "–" : <CountUp value={r.price} from={0.9} format={(n) => formatUsd(n)} />}
+                      {r.price == null ? "–" : <CountUp value={r.price} from={0.9} kind="usd" />}
                     </span>
                     <span className={`num block text-xs ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
                   </span>

@@ -66,7 +66,7 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
               {phase.phase !== "open" && <span className="text-on-dark-muted"> Opens in {untilOpen}.</span>}
             </div>
             <div className="text-blue-light font-medium">
-              <CountUp value={stockCount} format={(n) => String(Math.round(n))} /> stocks are trading onchain right now.
+              <CountUp value={stockCount} kind="int" /> stocks are trading onchain right now.
             </div>
           </div>
         </div>

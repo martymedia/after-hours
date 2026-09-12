@@ -5,16 +5,27 @@
 
 import { useEffect, useState } from "react";
 
+import { formatUsd } from "@/lib/format";
+
+// Server components cannot hand functions to client components, so the
+// format is a named kind instead of a callback.
+type Kind = "int" | "usd";
+const FORMAT: Record<Kind, (n: number) => string> = {
+  int: (n) => String(Math.round(n)),
+  usd: (n) => formatUsd(n),
+};
+
 type Props = {
   value: number;
-  format: (n: number) => string;
+  kind?: Kind;
   /** Start at this fraction of the value (0 = from zero). */
   from?: number;
   durationMs?: number;
   className?: string;
 };
 
-export function CountUp({ value, format, from = 0, durationMs = 900, className = "" }: Props) {
+export function CountUp({ value, kind = "int", from = 0, durationMs = 900, className = "" }: Props) {
+  const format = FORMAT[kind];
   const [shown, setShown] = useState(value);
 
   useEffect(() => {
