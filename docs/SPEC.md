@@ -127,37 +127,45 @@ Button: green if net_edge > 0.30 percent and reference is live; amber if
 While closed the button is "Buy anyway" in neutral style with the drift
 warning, never green.
 
-## 6. Screens (minimal, Solana-branded)
+## 6. Screens (brand guide: Outfit, blue, black, white)
 
-Branding: logo mark is a dark "night" disc with the three slanted Solana bars
-in the purple-to-green gradient, wordmark "After Hours", tagline "Trade
-stocks when Wall Street sleeps." The gradient is used for the logo, key words
-in the hero, the primary button, hairline rules under section labels and the
-"Built on Solana" badge. Everything else stays paper, ink and three signal
-colors. Every jargon term carries a hover tooltip in plain words.
+Brand (from Maik's reference dashboard, 2026-09-12): Outfit for everything,
+blue #5B91FF as the one accent, black #121214 for buttons and dark panels,
+white cards with 20px radius on a light grey ground (#F4F4F6), pill buttons
+and pill badges, a dark chart panel with a white line. Green and red only
+for up and down. No gradients. Logo: the open clock face with a price line
+running past its edge, white on a blue disc. Tagline "Trade stocks when
+Wall Street sleeps."
 
-0. **Landing (/).** Hero with logo, tagline, one paragraph, gradient CTA to
-   /stocks, and the live phase line. Six live cards plus the biggest movers.
-   "How it works" in three steps, "Why this exists", "What we will not do".
+Shell: icon rail on the left (desktop), top bar with page title and stock
+search, bottom tab bar on phones. Every jargon term has a hover tooltip.
 
-1. **Stocks (/stocks).** One line of status at the top: "Wall Street is
-   closed. 37 stocks are trading onchain anyway." Under it the table:
+0. **Overview (/).** Four KPI cards (Wall Street status with countdown,
+   stocks trading onchain, biggest move, next earnings). Dark panel with the
+   headline, CTA, New York clock and the three.js globe: land as dots, the
+   real night side lit in blue, New York marked. Below: "Moved most" as
+   three dark tiles with sparklines, "Trading now" list with ticker badges,
+   "How it works" card, "What we will not do" dark card.
+
+1. **Stocks (/stocks).** Status card with the phase line, earnings ahead and
+   an issuer filter (All, xStocks, Backpack). Under it the table in a card:
    ticker + issuer pill, onchain price, last close or live reference, drift
    in percent (color), freshness (e.g. "2m ago" or "stale 6h"), liquidity,
    net cost at 1k (percent), 7-day sparkline from GeckoTerminal. Filters:
    issuer, liquid only, movers. Auto-refresh 15 s. A small "Next earnings"
    strip: MU Sep 30 AMC, NKE Oct 1.
-2. **Stock (/stock/TSLA).** Header with name, issuer count, next earnings,
-   big onchain price with drift vs reference and freshness. Chart: 7 days of
-   hourly onchain price, shaded closed periods, dashed reference line,
-   hover shows date, time (ET) and price. Right rail: the "Is now a good
-   moment?" panel: amount presets, a real Jupiter quote, one verdict line
-   (fair moment / reasonable with a caveat / better wait) and four checks in
-   plain words: Price vs reference, Freshness, Size vs pool, Market state.
-   Below: issuer cards with the legal structure (tooltip explains it).
-3. **Buy.** Inside the panel: connect a Wallet Standard wallet, the server
-   builds the Jupiter swap, the browser signs and sends, Solscan link. No
-   wallet installed: plain Jupiter link.
+2. **Stock (/stock/TSLA).** Ticker badge and name, four KPI cards (onchain
+   price with change pill, reference, updated with tradability pill, next
+   earnings). Dark chart panel: white line with soft area, closed hours
+   shaded, dashed blue reference line, 24h/7d segmented control, hover
+   readout with date, time (ET) and price. "Where it trades" card with one
+   tile per issuer (structure label with tooltip). Sticky buy card: amount
+   field with preset pills, real Jupiter quote (you get, per share, price
+   impact), one verdict line (fair moment / reasonable with a caveat /
+   better wait) and four checks: Price, Freshness, Size, Market.
+3. **Buy.** Inside the buy card: connect a Wallet Standard wallet, the
+   server builds the Jupiter swap, the browser signs and sends, Solscan
+   link. No wallet installed: plain Jupiter link.
 
 Add-ons only after the three screens are solid: Telegram alerts ("ping me
 if TSLAx drifts more than 2 percent this weekend"), positions.
