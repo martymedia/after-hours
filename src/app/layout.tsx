@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: { default: "After Hours", template: "%s | After Hours" },
   description:
     "Trade stocks when Wall Street sleeps. Tokenized stocks keep trading on Solana around the clock. See which ones, whether the price is real, and what a trade really costs.",
+  // iOS Safari otherwise rewrites number-like text into tel: links before
+  // React loads, which trips hydration on phones.
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export const viewport: Viewport = { themeColor: "#121214" };
