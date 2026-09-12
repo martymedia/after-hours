@@ -6,7 +6,7 @@ import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
-import { formatDuration, formatPct, formatUsd } from "@/lib/format";
+import { formatDuration, formatPct } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";

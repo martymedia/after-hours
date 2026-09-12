@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RadarRow } from "@/lib/radar-types";
-import { formatPct, formatUsd } from "@/lib/format";
+import { formatPct } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { CountUp } from "./count-up";
