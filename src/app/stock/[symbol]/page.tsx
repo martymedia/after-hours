@@ -91,8 +91,12 @@ export default async function StockPage({ params }: Props) {
           icon={Clock}
           label="Updated"
           value={p.ageMs == null ? "–" : formatAgo(p.ageMs)}
-          badge={<span className={`pill ${PILL[p.tradability]}`}>{TRADABILITY_LABEL[p.tradability]}</span>}
-          detail={`${formatCompactUsd(p.liquidity)} in pools`}
+          detail={
+            <span className="flex flex-wrap items-center gap-2">
+              <span className={`pill ${PILL[p.tradability]}`}>{TRADABILITY_LABEL[p.tradability]}</span>
+              <span>{formatCompactUsd(p.liquidity)} in pools</span>
+            </span>
+          }
           hint="Time since the most recent onchain trade. Old means the price may be out of date."
         />
         <StatCard

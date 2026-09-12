@@ -26,13 +26,13 @@ const TITLES: [(p: string) => boolean, string][] = [
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     // Read the saved preference after hydration so server and client agree.
     const id = requestAnimationFrame(() => {
       try {
-        setExpanded(localStorage.getItem("rail") === "open");
+        setExpanded(localStorage.getItem("rail") !== "closed");
       } catch {}
     });
     return () => cancelAnimationFrame(id);
