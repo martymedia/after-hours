@@ -93,7 +93,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-24 sm:px-6 lg:pb-8 lg:pr-8 lg:pl-6">
         <header className="flex items-center justify-between gap-4 py-5">
-          <Link href="/" className="lg:hidden" aria-label="After Hours home">
+          <Link href="/" className="shrink-0 lg:hidden" aria-label="After Hours home">
             <Logo size={30} />
           </Link>
           <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{title}</h1>

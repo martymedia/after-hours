@@ -7,7 +7,7 @@ type Props = { size?: number; withWordmark?: boolean; className?: string; onDark
 export function Logo({ size = 32, className = "", onDark = false, withWordmark = true }: Props) {
   const fontSize = size * 0.72;
   return (
-    <span className={`inline-flex items-center gap-[0.35em] ${onDark ? "text-white" : "text-ink"} ${className}`} style={{ fontSize, lineHeight: 1 }}>
+    <span className={`inline-flex shrink-0 items-center gap-[0.35em] whitespace-nowrap ${onDark ? "text-white" : "text-ink"} ${className}`} style={{ fontSize, lineHeight: 1 }}>
       <LogoMark size={size} />
       {withWordmark && (
         <span className="inline-flex items-baseline gap-[0.18em] font-bold tracking-tight">
@@ -28,7 +28,7 @@ const MOONS = [0.75, 14.25, 27.75];
 
 export function LogoMark({ size = 32, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className={className}>
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className={`shrink-0 ${className}`} style={{ minWidth: size }}>
       <defs>
         {MOONS.map((cy, i) => (
           <mask key={i} id={`ah-moon-${i}`} maskUnits="userSpaceOnUse" x="0" y="-20" width="40" height="80">

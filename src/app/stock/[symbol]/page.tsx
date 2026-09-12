@@ -109,7 +109,18 @@ export default async function StockPage({ params }: Props) {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        <div className="flex flex-col gap-5 lg:col-span-8">
+        <div className="lg:order-2 lg:col-span-4">
+          <BuyPanel
+            mint={p.mint}
+            symbol={p.symbol}
+            referencePhrase={stock.reference.phrase}
+            phase={stock.phase.phase}
+            ageMs={p.ageMs}
+            liquidity={p.liquidity}
+            disabled={p.tradability === "none"}
+          />
+        </div>
+        <div className="flex flex-col gap-5 lg:order-1 lg:col-span-8">
           <PriceChart candles={stock.candles} reference={p.reference} referenceLabel={stock.reference.short} now={now} symbol={p.symbol} />
 
           <section className="card p-5">
@@ -194,18 +205,6 @@ export default async function StockPage({ params }: Props) {
               </ul>
             </section>
           )}
-        </div>
-
-        <div className="lg:col-span-4">
-          <BuyPanel
-            mint={p.mint}
-            symbol={p.symbol}
-            referencePhrase={stock.reference.phrase}
-            phase={stock.phase.phase}
-            ageMs={p.ageMs}
-            liquidity={p.liquidity}
-            disabled={p.tradability === "none"}
-          />
         </div>
       </div>
     </div>

@@ -62,7 +62,7 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
   const verdict = summarize(checks);
 
   return (
-    <section className="card sticky top-5 p-5">
+    <section className="card p-5 lg:sticky lg:top-5">
       <div className="flex items-baseline justify-between">
         <h2 className="font-semibold">Buy {symbol}</h2>
         <span className="text-muted text-xs">via Jupiter</span>
