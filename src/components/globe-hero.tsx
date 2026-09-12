@@ -41,18 +41,20 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
     <section className="card-dark relative overflow-hidden">
       <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-12">
         <div className="lg:col-span-6">
-          <h2 className="text-[2.25rem] leading-[1.05] font-semibold tracking-tight sm:text-5xl">
-            Trade stocks when Wall Street sleeps.
+          <p className="text-blue-light text-sm font-medium">Trade stocks when Wall Street sleeps.</p>
+          <h2 className="mt-2 text-[2.4rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
+            Solana After Hours
           </h2>
           <p className="text-on-dark-muted mt-5 max-w-md leading-relaxed">
             Real stocks, tokenized on Solana, keep trading after the bell and all weekend. See what is moving,
-            whether the price is fresh, and what a buy really costs. Then buy from your own wallet.
+            whether the price is fresh, and how much cheaper or dearer it is than the last Wall Street print.
+            Then buy from your own wallet.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <Link href="/stocks" className="btn btn-white">
               See what is trading
             </Link>
-            <Link href="#how" className="text-on-dark-muted text-sm hover:text-white">
+            <Link href="/how" className="text-on-dark-muted text-sm hover:text-white">
               How it works
             </Link>
           </div>
@@ -65,7 +67,7 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
           </div>
         </div>
         <div className="lg:col-span-6">
-          <Globe className="mx-auto max-w-[520px] lg:translate-x-10" />
+          <Globe className="mx-auto max-w-[540px] lg:translate-x-8" />
         </div>
       </div>
     </section>

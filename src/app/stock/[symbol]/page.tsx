@@ -9,6 +9,7 @@ import { PriceChart } from "@/components/price-chart";
 import { BuyPanel } from "@/components/buy-panel";
 import { StatCard } from "@/components/stat-card";
 import { TickerBadge } from "@/components/ticker-badge";
+import { GapChart } from "@/components/gap-chart";
 import { Tip } from "@/components/tip";
 
 export const dynamic = "force-dynamic";
@@ -49,16 +50,17 @@ export default async function StockPage({ params }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <Link href="/stocks" className="icon-badge h-8 w-8" aria-label="All stocks">
+      <div className="flex items-start gap-3">
+        <Link href="/stocks" className="icon-badge mt-1 h-8 w-8 shrink-0" aria-label="All stocks">
           <ArrowLeft size={15} strokeWidth={1.75} />
         </Link>
-        <TickerBadge symbol={p.symbol} size={40} />
-        <div>
+        <TickerBadge symbol={p.symbol} size={44} />
+        <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">{stock.name}</h2>
           <p className="text-muted text-sm">
-            {stock.underlying} · {stock.tokens.length} {stock.tokens.length === 1 ? "issuer" : "issuers"} on Solana
+            {stock.underlying} · {stock.sector} · {stock.tokens.length} {stock.tokens.length === 1 ? "issuer" : "issuers"} on Solana
           </p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed">{stock.description}</p>
         </div>
       </div>
 
@@ -67,29 +69,38 @@ export default async function StockPage({ params }: Props) {
           icon={Scale}
           label="Onchain price"
           value={formatUsd(p.price)}
-          badge={<span className={`pill ${(p.gapPct ?? 0) >= 0 ? "pill-dark" : "bg-soft-down text-down"}`}>{formatPct(p.gapPct)}</span>}
+          detail={
+            <>
+              <span className={`num font-medium ${tone(p.gapPct)}`}>{formatPct(p.gapPct)}</span> vs {stock.reference.phrase}
+            </>
+          }
+          hint="The last trade of the most liquid token for this stock on Solana."
         />
         <StatCard
           icon={Layers}
           label={stock.reference.short}
           value={formatUsd(p.reference)}
-          detail={
-            <Tip text={stock.liveReference ? "The live price on the exchange or the overnight venue." : "The last regular-session price on Wall Street. While the exchange is shut this is the only anchor."}>
-              what is this
-            </Tip>
+          detail={stock.liveReference ? "live exchange price" : "last regular session"}
+          hint={
+            stock.liveReference
+              ? "The live price on the exchange or the overnight venue, so the onchain price has something real to compare against."
+              : "The last regular-session price on Wall Street. While the exchange is shut this is the only anchor; onchain can drift from it."
           }
         />
         <StatCard
           icon={Clock}
           label="Updated"
           value={p.ageMs == null ? "–" : formatAgo(p.ageMs)}
-          detail={<span className={`pill ${PILL[p.tradability]}`}>{TRADABILITY_LABEL[p.tradability]}</span>}
+          badge={<span className={`pill ${PILL[p.tradability]}`}>{TRADABILITY_LABEL[p.tradability]}</span>}
+          detail={`${formatCompactUsd(p.liquidity)} in pools`}
+          hint="Time since the most recent onchain trade. Old means the price may be out of date."
         />
         <StatCard
           icon={CalendarDays}
           label="Next earnings"
           value={stock.nextEarnings ? earningsDate.format(new Date(`${stock.nextEarnings.date}T12:00:00Z`)) : "–"}
-          detail={stock.nextEarnings ? stock.nextEarnings.timing : "none scheduled"}
+          detail={stock.nextEarnings ? stock.nextEarnings.timing : "none in the next 60 days"}
+          hint="Earnings reports usually land after the closing bell. Onchain prices react hours before a brokerage would let you."
         />
       </div>
 
@@ -98,7 +109,19 @@ export default async function StockPage({ params }: Props) {
           <PriceChart candles={stock.candles} reference={p.reference} referenceLabel={stock.reference.short} now={now} symbol={p.symbol} />
 
           <section className="card p-5">
-            <h2 className="font-semibold">Where it trades</h2>
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-semibold">Gap radar</h2>
+              <span className="text-muted text-xs">last 48 hours</span>
+            </div>
+            <p className="text-muted mt-1 mb-3 text-sm">
+              How far the onchain price sits from {stock.reference.phrase}, every 15 minutes. Blue bars: onchain above.
+              Grey bars: onchain below, which is where a buy is cheaper than on Wall Street.
+            </p>
+            <GapChart series={stock.gapSeries} referencePhrase={stock.reference.phrase} />
+          </section>
+
+          <section className="card p-5">
+            <h2 className="font-semibold">What you are buying</h2>
             <p className="text-muted mt-1 text-sm">
               Same company, different wrappers. Each issuer has its own legal structure, so the tokens are not
               interchangeable. We quote the one with the deepest pool.
@@ -137,6 +160,36 @@ export default async function StockPage({ params }: Props) {
               ))}
             </ul>
           </section>
+
+          {stock.similar.length > 0 && (
+            <section className="card p-5">
+              <div className="flex items-baseline justify-between">
+                <h2 className="font-semibold">More in {stock.sector}</h2>
+                <Link href="/stocks" className="text-muted text-sm hover:text-ink">
+                  All stocks
+                </Link>
+              </div>
+              <ul className="mt-3 divide-y divide-line">
+                {stock.similar.map((r) => (
+                  <li key={r.underlying}>
+                    <Link href={`/stock/${r.underlying}`} className="flex items-center gap-3 py-2.5 hover:opacity-80">
+                      <TickerBadge symbol={r.symbol} size={30} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{r.name}</span>
+                        <span className="text-muted block text-xs">
+                          {r.symbol} · {r.issuerName}
+                        </span>
+                      </span>
+                      <span className="text-right">
+                        <span className="num block text-sm font-semibold">{formatUsd(r.price)}</span>
+                        <span className={`num block text-xs ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <div className="lg:col-span-4">

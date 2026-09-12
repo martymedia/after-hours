@@ -14,7 +14,7 @@ import landTopology from "world-atlas/land-110m.json";
 
 const DEG = Math.PI / 180;
 const NEW_YORK = { lon: -74.006, lat: 40.7128 };
-const DOT_COUNT = 16000;
+const DOT_COUNT = 30000;
 
 function toVector(lon: number, lat: number, r = 1): THREE.Vector3 {
   const phi = (90 - lat) * DEG;
@@ -94,7 +94,7 @@ const DOT_SHADER = {
     void main() {
       vNormal = normalize(position);
       vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = 2.1 * pixelRatio * (3.2 / -mv.z);
+      gl_PointSize = 1.9 * pixelRatio * (4.3 / -mv.z);
       gl_Position = projectionMatrix * mv;
     }
   `,
@@ -109,7 +109,7 @@ const DOT_SHADER = {
       float d = dot(vNormal, normalize(sunDir));
       float night = smoothstep(0.15, -0.12, d);
       vec3 color = mix(dayColor, nightColor, night);
-      float alpha = mix(0.55, 1.0, night);
+      float alpha = mix(0.6, 1.0, night);
       gl_FragColor = vec4(color, alpha);
     }
   `,
@@ -151,7 +151,9 @@ export function Globe({ className = "" }: { className?: string }) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 10);
-    camera.position.set(0, 0, 3.2);
+    // The sphere has radius 1; at z = 4.3 with a 30 degree lens it fills about
+    // 85 percent of the frame instead of overflowing it.
+    camera.position.set(0, 0, 4.3);
 
     const globe = new THREE.Group();
     scene.add(globe);
@@ -182,7 +184,7 @@ export function Globe({ className = "" }: { className?: string }) {
           uniforms: {
             sunDir: sunUniform,
             pixelRatio: { value: pixelRatio },
-            dayColor: { value: new THREE.Color(0x3b3e48) },
+            dayColor: { value: new THREE.Color(0x454956) },
             nightColor: { value: new THREE.Color(0x8fb3ff) },
           },
           transparent: true,

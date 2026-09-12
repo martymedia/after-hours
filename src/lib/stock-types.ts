@@ -1,6 +1,7 @@
 import type { IssuerId } from "./issuers.ts";
 import type { PhaseInfo, ReferenceLabel } from "./market-phase.ts";
-import type { Tradability } from "./radar-types.ts";
+import type { RadarRow, Tradability } from "./radar-types.ts";
+import type { Sector } from "./companies.ts";
 
 export type StockToken = {
   mint: string;
@@ -18,16 +19,24 @@ export type StockToken = {
   tradability: Tradability;
 };
 
+export type GapPoint = { ts: number; gapPct: number };
+
 export type StockData = {
   generatedAt: string;
   underlying: string;
   name: string;
+  description: string;
+  sector: Sector;
   phase: PhaseInfo;
   liveReference: boolean;
   reference: ReferenceLabel;
   primary: StockToken;
   tokens: StockToken[];
   candles: { ts: number; close: number }[];
+  /** Onchain vs reference over the last 48 hours, one point per 15 minutes. */
+  gapSeries: GapPoint[];
+  /** Other tracked stocks in the same sector. */
+  similar: RadarRow[];
   nextEarnings: { date: string; timing: string } | null;
 };
 

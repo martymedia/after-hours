@@ -50,7 +50,9 @@ export function PriceChart({ candles, reference, referenceLabel, now, symbol }: 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold">Onchain price</h2>
-          <p className="text-on-dark-muted text-xs">{symbol} on Solana. Grey bands: Wall Street closed. Hover for details.</p>
+          <p className="text-on-dark-muted text-xs">
+            {symbol} on Solana. <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue/35 align-middle" /> After hours: Wall Street closed, onchain open. Hover for details.
+          </p>
         </div>
         <div className="seg" role="group" aria-label="Range">
           {(["24h", "7d"] as Range[]).map((r) => (
@@ -161,9 +163,14 @@ function Chart({
           y={PAD.top}
           width={Math.max(0, x(b.end) - x(b.start))}
           height={H - PAD.top - PAD.bottom}
-          fill="#ffffff"
-          opacity="0.06"
+          fill="var(--blue)"
+          opacity="0.16"
         />
+      ))}
+      {bands.map((b) => (
+        <text key={`l${b.start}`} x={x(b.start) + 6} y={PAD.top + 12} fontSize="10" fill="var(--blue-light)">
+          {x(b.end) - x(b.start) > 60 ? "after hours" : ""}
+        </text>
       ))}
       {ticks.map((t) => (
         <g key={t.ts}>

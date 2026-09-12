@@ -100,6 +100,16 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
           <p className="text-warn text-sm">No route found for this amount right now. Try a smaller amount.</p>
         ) : estimate ? (
           <>
+            {estimate.vsReferencePct != null && (
+              <div className={`mb-4 rounded-2xl p-4 ${estimate.vsReferencePct <= 0 ? "bg-blue text-white" : "bg-soft"}`}>
+                <div className="num text-2xl font-semibold">
+                  {formatPct(Math.abs(estimate.vsReferencePct))} {estimate.vsReferencePct <= 0 ? "cheaper" : "dearer"}
+                </div>
+                <div className={`mt-0.5 text-sm ${estimate.vsReferencePct <= 0 ? "text-white/80" : "text-muted"}`}>
+                  than {referencePhrase}, for this amount and including price impact.
+                </div>
+              </div>
+            )}
             <div className="flex items-baseline justify-between text-sm">
               <span className="text-muted">You get</span>
               <span className="num font-semibold">
