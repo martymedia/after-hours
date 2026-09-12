@@ -8,6 +8,7 @@ export type JupiterSearchToken = {
   name: string;
   symbol: string;
   decimals: number;
+  icon?: string;
   tags?: string[];
   liquidity?: number;
   usdPrice?: number;

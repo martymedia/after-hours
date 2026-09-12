@@ -220,7 +220,7 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
     <tr className="border-b border-line last:border-b-0">
       <td className="px-5 py-3">
         <Link href={`/stock/${row.underlying}`} className="group flex items-center gap-3">
-          <TickerBadge symbol={row.symbol} size={32} />
+          <TickerBadge symbol={row.symbol} logo={row.logo} size={32} />
           <span className="flex flex-col">
             <span className="font-medium group-hover:underline">{row.name}</span>
             <span className="text-muted text-xs">
@@ -238,17 +238,9 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
       </td>
       <td className="num text-muted px-4 py-3 text-right text-xs">{ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}</td>
       <td className="px-4 py-3 pr-5">
-        <span className="group relative inline-flex">
-          <span tabIndex={0} className={`pill cursor-help outline-none ${PILL[row.tradability]}`}>
-            {TRADABILITY_LABEL[row.tradability]}
-          </span>
-          <span
-            role="tooltip"
-            className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 hidden w-60 rounded-xl bg-ink px-3 py-2 text-xs leading-relaxed font-normal text-white shadow-lg group-hover:block group-focus-within:block"
-          >
-            {TRADABILITY_TIP[row.tradability]}
-          </span>
-        </span>
+        <Tip text={TRADABILITY_TIP[row.tradability]} underline={false}>
+          <span className={`pill ${PILL[row.tradability]}`}>{TRADABILITY_LABEL[row.tradability]}</span>
+        </Tip>
       </td>
     </tr>
   );

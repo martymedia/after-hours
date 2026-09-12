@@ -77,6 +77,7 @@ export function getRadar(): RadarData {
       name: token.name,
       mint: token.mint,
       symbol: token.symbol,
+      logo: token.logo ?? null,
       issuer: token.issuer as IssuerId,
       issuerName: ISSUERS[token.issuer as IssuerId]?.name ?? token.issuer,
       price,

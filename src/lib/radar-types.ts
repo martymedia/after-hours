@@ -20,6 +20,7 @@ export type RadarRow = {
   /** Most liquid token for this stock. */
   mint: string;
   symbol: string;
+  logo: string | null;
   issuer: IssuerId;
   issuerName: string;
   price: number | null;

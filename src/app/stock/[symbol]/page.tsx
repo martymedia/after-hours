@@ -54,7 +54,7 @@ export default async function StockPage({ params }: Props) {
         <Link href="/stocks" className="icon-badge mt-1 h-8 w-8 shrink-0" aria-label="All stocks">
           <ArrowLeft size={15} strokeWidth={1.75} />
         </Link>
-        <TickerBadge symbol={p.symbol} size={44} />
+        <TickerBadge symbol={p.symbol} logo={p.logo} size={44} />
         <div className="min-w-0">
           <h2 className="text-2xl font-semibold tracking-tight">{stock.name}</h2>
           <p className="text-muted text-sm">
@@ -134,7 +134,7 @@ export default async function StockPage({ params }: Props) {
               {stock.tokens.map((t) => (
                 <li key={t.mint} className="rounded-2xl bg-soft p-4">
                   <div className="flex items-center gap-2.5">
-                    <TickerBadge symbol={t.symbol} size={30} />
+                    <TickerBadge symbol={t.symbol} logo={t.logo} size={30} />
                     <div>
                       <div className="text-sm font-medium">{t.issuerName}</div>
                       <div className="text-muted text-xs">
@@ -152,9 +152,9 @@ export default async function StockPage({ params }: Props) {
                       </span>
                     )}
                     <span className="text-right">
-                      <span className={`pill ${PILL[t.tradability]}`}>
-                        <Tip text={TRADABILITY_TIP[t.tradability]}>{TRADABILITY_LABEL[t.tradability]}</Tip>
-                      </span>
+                      <Tip text={TRADABILITY_TIP[t.tradability]} underline={false}>
+                        <span className={`pill ${PILL[t.tradability]}`}>{TRADABILITY_LABEL[t.tradability]}</span>
+                      </Tip>
                       {t.tradability !== "none" && (
                         <span className="text-muted mt-1 block text-xs">{formatCompactUsd(t.liquidity)} in pools</span>
                       )}
@@ -177,7 +177,7 @@ export default async function StockPage({ params }: Props) {
                 {stock.similar.map((r) => (
                   <li key={r.underlying}>
                     <Link href={`/stock/${r.underlying}`} className="flex items-center gap-3 py-2.5 hover:opacity-80">
-                      <TickerBadge symbol={r.symbol} size={30} />
+                      <TickerBadge symbol={r.symbol} logo={r.logo} size={30} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{r.name}</span>
                         <span className="text-muted block text-xs">

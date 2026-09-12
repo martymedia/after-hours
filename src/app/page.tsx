@@ -106,7 +106,7 @@ export default function OverviewPage() {
             {rows.map((r) => (
               <li key={r.underlying}>
                 <Link href={`/stock/${r.underlying}`} className="flex items-center gap-3 py-3 transition hover:opacity-80">
-                  <TickerBadge symbol={r.symbol} />
+                  <TickerBadge symbol={r.symbol} logo={r.logo} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{r.name}</span>
                     <span className="text-muted block text-xs">

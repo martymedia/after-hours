@@ -28,6 +28,7 @@ export function getStock(underlying: string): StockData | null {
     return {
       mint: t.mint,
       symbol: t.symbol,
+      logo: t.logo ?? null,
       issuer: t.issuer as IssuerId,
       issuerName: issuer?.name ?? t.issuer,
       structure: issuer?.structure ?? "",

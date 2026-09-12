@@ -6,6 +6,7 @@
 // The two labels carry a tooltip that says what they mean.
 
 import { nyParts } from "@/lib/market-phase";
+import { Tip } from "./tip";
 
 const OPEN_MIN = 9 * 60 + 30;
 const CLOSE_MIN = 16 * 60;
@@ -31,22 +32,10 @@ function arc(r: number, fromMin: number, toMin: number): string {
 function Label({ minutes, text, tip }: { minutes: number; text: string; tip: string }) {
   const [x, y] = point(R + 6, angleAt(minutes));
   return (
-    <span
-      className="group absolute -translate-x-1/2 -translate-y-1/2"
-      style={{ left: `${x}%`, top: `${y}%` }}
-    >
-      <span
-        tabIndex={0}
-        className="num cursor-help rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-white/80 outline-none hover:bg-white/20 sm:text-[11px]"
-      >
-        {text}
-      </span>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute top-full left-1/2 z-20 mt-1.5 hidden w-52 -translate-x-1/2 rounded-xl bg-white px-3 py-2 text-left text-xs leading-relaxed font-normal text-ink shadow-lg group-hover:block group-focus-within:block"
-      >
-        {tip}
-      </span>
+    <span className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
+      <Tip text={tip} underline={false} tone="light">
+        <span className="num rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-white/80 hover:bg-white/20 sm:text-[11px]">{text}</span>
+      </Tip>
     </span>
   );
 }

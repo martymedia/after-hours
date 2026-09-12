@@ -65,6 +65,9 @@ export function getDb(): DatabaseSync {
       value TEXT NOT NULL
     );
   `);
+  // Additive migration: logo URL per token (added 2026-09-12).
+  const cols = db.prepare("PRAGMA table_info(tokens)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "logo")) db.exec("ALTER TABLE tokens ADD COLUMN logo TEXT");
   return db;
 }
 
@@ -75,6 +78,7 @@ export type TokenRow = {
   underlying: string;
   issuer: string;
   decimals: number;
+  logo: string | null;
   active: number;
   updated_at: number;
 };
@@ -104,17 +108,17 @@ export function upsertTokens(rows: Omit<TokenRow, "updated_at" | "active">[]): v
   const d = getDb();
   const now = Date.now();
   const stmt = d.prepare(`
-    INSERT INTO tokens (mint, symbol, name, underlying, issuer, decimals, active, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+    INSERT INTO tokens (mint, symbol, name, underlying, issuer, decimals, logo, active, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
     ON CONFLICT(mint) DO UPDATE SET
       symbol = excluded.symbol, name = excluded.name, underlying = excluded.underlying,
-      issuer = excluded.issuer, decimals = excluded.decimals, active = 1,
+      issuer = excluded.issuer, decimals = excluded.decimals, logo = excluded.logo, active = 1,
       updated_at = excluded.updated_at
   `);
   d.exec("BEGIN");
   try {
     for (const r of rows) {
-      stmt.run(r.mint, r.symbol, r.name, r.underlying, r.issuer, r.decimals, now);
+      stmt.run(r.mint, r.symbol, r.name, r.underlying, r.issuer, r.decimals, r.logo, now);
     }
     d.exec("COMMIT");
   } catch (err) {

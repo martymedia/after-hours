@@ -18,6 +18,7 @@ export type UniverseToken = {
   underlying: string;
   issuer: IssuerId;
   decimals: number;
+  logo: string | null;
   liquidity: number;
 };
 
@@ -25,6 +26,7 @@ type XStocksAsset = {
   symbol: string;
   name: string;
   underlyingSymbol: string;
+  logo?: string;
   isTradingHalted: boolean;
   deployments: { address: string; network: string }[];
 };
@@ -102,6 +104,7 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
       underlying: asset.underlyingSymbol.toUpperCase(),
       issuer: "xstocks",
       decimals: p.decimals ?? 8,
+      logo: asset.logo ?? null,
       liquidity: p.liquidity ?? 0,
     });
   }
@@ -128,6 +131,7 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
           underlying: underlyingFor(t, issuerId),
           issuer: issuerId,
           decimals: t.decimals,
+          logo: t.icon ?? null,
           liquidity: t.liquidity ?? 0,
         });
       }

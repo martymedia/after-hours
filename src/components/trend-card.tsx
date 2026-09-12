@@ -11,7 +11,7 @@ export function TrendCard({ row }: { row: RadarRow }) {
   return (
     <Link href={`/stock/${row.underlying}`} className="card-dark flex flex-col justify-between gap-4 p-4 transition hover:opacity-95">
       <div className="flex items-center gap-2.5">
-        <TickerBadge symbol={row.symbol} size={32} dark />
+        <TickerBadge symbol={row.symbol} logo={row.logo} size={32} dark />
         <div className="min-w-0">
           <div className="truncate text-sm font-medium">{row.symbol}</div>
           <div className="text-on-dark-muted truncate text-xs">{row.name}</div>

@@ -19,8 +19,8 @@ function addDays(ymd: string, days: number): string {
 export default function EarningsPage() {
   const today = nyYmd();
   const tokens = listTokens();
-  const nameOf = new Map<string, { name: string; symbol: string }>();
-  for (const t of tokens) if (!nameOf.has(t.underlying)) nameOf.set(t.underlying, { name: t.name, symbol: t.symbol });
+  const nameOf = new Map<string, { name: string; symbol: string; logo: string | null }>();
+  for (const t of tokens) if (!nameOf.has(t.underlying)) nameOf.set(t.underlying, { name: t.name, symbol: t.symbol, logo: t.logo ?? null });
   const events = upcomingEarnings(today, 200).filter((e) => nameOf.has(e.symbol));
 
   const byDay = new Map<string, typeof events>();
@@ -86,7 +86,7 @@ export default function EarningsPage() {
                     return (
                       <li key={e.symbol}>
                         <Link href={`/stock/${e.symbol}`} className="flex items-center gap-3 hover:opacity-80">
-                          <TickerBadge symbol={info?.symbol ?? e.symbol} size={32} />
+                          <TickerBadge symbol={info?.symbol ?? e.symbol} logo={info?.logo} size={32} />
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-medium">{info?.name ?? e.symbol}</span>
                             <span className="text-muted block text-xs">{e.symbol}</span>

@@ -6,6 +6,7 @@ import type { Sector } from "./companies.ts";
 export type StockToken = {
   mint: string;
   symbol: string;
+  logo: string | null;
   issuer: IssuerId;
   issuerName: string;
   structure: string;
