@@ -8,6 +8,10 @@ services:
     image: after-hours:latest
     restart: unless-stopped
     env_file: .env
+    # env_file would otherwise override the image's DB path with the local
+    # dev value; both containers must point at the shared volume.
+    environment:
+      AFTER_HOURS_DB: /data/after-hours.db
     volumes:
       - ah_data:/data
     networks:
@@ -22,6 +26,8 @@ services:
     image: after-hours:latest
     restart: unless-stopped
     env_file: .env
+    environment:
+      AFTER_HOURS_DB: /data/after-hours.db
     command: ["node", "scripts/collector.ts"]
     volumes:
       - ah_data:/data
