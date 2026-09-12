@@ -19,7 +19,7 @@ import {
   upsertTokens,
 } from "../src/lib/db.ts";
 import { getPrices } from "../src/lib/jupiter.ts";
-import { MIN_LIQUIDITY_USD, buildUniverse } from "../src/lib/universe.ts";
+import { MIN_LIST_LIQUIDITY_USD, buildUniverse } from "../src/lib/universe.ts";
 import { hourlyCandles, topPoolFor } from "../src/lib/geckoterminal.ts";
 import { fetchEarnings } from "../src/lib/earnings.ts";
 
@@ -68,7 +68,7 @@ async function refreshCandles(): Promise<void> {
   // Only tokens with a real pool; the rest have no candles anyway.
   const liquid = new Set(
     latestSnapshots()
-      .filter((s) => (s.liquidity ?? 0) >= MIN_LIQUIDITY_USD)
+      .filter((s) => (s.liquidity ?? 0) >= MIN_LIST_LIQUIDITY_USD)
       .map((s) => s.mint),
   );
   const tokens = listTokens().filter((t) => liquid.has(t.mint));

@@ -7,8 +7,10 @@ import { getPrices, searchTokens, type JupiterSearchToken } from "./jupiter.ts";
 
 const XSTOCKS_API = "https://api.backed.fi/api/v2/public";
 
-/** Below this we do not list a token at all; the price would be noise. */
+/** From here on a token counts as tradable for small orders. Below it is listed but marked thin. */
 export const MIN_LIQUIDITY_USD = 50_000;
+/** Below this there is no real pool; the token is not listed at all. */
+export const MIN_LIST_LIQUIDITY_USD = 1_000;
 
 export type UniverseToken = {
   mint: string;
@@ -138,12 +140,12 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
     }
   }
 
-  // 3. Keep tradable tokens, plus every issuer of a stock that has at least
-  //    one tradable token (so the comparison view can say "no liquidity").
-  const tradableUnderlyings = new Set(
-    [...byMint.values()].filter((t) => t.liquidity >= MIN_LIQUIDITY_USD).map((t) => t.underlying),
+  // 3. Keep every stock that has at least one token with a real pool, and
+  //    all issuers of it (so the comparison view can say "no liquidity").
+  const listedUnderlyings = new Set(
+    [...byMint.values()].filter((t) => t.liquidity >= MIN_LIST_LIQUIDITY_USD).map((t) => t.underlying),
   );
   return [...byMint.values()]
-    .filter((t) => tradableUnderlyings.has(t.underlying))
+    .filter((t) => listedUnderlyings.has(t.underlying))
     .sort((a, b) => b.liquidity - a.liquidity);
 }

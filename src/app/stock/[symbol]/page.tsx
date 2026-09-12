@@ -33,7 +33,7 @@ const PILL: Record<Tradability, string> = {
 const TRADABILITY_TIP: Record<string, string> = {
   easy: "More than 500k USD sits in this token's pools. Orders up to a few thousand dollars barely move the price.",
   ok: "Between 50k and 500k USD in pools. Fine for small amounts; large orders would move the price.",
-  thin: "Very little liquidity. Expect a bad price on anything but tiny orders.",
+  thin: "Under 50k USD in this token's pools. Listed so you can see it exists; expect a bad price on anything but tiny orders.",
   stale: "The last trade was more than an hour ago. The price you see may not be where it would trade now.",
   none: "No pool with real liquidity on Solana. This token is minted and redeemed with the issuer directly.",
 };

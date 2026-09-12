@@ -12,7 +12,7 @@ import {
 } from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
-import { MIN_LIQUIDITY_USD } from "./universe.ts";
+import { MIN_LIQUIDITY_USD, MIN_LIST_LIQUIDITY_USD } from "./universe.ts";
 import type { RadarData, RadarRow, Tradability } from "./radar-types.ts";
 
 export type { RadarData, RadarRow, Tradability } from "./radar-types.ts";
@@ -23,7 +23,8 @@ const STALE_AFTER_MS = 60 * 60_000;
 const EASY_LIQUIDITY_USD = 500_000;
 
 export function tradabilityOf(liquidity: number, ageMs: number | null, price: number | null): Tradability {
-  if (price == null || liquidity < MIN_LIQUIDITY_USD) return "none";
+  if (price == null || liquidity < MIN_LIST_LIQUIDITY_USD) return "none";
+  if (liquidity < MIN_LIQUIDITY_USD) return "thin";
   if (ageMs != null && ageMs > STALE_AFTER_MS) return "stale";
   if (liquidity >= EASY_LIQUIDITY_USD) return "easy";
   return "ok";
@@ -64,7 +65,7 @@ export function getRadar(): RadarData {
   const rows: RadarRow[] = [];
   for (const { token, snap, count } of byUnderlying.values()) {
     const liquidity = snap?.liquidity ?? 0;
-    if (liquidity < MIN_LIQUIDITY_USD) continue;
+    if (liquidity < MIN_LIST_LIQUIDITY_USD) continue;
     const price = snap?.usd_price ?? null;
     const reference = snap?.ref_price ?? null;
     const ageMs = ageOf(snap, maxBlock, now);

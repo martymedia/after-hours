@@ -25,7 +25,7 @@ export default function OverviewPage() {
   const data = getRadar();
   const now = Date.parse(data.generatedAt);
   const rows = data.rows.slice(0, 10);
-  const withGap = data.rows.filter((r) => r.gapPct != null && r.spark.length > 2);
+  const withGap = data.rows.filter((r) => r.gapPct != null && r.spark.length > 2 && (r.tradability === "easy" || r.tradability === "ok"));
   const cheaper = [...withGap].filter((r) => (r.gapPct ?? 0) < 0).sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0)).slice(0, 3);
   const pricier = [...withGap].filter((r) => (r.gapPct ?? 0) > 0).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0)).slice(0, 3);
   const top = [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))[0];
@@ -50,9 +50,9 @@ export default function OverviewPage() {
           label="Trading onchain"
           href="/stocks"
           value={<CountUp value={data.rows.length} kind="int" />}
-          detail="stocks with real liquidity"
+          detail="stocks with an onchain market"
           badge={<span className="pill pill-blue">24/7</span>}
-          hint="We list a stock only when at least 50k USD sits in its onchain pools. Thin tokens are hidden, not decorated."
+          hint="Every tokenized stock with a real pool on Solana. Under 50k USD of liquidity it is marked thin, so you know a buy would move the price."
         />
         <StatCard
           index={2}

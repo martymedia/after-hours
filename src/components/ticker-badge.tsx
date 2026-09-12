@@ -9,7 +9,7 @@ export function TickerBadge({ symbol, logo, size = 36, dark = false }: Props) {
   if (logo) {
     return (
       <span
-        className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-black/5"
+        className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${dark ? "bg-transparent" : "bg-white ring-1 ring-black/5"}`}
         style={{ width: size, height: size }}
         aria-hidden="true"
       >

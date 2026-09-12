@@ -84,7 +84,7 @@ Earnings during hackathon week: none in our universe. Next are MU
 demo. The demo leans on weekend drift, freshness, and net cost.
 
 Hard rules:
-1. Universe filter: liquidity >= 50k USD or last trade younger than 24h.
+1. Universe: every token with a real pool (>= 1k USD) is listed; under 50k USD it is marked thin, excluded from deal rankings, and sorted behind tradable stocks.
 2. Every row carries last-trade age; older than 1h is "stale", never green.
 3. Cross-issuer rows carry a structure label (tracker cert, redeemable share,
    SPV, note); only same-structure pairs count as arb.

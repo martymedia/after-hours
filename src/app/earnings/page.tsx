@@ -84,7 +84,7 @@ export default function EarningsPage() {
                 ) : (
                   <span className="flex items-center -space-x-1">
                     {items.slice(0, 3).map((e) => (
-                      <TickerBadge key={e.symbol} symbol={info.get(e.symbol)?.symbol ?? e.symbol} logo={info.get(e.symbol)?.logo} size={24} />
+                      <TickerBadge key={e.symbol} symbol={info.get(e.symbol)?.symbol ?? e.symbol} logo={info.get(e.symbol)?.logo} size={24} dark />
                     ))}
                     {items.length > 3 && (
                       <span className="num ml-1.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold">+{items.length - 3}</span>

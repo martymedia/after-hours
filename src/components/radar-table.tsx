@@ -23,7 +23,7 @@ const PILL: Record<Tradability, string> = {
 const TRADABILITY_TIP: Record<Tradability, string> = {
   easy: "More than 500k USD in pools. Orders up to a few thousand dollars barely move the price.",
   ok: "Between 50k and 500k USD in pools. Fine for small amounts; large orders move the price.",
-  thin: "Very little liquidity. Expect a bad price on anything but tiny orders.",
+  thin: "Under 50k USD in pools. Listed so you can see it exists; expect a bad price on anything but tiny orders.",
   stale: "Last trade more than an hour ago. The price may not be where it would trade now.",
   none: "No pool with real liquidity on Solana.",
 };
@@ -90,10 +90,11 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       if (needle && !(r.name.toLowerCase().includes(needle) || r.symbol.toLowerCase().includes(needle) || r.underlying.toLowerCase().includes(needle))) return false;
       return true;
     });
+    const tier = (r: RadarRow) => (r.tradability === "easy" || r.tradability === "ok" ? 0 : r.tradability === "stale" ? 1 : 2);
     const by: Record<Sort, (a: RadarRow, b: RadarRow) => number> = {
       liquidity: (a, b) => b.liquidity - a.liquidity,
-      move: (a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
-      cheaper: (a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0),
+      move: (a, b) => tier(a) - tier(b) || Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
+      cheaper: (a, b) => tier(a) - tier(b) || (a.gapPct ?? 0) - (b.gapPct ?? 0),
       name: (a, b) => a.name.localeCompare(b.name),
     };
     return [...list].sort(by[sort]);

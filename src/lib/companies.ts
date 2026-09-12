@@ -8,7 +8,10 @@ export type Sector =
   | "Crypto & fintech"
   | "Consumer"
   | "Games & media"
-  | "Space, AI & mobility";
+  | "Space, AI & mobility"
+  | "Health & pharma"
+  | "Energy"
+  | "Banks & payments";
 
 export type Company = { description: string; sector: Sector };
 
@@ -50,6 +53,33 @@ export const COMPANIES: Record<string, Company> = {
   TSLA: { sector: "Space, AI & mobility", description: "Tesla: electric cars, energy storage, and bets on robotaxis and humanoid robots." },
   PLTR: { sector: "Space, AI & mobility", description: "Palantir sells data and AI software to governments and large companies." },
   BOT: { sector: "Space, AI & mobility", description: "RoboStrategy (BOT), a Nasdaq-listed robotics company. Check the issuer's page for the full profile." },
+  SLV: { sector: "Index & ETFs", description: "iShares Silver Trust. Each share represents a slice of physical silver held in a vault." },
+  TQQQ: { sector: "Index & ETFs", description: "ProShares UltraPro QQQ. A leveraged ETF that aims for three times the daily move of the Nasdaq-100, in both directions." },
+  AMD: { sector: "Semiconductors", description: "AMD designs CPUs and GPUs for PCs, servers and AI data centers, NVIDIA's closest rival in accelerators." },
+  INTC: { sector: "Semiconductors", description: "Intel makes PC and server processors and is rebuilding itself as a contract chip manufacturer." },
+  MRVL: { sector: "Semiconductors", description: "Marvell Technology designs networking, storage and custom AI chips for data centers." },
+  TSM: { sector: "Semiconductors", description: "TSMC, the Taiwanese foundry that manufactures most of the world's advanced chips, including Apple's and NVIDIA's." },
+  ORCL: { sector: "Big tech", description: "Oracle sells databases, enterprise software and a cloud that hosts large AI training clusters." },
+  IBM: { sector: "Big tech", description: "IBM: enterprise consulting, hybrid cloud software from Red Hat, mainframes and quantum research." },
+  BMNR: { sector: "Crypto & fintech", description: "Bitmine Immersion Technologies runs bitcoin mining and holds a large Ether treasury; the stock moves with crypto prices." },
+  V: { sector: "Banks & payments", description: "Visa runs the card network that routes payments between banks, earning a fee on every swipe." },
+  JPM: { sector: "Banks & payments", description: "JPMorgan Chase, the largest US bank: consumer banking, investment banking, trading and asset management." },
+  LLY: { sector: "Health & pharma", description: "Eli Lilly makes the GLP-1 diabetes and weight-loss drugs Mounjaro and Zepbound, plus insulin and cancer drugs." },
+  NVO: { sector: "Health & pharma", description: "Novo Nordisk, the Danish maker of Ozempic and Wegovy, the other big name in GLP-1 weight-loss drugs." },
+  UNH: { sector: "Health & pharma", description: "UnitedHealth Group, the largest US health insurer, plus the Optum care and pharmacy services arm." },
+  HIMS: { sector: "Health & pharma", description: "Hims & Hers Health sells prescriptions online, from hair loss and skin care to compounded weight-loss drugs." },
+  AZN: { sector: "Health & pharma", description: "AstraZeneca, the British-Swedish pharma group known for cancer, heart and respiratory drugs." },
+  XOM: { sector: "Energy", description: "Exxon Mobil, the largest US oil and gas producer, from drilling to refining and chemicals." },
+  CVX: { sector: "Energy", description: "Chevron, the second-largest US oil major, with big positions in the Permian Basin and Kazakhstan." },
+  COST: { sector: "Consumer", description: "Costco runs membership warehouses selling groceries and goods in bulk at thin margins." },
+  WMT: { sector: "Consumer", description: "Walmart, the largest retailer in the world by revenue, and a growing online and advertising business." },
+  LULU: { sector: "Consumer", description: "Lululemon sells premium yoga and athletic apparel through its own stores and website." },
+  PEP: { sector: "Consumer", description: "PepsiCo: Pepsi, Gatorade, Lay's, Doritos and Quaker, half drinks and half snacks." },
+  PG: { sector: "Consumer", description: "Procter & Gamble makes everyday brands such as Tide, Pampers, Gillette and Oral-B." },
+  FLWS: { sector: "Consumer", description: "1-800-Flowers.com sells flowers, gift baskets and gourmet food online." },
+  AMC: { sector: "Games & media", description: "AMC Entertainment runs the largest cinema chain in the US and Europe, and is a favorite of retail traders." },
+  NFLX: { sector: "Games & media", description: "Netflix, the streaming service with over 300 million subscribers, now also selling ads and live events." },
+  VIDA: { sector: "Space, AI & mobility", description: "Vida Global builds an operating system for enterprise AI agents that handle calls, chat and email. A small NYSE listing from 2026." },
 };
 
 export const SECTOR_ORDER: Sector[] = [
@@ -60,6 +90,9 @@ export const SECTOR_ORDER: Sector[] = [
   "Consumer",
   "Games & media",
   "Space, AI & mobility",
+  "Health & pharma",
+  "Energy",
+  "Banks & payments",
 ];
 
 export function companyFor(underlying: string): Company {
