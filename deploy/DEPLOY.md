@@ -4,11 +4,13 @@ Server: `ssh root@167.233.192.162`, project dir `/opt/after-hours`.
 Own compose project; joins the `marty-media_default` network so the shared
 Caddy can proxy to it. Nothing here touches `/opt/marty-media`.
 
-Local (PowerShell or Git Bash, from the repo root):
+Local (Git Bash, from the repo root). Commit first: the tarball is the
+committed tree, which avoids shipping half-edited files.
 
 ```bash
-tar czf after-hours.tar.gz --exclude=node_modules --exclude=.next --exclude=data --exclude=.git --exclude=.env .
+git archive --format=tar.gz -o after-hours.tar.gz HEAD
 scp after-hours.tar.gz root@167.233.192.162:/opt/after-hours/deploy.tar.gz
+rm after-hours.tar.gz
 ```
 
 Server:
@@ -16,12 +18,15 @@ Server:
 ```bash
 ssh root@167.233.192.162
 mkdir -p /opt/after-hours && cd /opt/after-hours
-rm -rf src scripts && tar xzf deploy.tar.gz
+rm -rf src scripts deploy public docs && tar xzf deploy.tar.gz
 test -f .env || cp .env.example .env
 docker compose build web
 docker compose up -d
 docker compose ps
 ```
+
+The `rm -rf` of the source dirs matters: tar extracts over the old tree and
+never deletes removed files.
 
 The build runs on the box (2 GB RAM plus swap). If it OOMs, build locally
 and `docker save | ssh ... docker load` instead.
