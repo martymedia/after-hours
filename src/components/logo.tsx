@@ -21,24 +21,24 @@ export function Logo({ size = 32, className = "", onDark = false, withWordmark =
   );
 }
 
-const MOONS = [6.5, 17.5, 28.5];
+// Each crescent: a disc of radius 12 whose top is cut away by a flatter disc
+// (radius 15.84, centred 10.34 above), so the tips sit exactly on the centre
+// line and the bowl is 6.5 thick at the bottom. Three of them, 1.5 apart.
+const MOONS = [0.75, 14.25, 27.75];
 
 export function LogoMark({ size = 32, className = "" }: { size?: number; className?: string }) {
-  // Three stacked crescents, bowls open to the sky: the Solana stripes, read
-  // as moons. Each crescent is a disc with a second disc cut out above it;
-  // every crescent has its own mask so the cutouts never touch a neighbour.
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className={className}>
       <defs>
         {MOONS.map((cy, i) => (
-          <mask key={i} id={`ah-moon-${i}`} maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
-            <rect width="40" height="40" fill="#fff" />
-            <circle cx="20" cy={cy - 4.9} r="9.2" fill="#000" />
+          <mask key={i} id={`ah-moon-${i}`} maskUnits="userSpaceOnUse" x="0" y="-20" width="40" height="80">
+            <rect x="0" y="-20" width="40" height="80" fill="#fff" />
+            <circle cx="20" cy={cy - 10.34} r="15.84" fill="#000" />
           </mask>
         ))}
       </defs>
       {MOONS.map((cy, i) => (
-        <circle key={i} cx="20" cy={cy} r="9.6" fill="currentColor" mask={`url(#ah-moon-${i})`} />
+        <circle key={i} cx="20" cy={cy} r="12" fill="currentColor" mask={`url(#ah-moon-${i})`} />
       ))}
     </svg>
   );
