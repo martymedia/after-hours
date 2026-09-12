@@ -128,7 +128,8 @@ export function RadarTable({ initial }: { initial: RadarData }) {
           )}
         </p>
 
-        <label className="mt-4 flex h-10 items-center gap-2 rounded-full bg-soft px-3 text-sm sm:w-80">
+        <div className="mt-4 flex items-center gap-3">
+        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-soft px-3 text-sm sm:max-w-80">
             <Search size={15} strokeWidth={1.75} className="text-muted" />
             <input
               ref={inputRef}
@@ -146,19 +147,30 @@ export function RadarTable({ initial }: { initial: RadarData }) {
             )}
           </label>
 
-        {/* While typing, the best matches sit right under the box, above the keyboard. */}
-        {q.trim() && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {rows.slice(0, 5).map((r) => (
-              <Link key={r.underlying} href={`/stock/${r.underlying}`} className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2">
-                <TickerBadge symbol={r.symbol} logo={r.logo} size={24} />
-                <span className="font-medium">{r.name}</span>
-                <span className={`num text-xs ${gapTone(r.gapPct)}`}>{gapWords(r.gapPct)}</span>
-              </Link>
-            ))}
-            {rows.length === 0 && <span className="text-muted text-sm">No stock matches that.</span>}
-          </div>
-        )}
+          {/* While typing, the best matches appear as round logos next to the box,
+              in the same row, so they stay above the keyboard on phones. */}
+          {q.trim() && (
+            <div className="flex shrink-0 items-center -space-x-1.5">
+              {rows.slice(0, 4).map((r) => (
+                <Link
+                  key={r.underlying}
+                  href={`/stock/${r.underlying}`}
+                  title={`${r.name} · ${gapWords(r.gapPct)}`}
+                  aria-label={`Open ${r.name}`}
+                  className="rounded-full ring-2 ring-card transition hover:z-10 hover:scale-110"
+                >
+                  <TickerBadge symbol={r.symbol} logo={r.logo} size={40} />
+                </Link>
+              ))}
+              {rows.length > 4 && (
+                <span className="num flex h-10 w-10 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white ring-2 ring-card">
+                  +{rows.length - 4}
+                </span>
+              )}
+              {rows.length === 0 && <span className="text-muted text-sm">No match</span>}
+            </div>
+          )}
+        </div>
 
         <div className={`mt-3 flex flex-wrap items-center gap-3 ${q.trim() ? "hidden sm:flex" : ""}`}>
           <div className="seg" role="group" aria-label="Issuer">
