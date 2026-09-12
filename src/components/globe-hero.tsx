@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PhaseInfo } from "@/lib/market-phase";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatDurationWords } from "@/lib/format";
 import { SessionRing } from "./session-ring";
 import { CountUp } from "./count-up";
 
@@ -74,6 +74,28 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
           <div className="relative mx-auto max-w-[540px] lg:translate-x-8">
             <Globe />
             <SessionRing now={now} tradingDay={phase.phase !== "closed" || phase.msUntilOpen < 16 * 3600_000} />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="rounded-2xl bg-ink/70 px-4 py-3 text-center backdrop-blur-sm">
+                {phase.phase === "open" ? (
+                  <>
+                    <div className="text-sm font-semibold">Wall Street open</div>
+                    <div className="text-on-dark-muted text-xs">
+                      After Hours begins in{" "}
+                      <span className="num text-white">
+                        {phase.nextClose ? formatDurationWords(new Date(phase.nextClose).getTime() - now) : "a few hours"}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-blue-light text-sm font-semibold">After Hours active</div>
+                    <div className="text-on-dark-muted text-xs">
+                      Wall Street opens in <span className="num text-white">{formatDurationWords(new Date(phase.nextOpen).getTime() - now)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

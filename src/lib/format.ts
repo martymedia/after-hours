@@ -56,3 +56,15 @@ export function gapWords(gap: number | null | undefined): string {
   if (abs < 0.25) return "in line";
   return `${abs.toFixed(2)}% ${gap < 0 ? "cheaper" : "pricier"}`;
 }
+
+/** "2 days 3 hours", "4 hours 12 minutes", "38 minutes". */
+export function formatDurationWords(ms: number): string {
+  const totalMin = Math.max(0, Math.round(ms / 60000));
+  const d = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  const unit = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  if (d > 0) return `${unit(d, "day")} ${unit(h, "hour")}`;
+  if (h > 0) return `${unit(h, "hour")} ${unit(m, "minute")}`;
+  return unit(m, "minute");
+}
