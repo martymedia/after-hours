@@ -3,21 +3,17 @@ import { Logo } from "./logo";
 
 export function SiteHeader() {
   return (
-    <header className="mb-10 flex items-center justify-between">
+    <header className="mb-12 flex items-center justify-between border-b border-line pb-4">
       <Link href="/" aria-label="After Hours home">
-        <Logo size={30} />
+        <Logo size={28} />
       </Link>
-      <nav className="flex items-center gap-5 text-sm">
-        <Link href="/stocks" className="text-ink hover:underline">
-          Stocks
+      <nav className="flex items-center gap-6 text-sm">
+        <Link href="/stocks" className="link">
+          Stocks trading now
         </Link>
-        <Link href="/#how" className="text-muted hover:text-ink hidden sm:inline">
+        <Link href="/#how" className="link text-muted hidden sm:inline">
           How it works
         </Link>
-        <span className="border-line inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs">
-          <span className="sol-dot" />
-          Built on Solana
-        </span>
       </nav>
     </header>
   );
@@ -25,9 +21,11 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="text-muted mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-xs">
-      <span>After Hours. Screener plus a buy button. We never hold your funds.</span>
-      <span>Not investment advice. Not available to US persons.</span>
+    <footer className="text-muted mt-20 border-t border-line pt-5 text-sm leading-relaxed">
+      <p>
+        After Hours runs on Solana and routes trades through Jupiter. It is a screener with a buy button; it
+        never holds your funds. Nothing here is investment advice. Not available to US persons.
+      </p>
     </footer>
   );
 }
