@@ -50,9 +50,9 @@ export default function OverviewPage() {
           label="Trading onchain"
           href="/stocks"
           value={<CountUp value={data.rows.length} kind="int" />}
-          detail="stocks with an onchain market"
+          detail="stocks with real liquidity"
           badge={<span className="pill pill-blue">24/7</span>}
-          hint="Every tokenized stock with a real pool on Solana. Under 50k USD of liquidity it is marked thin, so you know a buy would move the price."
+          hint="We list a stock only when at least 50k USD sits in its onchain pools. Thin tokens are hidden, not decorated."
         />
         <StatCard
           index={2}

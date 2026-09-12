@@ -34,7 +34,7 @@ The collector fills `data/after-hours.db`. The web app only reads it.
 
 ## Honesty rules
 
-- Every tokenized stock with a real pool is listed. Under 50k USD of liquidity it is marked thin and never ranked as a deal.
+- A token with less than 50k USD of onchain liquidity is not listed.
 - A price older than one hour is marked stale and never gets a green button.
 - While Wall Street is closed the reference is the last close, shown as
   drift, never as an opportunity.

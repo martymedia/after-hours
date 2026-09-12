@@ -155,7 +155,7 @@ export default function HowPage() {
         <p className="text-blue-light text-sm font-medium">What we will not do</p>
         <ul className="mt-4 grid gap-x-10 gap-y-4 text-lg font-medium leading-snug sm:grid-cols-2">
           <li>Hold your money. Every trade is signed in your wallet.</li>
-          <li>Dress up a thin market. Under 50k USD of liquidity a token is marked, never promoted.</li>
+          <li>List a token with less than 50k USD of real liquidity.</li>
           <li>Call a price fresh when it last traded an hour ago.</li>
           <li>Call a weekend drift an opportunity without saying it can reverse at the open.</li>
           <li>Pretend a synthetic pre-IPO token is a share.</li>

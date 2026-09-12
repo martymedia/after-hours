@@ -23,7 +23,7 @@ const PILL: Record<Tradability, string> = {
 const TRADABILITY_TIP: Record<Tradability, string> = {
   easy: "More than 500k USD in pools. Orders up to a few thousand dollars barely move the price.",
   ok: "Between 50k and 500k USD in pools. Fine for small amounts; large orders move the price.",
-  thin: "Under 50k USD in pools. Listed so you can see it exists; expect a bad price on anything but tiny orders.",
+  thin: "Liquidity dropped under 50k USD since we listed it. Expect a bad price on anything but tiny orders.",
   stale: "Last trade more than an hour ago. The price may not be where it would trade now.",
   none: "No pool with real liquidity on Solana.",
 };

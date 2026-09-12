@@ -7,10 +7,11 @@ import { getPrices, searchTokens, type JupiterSearchToken } from "./jupiter.ts";
 
 const XSTOCKS_API = "https://api.backed.fi/api/v2/public";
 
-/** From here on a token counts as tradable for small orders. Below it is listed but marked thin. */
+/** Below this we do not list a token at all; the price would be noise. */
 export const MIN_LIQUIDITY_USD = 50_000;
-/** Below this there is no real pool; the token is not listed at all. */
-export const MIN_LIST_LIQUIDITY_USD = 1_000;
+/** Listing floor. Same bar today; kept separate so the radar can mark a token
+ *  thin if its pool shrinks between two universe rebuilds. */
+export const MIN_LIST_LIQUIDITY_USD = MIN_LIQUIDITY_USD;
 
 export type UniverseToken = {
   mint: string;
