@@ -37,3 +37,17 @@ then `cd /opt/marty-media && docker compose exec -T caddy caddy reload --config 
 DNS A record for the hostname must point at 167.233.192.162 first.
 
 Disk hygiene after each build: `docker builder prune -f && df -h /`.
+
+## Force a universe rebuild on the server
+
+The collector rebuilds the token universe every 6 h, counted from process
+start. To rebuild now (after changing listing rules), clear the meta key and
+restart the collector; clearing alone does nothing until the restart.
+
+```bash
+ssh root@167.233.192.162 'cd /opt/after-hours && docker compose exec -T collector node -e "const {DatabaseSync}=require(\"node:sqlite\");const db=new DatabaseSync(process.env.AFTER_HOURS_DB);db.prepare(\"DELETE FROM meta WHERE key=?\").run(\"universe_updated_at\")" && docker compose restart collector'
+```
+
+Both services run the same `after-hours:latest` image, so `docker compose
+build web` also refreshes the collector's code; the collector still needs the
+restart to pick it up.
