@@ -46,8 +46,18 @@ export function SessionRing({ now, tradingDay }: { now: number; tradingDay: bool
 
   return (
     <div className="absolute inset-0">
-      <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+      <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
+        <defs>
+          <filter id="ring-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.4" />
+          </filter>
+        </defs>
         <circle cx={C} cy={C} r={R} fill="none" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="1.2" />
+        {/* soft blue halo under the after-hours arcs */}
+        <g filter="url(#ring-glow)" opacity="0.75">
+          <path d={arc(R, CLOSE_MIN, 1440)} fill="none" stroke="var(--blue)" strokeWidth="3.2" strokeLinecap="round" />
+          <path d={arc(R, 0, OPEN_MIN)} fill="none" stroke="var(--blue)" strokeWidth="3.2" strokeLinecap="round" />
+        </g>
         <path d={arc(R, CLOSE_MIN, 1440)} fill="none" stroke="var(--blue)" strokeWidth="1.6" strokeLinecap="round" />
         <path d={arc(R, 0, OPEN_MIN)} fill="none" stroke="var(--blue)" strokeWidth="1.6" strokeLinecap="round" />
         <path

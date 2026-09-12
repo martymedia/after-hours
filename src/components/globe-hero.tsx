@@ -49,7 +49,7 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
           </h2>
           <p className="text-on-dark-muted mt-5 max-w-md leading-relaxed">
             Real stocks, tokenized on Solana, keep trading after the bell and all weekend. See what is moving,
-            whether the price is fresh, and how much cheaper or dearer it is than the last Wall Street print.
+            whether the price is fresh, and how much cheaper or pricier it is than the last Wall Street print.
             Then buy from your own wallet.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4">

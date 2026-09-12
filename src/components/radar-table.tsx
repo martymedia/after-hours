@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
 import { TRADABILITY_LABEL } from "@/lib/radar-types";
-import { formatAgo, formatDuration, formatPct, formatUsd, gapTone } from "@/lib/format";
+import { formatAgo, formatDuration, formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { Tip } from "./tip";
@@ -165,7 +165,30 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         </div>
       </section>
 
-      <section className="card overflow-hidden">
+      {/* Phones: one compact row per stock, no sideways scrolling. */}
+      <section className="card divide-y divide-line md:hidden">
+        {rows.map((row) => {
+          const ageMs = row.ageMs == null ? null : row.ageMs + (now - Date.parse(data.generatedAt));
+          return (
+            <Link key={row.underlying} href={`/stock/${row.underlying}`} className="flex items-center gap-3 px-4 py-3 active:bg-soft">
+              <TickerBadge symbol={row.symbol} logo={row.logo} size={36} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{row.name}</span>
+                <span className="text-muted block truncate text-xs">
+                  {row.symbol} · {TRADABILITY_LABEL[row.tradability].toLowerCase()} · {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
+                </span>
+              </span>
+              <span className="text-right">
+                <span className="num block text-sm font-semibold">{formatUsd(row.price)}</span>
+                <span className={`num block text-xs ${gapTone(row.gapPct)}`}>{gapWords(row.gapPct)}</span>
+              </span>
+            </Link>
+          );
+        })}
+        {rows.length === 0 && <p className="text-muted px-4 py-8 text-center text-sm">Nothing matches. Loosen a filter.</p>}
+      </section>
+
+      <section className="card hidden overflow-hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

@@ -111,12 +111,12 @@ export default function HowPage() {
           )}
         </Step>
 
-        <Step n="03" title="Buy from your own wallet" text="Enter an amount. We fetch a real quote from Jupiter, including how much your order moves the pool, and say in one line whether you are getting the stock cheaper or dearer than on Wall Street. Then you sign in Phantom, Backpack or Solflare. We never touch your money.">
+        <Step n="03" title="Buy from your own wallet" text="Enter an amount. We fetch a real quote from Jupiter, including how much your order moves the pool, and say in one line whether you are getting the stock cheaper or pricier than on Wall Street. Then you sign in Phantom, Backpack or Solflare. We never touch your money.">
           {tileStock && (
             <div className="card p-4">
               <div className={`rounded-2xl p-4 text-white ${(tileStock.gapPct ?? 0) < 0 ? "bg-blue" : "bg-down"}`}>
                 <div className="num text-2xl font-semibold">
-                  {Math.abs(tileStock.gapPct ?? 0).toFixed(2)}% {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "more expensive"}
+                  {Math.abs(tileStock.gapPct ?? 0).toFixed(2)}% {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "pricier"}
                 </div>
                 <div className="mt-0.5 text-sm text-white/80">
                   {tileStock.name} than {data.reference.phrase}, right now, before price impact.
