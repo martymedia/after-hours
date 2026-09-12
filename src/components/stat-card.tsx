@@ -14,10 +14,13 @@ type Props = {
   hint?: string;
   /** Makes the whole card a link. */
   href?: string;
+  /** Stagger position for the entrance animation. */
+  index?: number;
 };
 
 /** KPI card: icon badge and label on top, big value, a small note below. */
-export function StatCard({ icon: Icon, label, value, detail, badge, hint, href }: Props) {
+export function StatCard({ icon: Icon, label, value, detail, badge, hint, href, index = 0 }: Props) {
+  const style = { "--i": index } as React.CSSProperties;
   const body = (
     <>
       <div className="flex items-center gap-2.5 text-sm font-medium">
@@ -54,10 +57,14 @@ export function StatCard({ icon: Icon, label, value, detail, badge, hint, href }
 
   if (href) {
     return (
-      <Link href={href} className="card group flex flex-col gap-4 p-5 transition hover:border-muted-2">
+      <Link href={href} style={style} className="card rise group flex flex-col gap-4 p-5 transition hover:border-muted-2">
         {body}
       </Link>
     );
   }
-  return <div className="card flex flex-col gap-4 p-5">{body}</div>;
+  return (
+    <div style={style} className="card rise flex flex-col gap-4 p-5">
+      {body}
+    </div>
+  );
 }

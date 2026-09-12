@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { LogoMark } from "./logo";
+import { Logo } from "./logo";
 
 export function SiteFooter() {
   return (
     <footer className="text-muted mt-14 border-t border-line pt-5 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="inline-flex items-center gap-2">
-          <LogoMark size={18} />
-          <span className="text-ink font-medium">After Hours</span>
+          <Logo size={18} />
           <span>· built on Solana, trades via Jupiter</span>
         </span>
         <nav className="flex items-center gap-4">

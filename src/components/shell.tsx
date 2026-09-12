@@ -57,9 +57,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           expanded ? "w-56" : "w-24"
         }`}
       >
-        <Link href="/" aria-label="After Hours home" className="flex items-center gap-3 px-1">
-          <LogoMark size={36} />
-          {expanded && <span className="font-semibold tracking-tight">After Hours</span>}
+        <Link href="/" aria-label="After Hours home" className="flex h-9 items-center px-1">
+          {expanded ? <Logo size={30} /> : <LogoMark size={32} />}
         </Link>
         <nav className="mt-10 flex flex-col gap-2">
           {NAV.map((n) => {
@@ -95,7 +94,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-24 sm:px-6 lg:pb-8 lg:pr-8 lg:pl-6">
         <header className="flex items-center justify-between gap-4 py-5">
           <Link href="/" className="lg:hidden" aria-label="After Hours home">
-            <Logo size={32} />
+            <Logo size={30} />
           </Link>
           <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{title}</h1>
           <div className="flex items-center gap-3">

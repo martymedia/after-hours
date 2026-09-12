@@ -1,31 +1,35 @@
-// Mark: a black app tile with a crescent moon (the night) and one blue light
-// still on (onchain). No circle, no wave, nothing borrowed.
+// Wordmark: "After" plain, "Hours" in a slanted black box with white type.
+// On dark panels the box inverts. The compact mark is the same box with "AH".
 
-type Props = { size?: number; withWordmark?: boolean; className?: string };
+type Props = { size?: number; withWordmark?: boolean; className?: string; onDark?: boolean };
 
-export function Logo({ size = 32, withWordmark = true, className = "" }: Props) {
+export function Logo({ size = 32, className = "", onDark = false }: Props) {
+  const fontSize = size * 0.72;
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <LogoMark size={size} />
-      {withWordmark && (
-        <span className="font-semibold tracking-tight" style={{ fontSize: size * 0.62 }}>
-          After Hours
-        </span>
-      )}
+    <span
+      className={`inline-flex items-baseline gap-[0.18em] font-bold tracking-tight ${onDark ? "text-white" : "text-ink"} ${className}`}
+      style={{ fontSize, lineHeight: 1 }}
+    >
+      <span>After</span>
+      <span
+        className={`inline-block -skew-x-[8deg] rounded-[0.12em] px-[0.28em] py-[0.08em] ${onDark ? "bg-white text-ink" : "bg-ink text-white"}`}
+      >
+        <span className="inline-block skew-x-[8deg]">Hours</span>
+      </span>
     </span>
   );
 }
 
-export function LogoMark({ size = 32 }: { size?: number }) {
+export function LogoMark({ size = 32, onDark = false }: { size?: number; onDark?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" fill="none">
-      <rect width="40" height="40" rx="11" fill="#121214" />
-      {/* crescent: a disc minus an offset disc */}
-      <path
-        d="M22.5 8.5 A11.5 11.5 0 1 0 22.5 31.5 A9.2 9.2 0 1 1 22.5 8.5 Z"
-        fill="#ffffff"
-      />
-      <circle cx="27.5" cy="14" r="2.6" fill="#5b91ff" />
-    </svg>
+    <span
+      className={`inline-flex -skew-x-[8deg] items-center justify-center rounded-[0.2em] font-bold tracking-tight ${
+        onDark ? "bg-white text-ink" : "bg-ink text-white"
+      }`}
+      style={{ width: size * 1.15, height: size, fontSize: size * 0.5 }}
+      aria-hidden="true"
+    >
+      <span className="inline-block skew-x-[8deg]">AH</span>
+    </span>
   );
 }

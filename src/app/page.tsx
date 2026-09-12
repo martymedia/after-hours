@@ -4,6 +4,7 @@ import { GlobeHero } from "@/components/globe-hero";
 import { StatCard } from "@/components/stat-card";
 import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
+import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
 import { formatDuration, formatPct, formatUsd } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
@@ -36,6 +37,7 @@ export default function OverviewPage() {
     <div className="flex flex-col gap-5">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
+          index={0}
           icon={Clock}
           label="Wall Street"
           href="/how"
@@ -44,15 +46,17 @@ export default function OverviewPage() {
           hint="Nasdaq and NYSE trade 9:30 to 16:00 New York time on weekdays. Outside that, tokenized stocks on Solana are the only place these shares change hands."
         />
         <StatCard
+          index={1}
           icon={Activity}
           label="Trading onchain"
           href="/stocks"
-          value={data.rows.length}
+          value={<CountUp value={data.rows.length} format={(n) => String(Math.round(n))} />}
           detail="stocks with real liquidity"
           badge={<span className="pill pill-blue">24/7</span>}
           hint="We list a stock only when at least 50k USD sits in its onchain pools. Thin tokens are hidden, not decorated."
         />
         <StatCard
+          index={2}
           icon={TrendingUp}
           label="Biggest move"
           href={top ? `/stock/${top.underlying}` : "/stocks"}
@@ -61,6 +65,7 @@ export default function OverviewPage() {
           detail={top ? `vs ${data.reference.phrase}` : undefined}
         />
         <StatCard
+          index={3}
           icon={CalendarDays}
           label="Next earnings"
           href="/earnings"
@@ -73,10 +78,12 @@ export default function OverviewPage() {
         />
       </div>
 
-      <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
+      <div className="rise" style={{ "--i": 4 } as React.CSSProperties}>
+        <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        <section className="card p-5 lg:col-span-5">
+        <section className="card rise p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="font-semibold">Moved most</h2>
             <span className="text-muted text-xs">since {data.reference.phrase}</span>
@@ -88,7 +95,7 @@ export default function OverviewPage() {
           </div>
         </section>
 
-        <section className="card p-5 lg:col-span-7">
+        <section className="card rise p-5 lg:col-span-7" style={{ "--i": 6 } as React.CSSProperties}>
           <div className="mb-2 flex items-baseline justify-between">
             <h2 className="font-semibold">Trading now</h2>
             <Link href="/stocks" className="text-muted text-sm hover:text-ink">
@@ -108,7 +115,9 @@ export default function OverviewPage() {
                   </span>
                   <span className={`pill hidden sm:inline-flex ${PILL[r.tradability]}`}>{TRADABILITY_LABEL[r.tradability]}</span>
                   <span className="text-right">
-                    <span className="num block text-sm font-semibold">{formatUsd(r.price)}</span>
+                    <span className="num block text-sm font-semibold">
+                      {r.price == null ? "–" : <CountUp value={r.price} from={0.9} format={(n) => formatUsd(n)} />}
+                    </span>
                     <span className={`num block text-xs ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
                   </span>
                 </Link>

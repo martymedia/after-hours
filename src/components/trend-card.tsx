@@ -3,6 +3,7 @@ import type { RadarRow } from "@/lib/radar-types";
 import { formatPct, formatUsd } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
+import { CountUp } from "./count-up";
 
 /** Dark "trending" tile: badge, name, sparkline, price and change. */
 export function TrendCard({ row }: { row: RadarRow }) {
@@ -20,7 +21,9 @@ export function TrendCard({ row }: { row: RadarRow }) {
         <Sparkline values={row.spark} width={200} height={48} color="var(--blue)" fill />
       </div>
       <div>
-        <div className="num text-xl font-semibold">{formatUsd(row.price)}</div>
+        <div className="num text-xl font-semibold">
+          {row.price == null ? "–" : <CountUp value={row.price} from={0.9} format={(n) => formatUsd(n)} />}
+        </div>
         <div className={`num text-xs ${up ? "text-blue-light" : "text-down"}`}>{formatPct(row.gapPct)} vs close</div>
       </div>
     </Link>
