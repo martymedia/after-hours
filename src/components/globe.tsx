@@ -216,8 +216,9 @@ export function Globe({ className = "" }: { className?: string }) {
     const resize = () => {
       const size = Math.max(280, Math.min(mount.clientWidth, 640));
       renderer.setSize(size, size, false);
-      renderer.domElement.style.width = `${size}px`;
-      renderer.domElement.style.height = `${size}px`;
+      // CSS size follows the container so the canvas can never widen the layout.
+      renderer.domElement.style.width = "100%";
+      renderer.domElement.style.height = "100%";
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -249,5 +250,5 @@ export function Globe({ className = "" }: { className?: string }) {
     };
   }, []);
 
-  return <div ref={mountRef} className={`aspect-square w-full ${className}`} aria-hidden="true" />;
+  return <div ref={mountRef} className={`aspect-square w-full min-w-0 ${className}`} aria-hidden="true" />;
 }
