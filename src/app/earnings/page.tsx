@@ -3,6 +3,7 @@ import Link from "next/link";
 import { listTokens, upcomingEarnings } from "@/lib/db";
 import { nyYmd } from "@/lib/market-phase";
 import { TickerBadge } from "@/components/ticker-badge";
+import { Tip } from "@/components/tip";
 
 export const dynamic = "force-dynamic";
 
@@ -56,42 +57,53 @@ export default function EarningsPage() {
         )}
       </div>
 
-      {/* Four-week strip: the calendar is the page */}
-      <section className="-mx-4 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-        <div className="flex min-w-max gap-2 pb-2">
-          {strip.map((ymd, i) => {
-            const items = byDay.get(ymd) ?? [];
-            const date = at(ymd);
-            const wd = date.getUTCDay();
-            const weekend = wd === 0 || wd === 6;
-            const isToday = i === 0;
-            const newMonth = Number(ymd.slice(-2)) === 1 || i === 0;
-            return (
-              <div
-                key={ymd}
-                className={`flex w-[4.6rem] flex-col items-center rounded-2xl px-1 pt-3 pb-3 ${
-                  items.length ? "bg-ink text-white" : weekend ? "bg-blue-soft" : "card"
-                } ${isToday ? "ring-2 ring-blue ring-offset-2 ring-offset-bg" : ""}`}
-              >
-                <span className={`text-[10px] font-medium ${items.length ? "text-white/70" : "text-muted"}`}>
-                  {newMonth ? shortMonth.format(date) : weekdayShort.format(date)}
-                </span>
-                <span className="num mt-0.5 text-xl font-semibold">{Number(ymd.slice(-2))}</span>
-                <div className="mt-2 flex h-11 flex-col items-center justify-end gap-1">
-                  {items.length === 0 ? (
-                    <span className={`h-1.5 w-1.5 rounded-full ${weekend ? "bg-blue/50" : "bg-line"}`} />
-                  ) : (
-                    items.map((e) => (
-                      <Link key={e.symbol} href={`/stock/${e.symbol}`} title={info.get(e.symbol)?.name}>
-                        <TickerBadge symbol={info.get(e.symbol)?.symbol ?? e.symbol} logo={info.get(e.symbol)?.logo} size={24} />
-                      </Link>
-                    ))
-                  )}
-                </div>
+      {/* Four weeks, two rows on desktop, four on phones. Every day is a link. */}
+      <section className="grid grid-cols-7 gap-2 lg:grid-cols-[repeat(14,minmax(0,1fr))]">
+        {strip.map((ymd, i) => {
+          const items = byDay.get(ymd) ?? [];
+          const date = at(ymd);
+          const wd = date.getUTCDay();
+          const weekend = wd === 0 || wd === 6;
+          const isToday = i === 0;
+          const firstOfMonth = Number(ymd.slice(-2)) === 1;
+          const cls = `flex flex-col items-center rounded-2xl px-1 pt-3 pb-3 transition ${
+            items.length ? "bg-ink text-white hover:bg-black" : weekend ? "bg-blue-soft hover:bg-blue/20" : "card hover:border-muted-2"
+          } ${isToday ? "ring-2 ring-blue ring-offset-2 ring-offset-bg" : ""}`;
+          const body = (
+            <>
+              <span className={`text-[10px] font-medium ${items.length ? "text-white/70" : "text-muted"}`}>
+                {weekdayShort.format(date)}
+              </span>
+              <span className="num mt-0.5 text-xl font-semibold">
+                {firstOfMonth ? <span className="text-xs font-medium">{shortMonth.format(date)} </span> : ""}
+                {Number(ymd.slice(-2))}
+              </span>
+              <div className="mt-2 flex h-8 flex-col items-center justify-end gap-1">
+                {items.length === 0 ? (
+                  <span className={`h-1.5 w-1.5 rounded-full ${weekend ? "bg-blue/50" : "bg-line"}`} />
+                ) : (
+                  <span className="flex -space-x-1">
+                    {items.map((e) => (
+                      <TickerBadge key={e.symbol} symbol={info.get(e.symbol)?.symbol ?? e.symbol} logo={info.get(e.symbol)?.logo} size={24} />
+                    ))}
+                  </span>
+                )}
               </div>
+            </>
+          );
+          if (items.length) {
+            return (
+              <Link key={ymd} href={items.length === 1 ? `/stock/${items[0].symbol}` : `#day-${ymd}`} className={cls} title={items.map((e) => info.get(e.symbol)?.name ?? e.symbol).join(", ")}>
+                {body}
+              </Link>
             );
-          })}
-        </div>
+          }
+          return (
+            <Tip key={ymd} text={weekend ? "Weekend. Wall Street is closed; onchain keeps trading." : "No tracked stock reports this day."} underline={false} className="block">
+              <span className={`${cls} w-full cursor-default`}>{body}</span>
+            </Tip>
+          );
+        })}
       </section>
 
       <div className="grid gap-8 lg:grid-cols-12">
@@ -103,7 +115,7 @@ export default function EarningsPage() {
           ) : (
             <ul className="mt-3 divide-y divide-line">
               {[...byDay.entries()].map(([date, items]) => (
-                <li key={date} className="grid grid-cols-[4.5rem_1fr] gap-4 py-4">
+                <li key={date} id={`day-${date}`} className="grid scroll-mt-24 grid-cols-[4.5rem_1fr] gap-4 py-4">
                   <div>
                     <div className="num text-2xl font-semibold leading-none">{Number(date.slice(-2))}</div>
                     <div className="text-muted mt-1 text-xs">
