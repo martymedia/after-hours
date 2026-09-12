@@ -13,9 +13,13 @@
     "universe": "node scripts/print-universe.ts"
   },
   "dependencies": {
+    "@solana/kit": "^8.3.0",
+    "@solana/kit-plugin-rpc": "^0.19.0",
+    "@solana/kit-plugin-wallet": "^0.20.0",
+    "@solana/react": "^8.3.0",
     "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

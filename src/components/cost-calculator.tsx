@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CostEstimate } from "@/lib/stock-types";
 import { formatPct, formatUsd } from "@/lib/format";
+import { BuyButton } from "./buy-button";
 
 type Props = {
   mint: string;
@@ -110,18 +111,12 @@ export function CostCalculator({ mint, symbol, referencePhrase, liveReference, d
         )}
       </div>
 
-      <a
-        href={`https://jup.ag/swap/USDC-${mint}`}
-        target="_blank"
-        rel="noreferrer"
-        className={`mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium ${
-          disabled ? "bg-soft text-muted pointer-events-none" : "bg-ink text-paper hover:opacity-90"
-        }`}
-      >
-        Buy on Jupiter
-      </a>
+      <div className="mt-4">
+        <BuyButton mint={mint} symbol={symbol} usd={usd} disabled={disabled} />
+      </div>
       <p className="text-muted mt-3 text-xs">
-        You trade from your own wallet on Jupiter. After Hours never holds your funds. Not investment advice.
+        The swap runs through Jupiter and is signed in your own wallet. After Hours never holds your funds.
+        Not investment advice. Not available to US persons.
       </p>
     </section>
   );
