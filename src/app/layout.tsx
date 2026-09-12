@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  variable: "--font-newsreader",
-  display: "swap",
-  weight: "variable",
-  axes: ["opsz"],
-});
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-plex-sans",
   display: "swap",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -31,9 +24,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
       <body>
-        <div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-8">
+        <div className="mx-auto max-w-6xl px-5 py-5 sm:px-8 sm:py-6">
           <SiteHeader />
           {children}
           <SiteFooter />

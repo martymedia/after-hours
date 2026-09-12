@@ -3,15 +3,15 @@ import { Logo } from "./logo";
 
 export function SiteHeader() {
   return (
-    <header className="mb-12 flex items-center justify-between border-b border-line pb-4">
+    <header className="mb-6 flex items-center justify-between">
       <Link href="/" aria-label="After Hours home">
         <Logo size={28} />
       </Link>
-      <nav className="flex items-center gap-6 text-sm">
-        <Link href="/stocks" className="link">
-          Stocks trading now
+      <nav className="flex items-center gap-6 text-sm font-medium">
+        <Link href="/stocks" className="hover:underline">
+          Stocks
         </Link>
-        <Link href="/#how" className="link text-muted hidden sm:inline">
+        <Link href="/#how" className="text-muted hover:text-ink hidden sm:inline">
           How it works
         </Link>
       </nav>

@@ -1,17 +1,20 @@
 "use client";
 
-// A line-drawn globe in ink on paper. The night side is shaded from the real
-// position of the sun, so when New York sits in the dark, Wall Street is
-// closed. That is the one animation on the page, and it means something.
+// Earth at night. A dot-matrix globe on a dark ground: land is drawn as
+// points, and on the night side of the real terminator the points glow like
+// city lights. Where Wall Street sleeps, the lights are on. New York is
+// marked. This is the one animation on the page and it means something.
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { mesh } from "topojson-client";
+import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
+import type { Feature, FeatureCollection, MultiPolygon, Polygon, Position } from "geojson";
 import landTopology from "world-atlas/land-110m.json";
 
 const DEG = Math.PI / 180;
 const NEW_YORK = { lon: -74.006, lat: 40.7128 };
+const DOT_COUNT = 16000;
 
 function toVector(lon: number, lat: number, r = 1): THREE.Vector3 {
   const phi = (90 - lat) * DEG;
@@ -29,50 +32,107 @@ function sunDirection(date: Date): THREE.Vector3 {
   return toVector(subsolarLon, declination).normalize();
 }
 
-function landSegments(): Float32Array {
+/** Rasterizes the land polygons into an equirectangular mask. */
+function landMask(width: number, height: number): Uint8ClampedArray {
   const topo = landTopology as unknown as Topology<{ land: GeometryCollection }>;
-  const lines = mesh(topo, topo.objects.land);
+  const land = feature(topo, topo.objects.land) as Feature<Polygon | MultiPolygon> | FeatureCollection<Polygon | MultiPolygon>;
+  const geometries = land.type === "FeatureCollection" ? land.features.map((f) => f.geometry) : [land.geometry];
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = "#fff";
+
+  const trace = (ring: Position[]) => {
+    ring.forEach(([lon, lat], i) => {
+      const x = ((lon + 180) / 360) * width;
+      const y = ((90 - lat) / 180) * height;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+  };
+  for (const g of geometries) {
+    const polygons = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+    for (const rings of polygons) {
+      ctx.beginPath();
+      for (const ring of rings) trace(ring);
+      ctx.fill("evenodd");
+    }
+  }
+  return ctx.getImageData(0, 0, width, height).data;
+}
+
+/** Evenly spread points on the sphere, kept only where there is land. */
+function landPoints(): Float32Array {
+  const W = 1440;
+  const H = 720;
+  const mask = landMask(W, H);
+  const golden = Math.PI * (3 - Math.sqrt(5));
   const out: number[] = [];
-  const r = 1.003;
-  for (const line of lines.coordinates) {
-    for (let i = 1; i < line.length; i++) {
-      const a = toVector(line[i - 1][0], line[i - 1][1], r);
-      const b = toVector(line[i][0], line[i][1], r);
-      out.push(a.x, a.y, a.z, b.x, b.y, b.z);
+  for (let i = 0; i < DOT_COUNT; i++) {
+    const y = 1 - (2 * (i + 0.5)) / DOT_COUNT;
+    const lat = Math.asin(y) / DEG;
+    const lon = ((i * golden) % (2 * Math.PI)) / DEG - 180;
+    const px = Math.floor(((lon + 180) / 360) * W);
+    const py = Math.floor(((90 - lat) / 180) * H);
+    if (mask[(py * W + px) * 4] > 127) {
+      const v = toVector(lon, lat, 1.004);
+      out.push(v.x, v.y, v.z);
     }
   }
   return new Float32Array(out);
 }
 
-function graticuleSegments(): Float32Array {
-  const out: number[] = [];
-  const r = 1.001;
-  const push = (a: THREE.Vector3, b: THREE.Vector3) => out.push(a.x, a.y, a.z, b.x, b.y, b.z);
-  for (let lat = -60; lat <= 60; lat += 30) {
-    for (let lon = -180; lon < 180; lon += 3) push(toVector(lon, lat, r), toVector(lon + 3, lat, r));
-  }
-  for (let lon = -180; lon < 180; lon += 30) {
-    for (let lat = -90; lat < 90; lat += 3) push(toVector(lon, lat, r), toVector(lon, lat + 3, r));
-  }
-  return new Float32Array(out);
-}
-
-const NIGHT_SHADER = {
+const DOT_SHADER = {
   vertexShader: `
+    uniform float pixelRatio;
     varying vec3 vNormal;
     void main() {
-      vNormal = normal;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vNormal = normalize(position);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = 2.1 * pixelRatio * (3.2 / -mv.z);
+      gl_Position = projectionMatrix * mv;
     }
   `,
   fragmentShader: `
     uniform vec3 sunDir;
-    uniform vec3 ink;
+    uniform vec3 dayColor;
+    uniform vec3 nightColor;
     varying vec3 vNormal;
     void main() {
-      float d = dot(normalize(vNormal), normalize(sunDir));
-      float night = smoothstep(0.12, -0.14, d);
-      gl_FragColor = vec4(ink, night * 0.17);
+      vec2 c = gl_PointCoord - 0.5;
+      if (dot(c, c) > 0.25) discard;
+      float d = dot(vNormal, normalize(sunDir));
+      float night = smoothstep(0.15, -0.12, d);
+      vec3 color = mix(dayColor, nightColor, night);
+      float alpha = mix(0.55, 1.0, night);
+      gl_FragColor = vec4(color, alpha);
+    }
+  `,
+};
+
+const RIM_SHADER = {
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vView;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      vView = normalize(-mv.xyz);
+      gl_Position = projectionMatrix * mv;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 rimColor;
+    varying vec3 vNormal;
+    varying vec3 vView;
+    void main() {
+      float rim = pow(1.0 - max(dot(vNormal, vView), 0.0), 3.5);
+      gl_FragColor = vec4(rimColor, rim * 0.45);
     }
   `,
 };
@@ -84,74 +144,77 @@ export function Globe({ className = "" }: { className?: string }) {
     const mount = mountRef.current;
     if (!mount) return;
 
-    const styles = getComputedStyle(document.documentElement);
-    const ink = new THREE.Color(styles.getPropertyValue("--ink").trim() || "#161616");
-    const accent = new THREE.Color(styles.getPropertyValue("--accent").trim() || "#c98a2e");
-    const surface = new THREE.Color(styles.getPropertyValue("--surface").trim() || "#ffffff");
-
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const pixelRatio = Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(pixelRatio);
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 10);
-    camera.position.set(0, 0, 4.6);
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 10);
+    camera.position.set(0, 0, 3.2);
 
     const globe = new THREE.Group();
     scene.add(globe);
 
-    // Opaque body hides the far side of the line work.
+    // Body: a shade lighter than the ground so the disc reads, plus a soft rim.
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: 0x15161c })));
     globe.add(
-      new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: surface })),
+      new THREE.Mesh(
+        new THREE.SphereGeometry(1.0, 64, 48),
+        new THREE.ShaderMaterial({
+          ...RIM_SHADER,
+          uniforms: { rimColor: { value: new THREE.Color(0x7d8394) } },
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      ),
     );
-
-    const lineMaterial = (opacity: number) =>
-      new THREE.LineBasicMaterial({ color: ink, transparent: true, opacity });
-    const grat = new THREE.BufferGeometry();
-    grat.setAttribute("position", new THREE.BufferAttribute(graticuleSegments(), 3));
-    globe.add(new THREE.LineSegments(grat, lineMaterial(0.13)));
-    const land = new THREE.BufferGeometry();
-    land.setAttribute("position", new THREE.BufferAttribute(landSegments(), 3));
-    globe.add(new THREE.LineSegments(land, lineMaterial(0.7)));
 
     const sunUniform = { value: new THREE.Vector3(1, 0, 0) };
-    const night = new THREE.Mesh(
-      new THREE.SphereGeometry(1.006, 64, 48),
-      new THREE.ShaderMaterial({
-        ...NIGHT_SHADER,
-        uniforms: { sunDir: sunUniform, ink: { value: ink } },
-        transparent: true,
-        depthWrite: false,
-      }),
+    const dots = new THREE.BufferGeometry();
+    dots.setAttribute("position", new THREE.BufferAttribute(landPoints(), 3));
+    globe.add(
+      new THREE.Points(
+        dots,
+        new THREE.ShaderMaterial({
+          ...DOT_SHADER,
+          uniforms: {
+            sunDir: sunUniform,
+            pixelRatio: { value: pixelRatio },
+            dayColor: { value: new THREE.Color(0x3a3d47) },
+            nightColor: { value: new THREE.Color(0xffc978) },
+          },
+          transparent: true,
+          depthWrite: false,
+        }),
+      ),
     );
-    globe.add(night);
 
     // New York, where the bell rings.
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.022, 16, 16),
-      new THREE.MeshBasicMaterial({ color: accent }),
-    );
-    marker.position.copy(toVector(NEW_YORK.lon, NEW_YORK.lat, 1.01));
+    const amber = new THREE.Color(0xffb84d);
+    const marker = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: amber }));
+    marker.position.copy(toVector(NEW_YORK.lon, NEW_YORK.lat, 1.012));
     globe.add(marker);
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.035, 0.042, 32),
-      new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.7, side: THREE.DoubleSide }),
+      new THREE.RingGeometry(0.036, 0.044, 40),
+      new THREE.MeshBasicMaterial({ color: amber, transparent: true, opacity: 0.8, side: THREE.DoubleSide }),
     );
-    ring.position.copy(toVector(NEW_YORK.lon, NEW_YORK.lat, 1.012));
+    ring.position.copy(toVector(NEW_YORK.lon, NEW_YORK.lat, 1.014));
     ring.lookAt(ring.position.clone().multiplyScalar(2));
     globe.add(ring);
 
     // Face New York, tilt a little so the northern hemisphere reads well.
     const ny = toVector(NEW_YORK.lon, NEW_YORK.lat);
-    const baseYaw = -Math.atan2(ny.x, ny.z) - 0.35;
-    globe.rotation.x = 0.28;
+    const baseYaw = -Math.atan2(ny.x, ny.z) - 0.45;
+    globe.rotation.x = 0.3;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const localSun = new THREE.Vector3();
     const inverse = new THREE.Quaternion();
 
     const resize = () => {
-      const size = Math.min(mount.clientWidth, 520);
+      const size = Math.max(280, Math.min(mount.clientWidth, 640));
       renderer.setSize(size, size, false);
       renderer.domElement.style.width = `${size}px`;
       renderer.domElement.style.height = `${size}px`;
@@ -164,7 +227,7 @@ export function Globe({ className = "" }: { className?: string }) {
     const start = performance.now();
     const render = (t: number) => {
       const elapsed = (t - start) / 1000;
-      globe.rotation.y = baseYaw + (reducedMotion ? 0 : Math.sin(elapsed / 9) * 0.16);
+      globe.rotation.y = baseYaw + (reducedMotion ? 0 : elapsed * 0.02 + Math.sin(elapsed / 7) * 0.05);
       inverse.copy(globe.quaternion).invert();
       localSun.copy(sunDirection(new Date())).applyQuaternion(inverse);
       sunUniform.value.copy(localSun);
@@ -181,8 +244,7 @@ export function Globe({ className = "" }: { className?: string }) {
       cancelAnimationFrame(frame);
       observer.disconnect();
       renderer.dispose();
-      grat.dispose();
-      land.dispose();
+      dots.dispose();
       mount.removeChild(renderer.domElement);
     };
   }, []);

@@ -68,7 +68,7 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
 
   return (
     <section className="border-line rounded-lg border bg-surface p-5">
-      <h2 className="font-display text-xl">Is now a good moment?</h2>
+      <h2 className="text-base font-semibold">Is now a good moment?</h2>
       <p className="text-muted mt-1 text-xs">Pick an amount. We fetch a real quote and check four things.</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

@@ -2,9 +2,17 @@ import Link from "next/link";
 import { GlobeHero } from "@/components/globe-hero";
 import { getRadar } from "@/lib/radar";
 import { formatPct, formatUsd } from "@/lib/format";
-import { TRADABILITY_LABEL } from "@/lib/radar-types";
+import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";
+
+const PILL: Record<Tradability, string> = {
+  easy: "bg-soft-up text-up",
+  ok: "bg-soft text-ink",
+  thin: "bg-soft-warn text-warn",
+  stale: "bg-soft-warn text-warn",
+  none: "bg-soft text-muted",
+};
 
 export default function LandingPage() {
   const data = getRadar();
@@ -16,60 +24,67 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Hero: text left, the globe right, nothing centered. */}
-      <section className="grid items-center gap-10 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <h1 className="font-display text-[2.6rem] leading-[1.05] font-medium tracking-tight sm:text-6xl">
-            Trade stocks when Wall Street sleeps.
-          </h1>
-          <p className="mt-6 max-w-xl text-[1.05rem] leading-relaxed">
-            Real stocks, tokenized on Solana, keep trading after the closing bell and all weekend. After
-            Hours tells you which ones are trading right now, whether the price you see is fresh, how far it
-            has drifted from the last real print, and what a buy would actually cost. Then you buy from your
-            own wallet.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
-            <Link href="/stocks" className="btn">
-              See what is trading now
-            </Link>
-            <Link href="#how" className="link text-sm">
-              How it works
-            </Link>
+      {/* The night: a dark panel, text left, the lit globe bleeding off the right. */}
+      <section className="relative overflow-hidden rounded-xl bg-night text-white">
+        <div className="grid items-center gap-8 px-6 py-10 sm:px-10 sm:py-14 lg:grid-cols-12 lg:gap-4">
+          <div className="lg:col-span-6">
+            <h1 className="text-[2.5rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
+              Trade stocks when Wall Street sleeps.
+            </h1>
+            <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-white/70">
+              Real stocks, tokenized on Solana, keep trading after the closing bell and all weekend. See which
+              ones are moving right now, whether the price is fresh, and what a buy really costs. Then buy from
+              your own wallet.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-5">
+              <Link href="/stocks" className="btn btn-light">
+                See what is trading now
+              </Link>
+              <Link href="#how" className="text-sm text-white/70 hover:text-white">
+                How it works
+              </Link>
+            </div>
           </div>
-        </div>
-        <div className="lg:col-span-5">
-          <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
+          <div className="lg:col-span-6">
+            <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
+          </div>
         </div>
       </section>
 
-      {/* Trading now: a typographic list, not a card grid. */}
-      <section className="mt-20">
-        <div className="flex items-baseline justify-between">
-          <h2 className="kicker flex-1">Trading now</h2>
-          <Link href="/stocks" className="link ml-6 text-sm">
-            All {data.rows.length} stocks
+      {/* Trading now: the table people liked, kept clean. */}
+      <section className="mt-14">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-xl font-semibold tracking-tight">Trading now</h2>
+          <Link href="/stocks" className="text-sm font-medium hover:underline">
+            All {data.rows.length} stocks →
           </Link>
         </div>
-        <ul>
-          {rows.map((r) => (
-            <li key={r.underlying} className="border-b border-line">
-              <Link
-                href={`/stock/${r.underlying}`}
-                className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 py-3 sm:grid-cols-[1fr_8rem_6rem_11rem]"
-              >
-                <span>
-                  <span className="font-medium">{r.name}</span>
-                  <span className="text-muted ml-2 text-xs">{r.symbol}</span>
-                </span>
-                <span className="num text-right">{formatUsd(r.price)}</span>
-                <span className={`num text-right ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
-                <span className="text-muted hidden text-right text-sm sm:inline">
-                  {TRADABILITY_LABEL[r.tradability]}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-hidden rounded-lg border border-line bg-surface">
+          <ul className="divide-y divide-line">
+            {rows.map((r) => (
+              <li key={r.underlying}>
+                <Link
+                  href={`/stock/${r.underlying}`}
+                  className="grid grid-cols-[1fr_auto_auto] items-center gap-x-5 px-4 py-3 transition hover:bg-paper sm:grid-cols-[1fr_8rem_6rem_12rem]"
+                >
+                  <span className="flex flex-col">
+                    <span className="font-medium">{r.name}</span>
+                    <span className="text-muted text-xs">
+                      {r.symbol} · {r.issuerName}
+                    </span>
+                  </span>
+                  <span className="num text-right">{formatUsd(r.price)}</span>
+                  <span className={`num text-right font-medium ${tone(r.gapPct)}`}>{formatPct(r.gapPct)}</span>
+                  <span className="hidden text-right sm:block">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${PILL[r.tradability]}`}>
+                      {TRADABILITY_LABEL[r.tradability]}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
         <p className="text-muted mt-3 text-sm">
           Difference is the onchain price against {data.reference.phrase}.
           {movers.length > 0 && (
@@ -79,7 +94,7 @@ export default function LandingPage() {
               {movers.map((m, i) => (
                 <span key={m.underlying}>
                   {i > 0 ? ", " : ""}
-                  <Link href={`/stock/${m.underlying}`} className="link text-ink">
+                  <Link href={`/stock/${m.underlying}`} className="text-ink hover:underline">
                     {m.name}
                   </Link>{" "}
                   <span className={`num ${tone(m.gapPct)}`}>{formatPct(m.gapPct)}</span>
@@ -91,33 +106,32 @@ export default function LandingPage() {
         </p>
       </section>
 
-      {/* How it works: a definition list, uneven on purpose. */}
-      <section id="how" className="mt-20">
-        <h2 className="kicker">How it works</h2>
-        <dl className="mt-2 divide-y divide-line">
-          <Row term="Pick a stock">
+      {/* How it works: three columns, no cards, no numbers. */}
+      <section id="how" className="mt-16">
+        <h2 className="text-xl font-semibold tracking-tight">How it works</h2>
+        <div className="mt-5 grid gap-8 sm:grid-cols-3">
+          <Col title="Pick a stock">
             Tesla, Nvidia, the S&amp;P 500 and {Math.max(0, data.rows.length - 3)} more. Each token is issued
-            by a regulated company and backed one to one by a real share held with a custodian. Different
-            issuers wrap the same stock differently, and we say which is which.
-          </Row>
-          <Row term="Check the price is real">
+            by a regulated company and backed one to one by a real share. Different issuers wrap the same
+            stock differently, and we say which is which.
+          </Col>
+          <Col title="Check the price is real">
             Every price carries the time of its last trade, the depth of the pool behind it, and its distance
-            from the last Wall Street print. A stale price is labeled stale. A thin market is labeled thin.
-            Nothing is hidden behind a green button.
-          </Row>
-          <Row term="Buy from your own wallet">
-            Enter an amount. We fetch a real quote, including how much your order would move the pool, and say
-            in plain words whether now is a fair moment. If it is, you sign in Phantom, Backpack or Solflare
-            and the swap runs through Jupiter. We never touch your money.
-          </Row>
-        </dl>
+            from the last Wall Street print. Stale is labeled stale. Thin is labeled thin.
+          </Col>
+          <Col title="Buy from your own wallet">
+            Enter an amount, get a real quote including how much your order moves the pool, and a plain verdict
+            on whether now is a fair moment. Sign in Phantom, Backpack or Solflare. The swap runs through
+            Jupiter. We never touch your money.
+          </Col>
+        </div>
       </section>
 
-      {/* Why: prose, with the one number that matters. */}
-      <section className="mt-20 grid gap-10 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <h2 className="kicker">Why this exists</h2>
-          <p className="mt-4 leading-relaxed">
+      {/* Why, and the rules. */}
+      <section className="mt-16 grid gap-10 lg:grid-cols-2">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Why this exists</h2>
+          <p className="text-muted mt-3 leading-relaxed">
             Brokerage apps close at four and stay shut all weekend. News does not. More than half of all
             tokenized-stock trading already happens outside US market hours, almost all of it on Solana. The
             catch: while Wall Street is closed, the onchain price floats on thin pools and can drift a few
@@ -125,9 +139,9 @@ export default function LandingPage() {
             number is real.
           </p>
         </div>
-        <div className="lg:col-span-5">
-          <h2 className="kicker">What we will not do</h2>
-          <ul className="mt-4 space-y-2 leading-relaxed">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">What we will not do</h2>
+          <ul className="text-muted mt-3 space-y-2 leading-relaxed">
             <li>Hold your money. Every trade is signed in your wallet.</li>
             <li>List a token with less than 50k USD of real liquidity.</li>
             <li>Call a price fresh when it last traded an hour ago.</li>
@@ -140,11 +154,11 @@ export default function LandingPage() {
   );
 }
 
-function Row({ term, children }: { term: string; children: React.ReactNode }) {
+function Col({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-2 py-5 sm:grid-cols-12 sm:gap-8">
-      <dt className="font-display text-xl sm:col-span-4">{term}</dt>
-      <dd className="text-muted leading-relaxed sm:col-span-8">{children}</dd>
+    <div>
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-muted mt-2 text-sm leading-relaxed">{children}</p>
     </div>
   );
 }

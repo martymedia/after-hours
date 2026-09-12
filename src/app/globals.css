@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
-/* Night edition of a financial paper. Paper and ink, a newspaper serif for
-   headlines, Plex for text and numbers, and one accent: streetlight amber for
-   "onchain is trading right now". Signal colors for up and down only. */
+/* Paper by day, night in the hero. IBM Plex for everything (sans for text,
+   mono for numbers), one amber for "onchain is trading right now", green and
+   red only for up and down. No gradients. */
 :root {
-  --paper: #f7f6f1;
-  --surface: #fdfcf9;
-  --ink: #17171a;
-  --muted: #6a6862;
-  --line: #dcd9d0;
+  --paper: #f7f6f2;
+  --surface: #ffffff;
+  --ink: #141519;
+  --muted: #6b6a66;
+  --line: #e3e1da;
+  --night: #0e0f13;
+  --night-2: #16171d;
+  --amber: #ffb84d;
   --accent: #c98a2e;
-  --up: #2d7a4f;
-  --down: #b5432f;
+  --up: #1f7a4c;
+  --down: #c0392b;
   --warn: #a4711c;
-  --soft-up: #e6f1ea;
-  --soft-down: #f6e6e2;
-  --soft-warn: #f6ecda;
-  --soft: #edebe4;
+  --soft-up: #e4f3ea;
+  --soft-down: #f8e6e2;
+  --soft-warn: #f7ecd8;
+  --soft: #eeece6;
 }
 
 @theme inline {
@@ -25,6 +28,9 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-amber: var(--amber);
   --color-accent: var(--accent);
   --color-up: var(--up);
   --color-down: var(--down);
@@ -34,11 +40,11 @@
   --color-soft-warn: var(--soft-warn);
   --color-soft: var(--soft);
   --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-plex-mono), ui-monospace, Menlo, monospace;
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
 }
 
 html {
@@ -54,27 +60,22 @@ body {
   min-height: 100dvh;
 }
 
-.font-display {
-  font-family: var(--font-display);
-  font-optical-sizing: auto;
-}
-
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-/* Primary action: ink on paper. It does not need to shout. */
+/* Primary action on paper: ink. On the night panel: paper. */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   background: var(--ink);
   color: var(--paper);
-  padding: 0.65rem 1.1rem;
+  padding: 0.7rem 1.15rem;
   border-radius: var(--radius-md);
   font-weight: 500;
-  transition: transform 120ms ease, background-color 120ms ease;
+  transition: transform 120ms ease, background-color 120ms ease, opacity 120ms ease;
 }
 .btn:hover {
   background: #000;
@@ -86,8 +87,15 @@ body {
   opacity: 0.5;
   transform: none;
 }
+.btn-light {
+  background: var(--paper);
+  color: var(--ink);
+}
+.btn-light:hover {
+  background: #fff;
+}
 
-/* A quiet secondary action: text with a hairline underline. */
+/* Quiet secondary action. */
 .link {
   text-decoration: underline;
   text-decoration-color: var(--line);
@@ -95,13 +103,13 @@ body {
   transition: text-decoration-color 120ms ease;
 }
 .link:hover {
-  text-decoration-color: var(--ink);
+  text-decoration-color: currentColor;
 }
 
-/* Section heading: small serif, sentence case, a hairline beneath. */
+/* Section label: small, bold, sentence case. */
 .kicker {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
 }

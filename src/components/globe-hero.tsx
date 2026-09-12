@@ -31,19 +31,21 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
   const untilOpen = formatDuration(new Date(phase.nextOpen).getTime() - now);
   const status =
     phase.phase === "open"
-      ? "Wall Street is open."
+      ? "Wall Street is open"
       : phase.phase === "after_hours"
-        ? "Wall Street is closed for the night."
-        : "Wall Street is closed.";
+        ? "Wall Street is closed for the night"
+        : "Wall Street is closed";
 
   return (
-    <figure className="mx-auto max-w-[520px]">
-      <Globe />
-      <figcaption className="mt-2 text-sm leading-relaxed">
-        <span className="num">{nyClock.format(new Date(now))}</span> in New York. {status}{" "}
-        {phase.phase !== "open" && <span className="text-muted">Opens in {untilOpen}.</span>}{" "}
-        <span className="text-accent font-medium">{stockCount} stocks are trading onchain right now.</span>
-      </figcaption>
-    </figure>
+    <div className="relative">
+      <Globe className="translate-x-6 sm:translate-x-10 lg:translate-x-16" />
+      <div className="absolute bottom-2 left-0 text-sm leading-relaxed text-white/85 sm:bottom-4">
+        <div>
+          <span className="num text-white">{nyClock.format(new Date(now))}</span> in New York. {status}.
+          {phase.phase !== "open" && <span className="text-white/60"> Opens in {untilOpen}.</span>}
+        </div>
+        <div className="text-[color:var(--amber)] font-medium">{stockCount} stocks are trading onchain right now.</div>
+      </div>
+    </div>
   );
 }

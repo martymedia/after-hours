@@ -30,7 +30,7 @@ export function StatusLine({ phase, stockCount, now }: Props) {
 
   return (
     <header className="mb-8">
-      <h1 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
         {headline}{" "}
         <span className="text-muted">{stockCount} stocks are trading onchain anyway.</span>
       </h1>
