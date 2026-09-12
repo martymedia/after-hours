@@ -89,7 +89,7 @@ export function Globe({ className = "" }: { className?: string }) {
     const accent = new THREE.Color(styles.getPropertyValue("--accent").trim() || "#c98a2e");
     const surface = new THREE.Color(styles.getPropertyValue("--surface").trim() || "#ffffff");
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mount.appendChild(renderer.domElement);
 
@@ -172,6 +172,10 @@ export function Globe({ className = "" }: { className?: string }) {
       frame = requestAnimationFrame(render);
     };
     frame = requestAnimationFrame(render);
+
+    if (process.env.NODE_ENV !== "production") {
+      (window as unknown as { __globe?: unknown }).__globe = { renderer, scene, camera, globe };
+    }
 
     return () => {
       cancelAnimationFrame(frame);

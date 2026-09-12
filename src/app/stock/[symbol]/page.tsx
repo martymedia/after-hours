@@ -42,7 +42,7 @@ export default async function StockPage({ params }: Props) {
 
       <header className="mt-4 mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{stock.name}</h1>
+          <h1 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">{stock.name}</h1>
           <p className="text-muted mt-1 text-sm">
             {stock.underlying} · {stock.tokens.length} {stock.tokens.length === 1 ? "issuer" : "issuers"} on Solana
             {stock.nextEarnings
@@ -97,7 +97,7 @@ export default async function StockPage({ params }: Props) {
         </div>
 
         <section className="lg:col-span-3 lg:order-1">
-          <h2 className="mb-3 text-sm font-semibold">Where it trades</h2>
+          <h2 className="kicker mb-4">Where it trades</h2>
           <ul className="grid gap-3 sm:grid-cols-2">
             {stock.tokens.map((t) => (
               <li key={t.mint} className="border-line rounded-lg border bg-surface p-4">
