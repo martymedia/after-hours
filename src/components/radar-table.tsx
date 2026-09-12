@@ -7,6 +7,7 @@ import { TRADABILITY_LABEL } from "@/lib/radar-types";
 import { formatAgo, formatPct, formatUsd } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { StatusLine } from "./status-line";
+import { Tip } from "./tip";
 
 const REFRESH_MS = 15_000;
 
@@ -16,6 +17,14 @@ const TRADABILITY_STYLE: Record<Tradability, string> = {
   thin: "bg-soft-warn text-warn",
   stale: "bg-soft-warn text-warn",
   none: "bg-soft text-muted",
+};
+
+const TRADABILITY_TIP: Record<Tradability, string> = {
+  easy: "More than 500k USD in pools. Orders up to a few thousand dollars barely move the price.",
+  ok: "Between 50k and 500k USD in pools. Fine for small amounts; large orders move the price.",
+  thin: "Very little liquidity. Expect a bad price on anything but tiny orders.",
+  stale: "Last trade more than an hour ago. The price may not be where it would trade now.",
+  none: "No pool with real liquidity on Solana.",
 };
 
 function gapClass(gap: number | null): string {
@@ -44,7 +53,10 @@ export function RadarTable({ initial }: { initial: RadarData }) {
     };
   }, []);
 
-  const referenceLabel = data.reference.short;
+  const ref = data.reference;
+  const referenceTip = data.liveReference
+    ? "The live price on the exchange or the overnight venue."
+    : `${ref.short} is the last regular-session price on Wall Street. While the exchange is shut, onchain prices can drift from it.`;
 
   return (
     <>
@@ -72,12 +84,26 @@ export function RadarTable({ initial }: { initial: RadarData }) {
           <thead>
             <tr className="text-muted border-line border-b text-left text-xs">
               <th className="px-4 py-3 font-medium">Stock</th>
-              <th className="px-4 py-3 text-right font-medium">Onchain price</th>
-              <th className="px-4 py-3 text-right font-medium">{referenceLabel}</th>
-              <th className="px-4 py-3 text-right font-medium">Difference</th>
+              <th className="px-4 py-3 text-right font-medium">
+                <Tip text="The last trade of the most liquid token for this stock on Solana.">Onchain price</Tip>
+              </th>
+              <th className="px-4 py-3 text-right font-medium">
+                <Tip text={referenceTip}>{ref.short}</Tip>
+              </th>
+              <th className="px-4 py-3 text-right font-medium">
+                <Tip text={`Onchain price versus ${ref.phrase}. Green above, red below. Small differences are normal; a few percent means the onchain market has moved on its own.`}>
+                  Difference
+                </Tip>
+              </th>
               <th className="hidden px-4 py-3 font-medium sm:table-cell">Last 48h</th>
-              <th className="px-4 py-3 text-right font-medium">Updated</th>
-              <th className="px-4 py-3 font-medium">Tradability</th>
+              <th className="px-4 py-3 text-right font-medium">
+                <Tip text="Time since the most recent onchain trade. Old means the price may be out of date.">Updated</Tip>
+              </th>
+              <th className="px-4 py-3 font-medium">
+                <Tip text="How much money sits in this token's pools, in plain words. It decides how big an order can be before the price moves.">
+                  Tradability
+                </Tip>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -92,7 +118,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         Onchain price is the last trade on Solana for the most liquid token of each stock.{" "}
         {data.liveReference
           ? "Wall Street is the live reference price from the exchange or the overnight venue."
-          : `${data.reference.short} is the last regular-session price; the difference shows how far the onchain market has moved since.`}{" "}
+          : `${ref.short} is the last regular-session price; the difference shows how far the onchain market has moved since.`}{" "}
         Nothing here is investment advice.
       </p>
     </>
@@ -130,10 +156,19 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
         {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
       </td>
       <td className="px-4 py-3">
-        <span
-          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${TRADABILITY_STYLE[row.tradability]}`}
-        >
-          {TRADABILITY_LABEL[row.tradability]}
+        <span className="group relative inline-flex">
+          <span
+            tabIndex={0}
+            className={`inline-block cursor-help rounded-full px-2 py-0.5 text-xs font-medium outline-none ${TRADABILITY_STYLE[row.tradability]}`}
+          >
+            {TRADABILITY_LABEL[row.tradability]}
+          </span>
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute top-full left-0 z-20 mt-1.5 hidden w-60 rounded-md bg-ink px-2.5 py-2 text-xs leading-relaxed font-normal text-paper shadow-lg group-hover:block group-focus-within:block"
+          >
+            {TRADABILITY_TIP[row.tradability]}
+          </span>
         </span>
       </td>
     </tr>

@@ -29,7 +29,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
   const [signature, setSignature] = useState<string>("");
 
   const baseClass = "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium";
-  const primary = `${baseClass} bg-ink text-paper hover:opacity-90 disabled:opacity-50`;
+  const primary = `${baseClass} sol-button disabled:opacity-50`;
 
   if (disabled) {
     return <span className={`${baseClass} bg-soft text-muted`}>No onchain market</span>;

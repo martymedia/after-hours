@@ -30,7 +30,8 @@ export function StatusLine({ phase, stockCount, now }: Props) {
 
   return (
     <header className="mb-8">
-      <p className="text-muted mb-1 text-xs font-medium tracking-wide uppercase">After Hours</p>
+      <p className="text-muted mb-1 text-xs font-medium tracking-wide uppercase">Stocks trading now</p>
+      <div className="sol-rule mb-3" />
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
         {headline}{" "}
         <span className="text-muted font-normal">

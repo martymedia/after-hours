@@ -15,6 +15,44 @@
   --soft-down: #fbeae7;
   --soft-warn: #fbf1df;
   --soft: #f1f0ea;
+
+  /* Solana brand */
+  --sol-purple: #9945ff;
+  --sol-green: #14f195;
+  --sol-gradient: linear-gradient(100deg, var(--sol-purple) 0%, var(--sol-green) 100%);
+}
+
+/* Gradient text for a few key words, never for body copy. */
+.sol-text {
+  background: var(--sol-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Primary call to action: brand gradient, dark text for contrast. */
+.sol-button {
+  background: var(--sol-gradient);
+  color: #0f0f12;
+}
+.sol-button:hover {
+  filter: brightness(1.05);
+}
+
+/* Hairline accent under section labels. */
+.sol-rule {
+  height: 2px;
+  width: 2.5rem;
+  background: var(--sol-gradient);
+  border-radius: 999px;
+}
+
+.sol-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--sol-gradient);
 }
 
 @theme inline {
