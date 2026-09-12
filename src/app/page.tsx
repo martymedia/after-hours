@@ -34,7 +34,7 @@ export default function OverviewPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="order-2 grid grid-cols-2 gap-3 sm:gap-4 lg:order-1 xl:grid-cols-4">
         <StatCard
           index={0}
           icon={Clock}
@@ -77,11 +77,11 @@ export default function OverviewPage() {
         />
       </div>
 
-      <div className="rise" style={{ "--i": 4 } as React.CSSProperties}>
+      <div className="rise order-1 lg:order-2" style={{ "--i": 4 } as React.CSSProperties}>
         <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-12">
+      <div className="order-3 grid gap-5 lg:grid-cols-12">
         <section className="card rise flex flex-col p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Where the gap is</h2>

@@ -64,7 +64,20 @@ export default async function StockPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 lg:grid-cols-12">
+        <div className="lg:order-2 lg:col-span-4">
+          <BuyPanel
+            mint={p.mint}
+            symbol={p.symbol}
+            referencePhrase={stock.reference.phrase}
+            phase={stock.phase.phase}
+            ageMs={p.ageMs}
+            liquidity={p.liquidity}
+            disabled={p.tradability === "none"}
+          />
+        </div>
+        <div className="flex flex-col gap-5 lg:order-1 lg:col-span-8">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           icon={Scale}
           label="Onchain price"
@@ -106,21 +119,7 @@ export default async function StockPage({ params }: Props) {
           detail={stock.nextEarnings ? stock.nextEarnings.timing : "none in the next 60 days"}
           hint="Earnings reports usually land after the closing bell. Onchain prices react hours before a brokerage would let you."
         />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-12">
-        <div className="lg:order-2 lg:col-span-4">
-          <BuyPanel
-            mint={p.mint}
-            symbol={p.symbol}
-            referencePhrase={stock.reference.phrase}
-            phase={stock.phase.phase}
-            ageMs={p.ageMs}
-            liquidity={p.liquidity}
-            disabled={p.tradability === "none"}
-          />
-        </div>
-        <div className="flex flex-col gap-5 lg:order-1 lg:col-span-8">
+          </div>
           <PriceChart candles={stock.candles} reference={p.reference} referenceLabel={stock.reference.short} now={now} symbol={p.symbol} />
 
           <section className="card p-5">

@@ -24,8 +24,8 @@ export function StatCard({ icon: Icon, label, value, detail, badge, hint, href, 
   const style = { "--i": index } as React.CSSProperties;
   const body = (
     <>
-      <div className="flex items-center gap-2.5 text-sm font-medium">
-        <span className="icon-badge h-7 w-7">
+      <div className="flex items-center gap-2 text-xs font-medium sm:gap-2.5 sm:text-sm">
+        <span className="icon-badge h-6 w-6 sm:h-7 sm:w-7">
           <Icon size={14} strokeWidth={1.75} />
         </span>
         <span className="flex-1">{label}</span>
@@ -42,21 +42,21 @@ export function StatCard({ icon: Icon, label, value, detail, badge, hint, href, 
         )}
       </div>
       <div>
-        <div className="num text-[1.75rem] leading-none font-semibold">{value}</div>
-        {detail && <div className="text-muted mt-1.5 text-sm">{detail}</div>}
+        <div className="num text-xl leading-none font-semibold sm:text-[1.75rem]">{value}</div>
+        {detail && <div className="text-muted mt-1.5 text-xs sm:text-sm">{detail}</div>}
       </div>
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} style={style} className="card rise group flex flex-col gap-4 p-5 transition hover:border-muted-2">
+      <Link href={href} style={style} className="card rise group flex flex-col gap-3 p-4 transition hover:border-muted-2 sm:gap-4 sm:p-5">
         {body}
       </Link>
     );
   }
   return (
-    <div style={style} className="card rise flex flex-col gap-4 p-5">
+    <div style={style} className="card rise flex flex-col gap-3 p-4 sm:gap-4 sm:p-5">
       {body}
     </div>
   );
