@@ -83,6 +83,11 @@ export function nyParts(date: Date): NyParts {
   };
 }
 
+/** Today's date in New York as YYYY-MM-DD. */
+export function nyYmd(date: Date = new Date()): string {
+  return nyParts(date).ymd;
+}
+
 /** UTC offset of New York (in minutes) at the given instant. */
 function nyOffsetMinutes(date: Date): number {
   const p = nyParts(date);

@@ -35,10 +35,19 @@ export type RadarRow = {
   spark: number[];
 };
 
+export type EarningsItem = {
+  underlying: string;
+  name: string;
+  /** YYYY-MM-DD, New York. */
+  date: string;
+  timing: string;
+};
+
 export type RadarData = {
   generatedAt: string;
   phase: PhaseInfo;
   liveReference: boolean;
   reference: ReferenceLabel;
   rows: RadarRow[];
+  earnings: EarningsItem[];
 };

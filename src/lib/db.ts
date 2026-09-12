@@ -53,6 +53,13 @@ export function getDb(): DatabaseSync {
       PRIMARY KEY (mint, ts)
     );
 
+    CREATE TABLE IF NOT EXISTS earnings (
+      symbol TEXT NOT NULL,
+      date   TEXT NOT NULL,
+      timing TEXT NOT NULL,
+      PRIMARY KEY (symbol, date)
+    );
+
     CREATE TABLE IF NOT EXISTS meta (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -219,6 +226,35 @@ export function latestCandleTs(mint: string): number | null {
     | { ts: number | null }
     | undefined;
   return row?.ts ?? null;
+}
+
+export type EarningsRow = { symbol: string; date: string; timing: string };
+
+export function replaceEarnings(rows: EarningsRow[]): void {
+  const d = getDb();
+  d.exec("BEGIN");
+  try {
+    d.exec("DELETE FROM earnings");
+    const stmt = d.prepare("INSERT OR REPLACE INTO earnings (symbol, date, timing) VALUES (?, ?, ?)");
+    for (const r of rows) stmt.run(r.symbol, r.date, r.timing);
+    d.exec("COMMIT");
+  } catch (err) {
+    d.exec("ROLLBACK");
+    throw err;
+  }
+}
+
+export function upcomingEarnings(fromYmd: string, limit = 8): EarningsRow[] {
+  return getDb()
+    .prepare("SELECT * FROM earnings WHERE date >= ? ORDER BY date LIMIT ?")
+    .all(fromYmd, limit) as EarningsRow[];
+}
+
+export function nextEarningsFor(symbol: string, fromYmd: string): EarningsRow | null {
+  const row = getDb()
+    .prepare("SELECT * FROM earnings WHERE symbol = ? AND date >= ? ORDER BY date LIMIT 1")
+    .get(symbol, fromYmd) as EarningsRow | undefined;
+  return row ?? null;
 }
 
 export function getMeta(key: string): string | null {

@@ -28,6 +28,7 @@ export type StockData = {
   primary: StockToken;
   tokens: StockToken[];
   candles: { ts: number; close: number }[];
+  nextEarnings: { date: string; timing: string } | null;
 };
 
 export type CostEstimate = {

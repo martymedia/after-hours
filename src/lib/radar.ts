@@ -1,9 +1,17 @@
 // Assembles what the home page shows: one row per real-world stock, using
 // the most liquid token for that stock, plus the market phase.
 
-import { candlesSince, latestSnapshots, listTokens, sparkSeries, type SnapshotRow, type TokenRow } from "./db.ts";
+import {
+  candlesSince,
+  latestSnapshots,
+  listTokens,
+  sparkSeries,
+  upcomingEarnings,
+  type SnapshotRow,
+  type TokenRow,
+} from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { getPhase, hasLiveReference, referenceLabel } from "./market-phase.ts";
+import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
 import { MIN_LIQUIDITY_USD } from "./universe.ts";
 import type { RadarData, RadarRow, Tradability } from "./radar-types.ts";
 
@@ -84,11 +92,18 @@ export function getRadar(): RadarData {
 
   rows.sort((a, b) => b.liquidity - a.liquidity);
 
+  const nameOf = new Map(rows.map((r) => [r.underlying, r.name]));
+  const todayNy = nyYmd(new Date(now));
+  const earnings = upcomingEarnings(todayNy, 6)
+    .filter((e) => nameOf.has(e.symbol))
+    .map((e) => ({ underlying: e.symbol, name: nameOf.get(e.symbol) ?? e.symbol, date: e.date, timing: e.timing }));
+
   return {
     generatedAt: new Date(now).toISOString(),
     phase,
     liveReference: hasLiveReference(phase.phase),
     reference: referenceLabel(phase.phase, new Date(now)),
     rows,
+    earnings,
   };
 }

@@ -36,6 +36,11 @@ export default async function StockPage({ params }: Props) {
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{stock.name}</h1>
           <p className="text-muted mt-1 text-sm">
             {stock.underlying} · {stock.tokens.length} {stock.tokens.length === 1 ? "issuer" : "issuers"} on Solana
+            {stock.nextEarnings
+              ? ` · earnings ${formatEarningsDate(stock.nextEarnings.date)}${
+                  stock.nextEarnings.timing !== "unknown" ? `, ${stock.nextEarnings.timing}` : ""
+                }`
+              : ""}
           </p>
         </div>
         <div className="text-right">
@@ -99,6 +104,12 @@ export default async function StockPage({ params }: Props) {
       </div>
     </>
   );
+}
+
+const earningsDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+function formatEarningsDate(ymd: string): string {
+  return earningsDate.format(new Date(`${ymd}T12:00:00Z`));
 }
 
 function gapTone(gap: number | null): string {

@@ -1,9 +1,9 @@
 // Data for the stock detail page: every issuer's token for one stock, the
 // price history of the most liquid one, and the market phase.
 
-import { candlesSince, getDb, latestSnapshots, type TokenRow } from "./db.ts";
+import { candlesSince, getDb, latestSnapshots, nextEarningsFor, type TokenRow } from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { getPhase, hasLiveReference, referenceLabel } from "./market-phase.ts";
+import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
 import { ageOf, tradabilityOf } from "./radar.ts";
 import type { StockData, StockToken } from "./stock-types.ts";
 
@@ -56,5 +56,6 @@ export function getStock(underlying: string): StockData | null {
     primary,
     tokens: list,
     candles,
+    nextEarnings: nextEarningsFor(underlying.toUpperCase(), nyYmd(new Date(now))),
   };
 }

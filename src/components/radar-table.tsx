@@ -50,6 +50,23 @@ export function RadarTable({ initial }: { initial: RadarData }) {
     <>
       <StatusLine phase={data.phase} stockCount={data.rows.length} now={now} />
 
+      {data.earnings.length > 0 && (
+        <p className="text-muted mb-4 text-sm">
+          <span className="text-ink font-medium">Earnings ahead:</span>{" "}
+          {data.earnings.map((e, i) => (
+            <span key={`${e.underlying}-${e.date}`}>
+              {i > 0 ? " · " : ""}
+              <Link href={`/stock/${e.underlying}`} className="hover:underline">
+                {e.name}
+              </Link>{" "}
+              {formatEarningsDate(e.date)}
+              {e.timing !== "unknown" ? `, ${e.timing}` : ""}
+            </span>
+          ))}
+          . Reports land after the bell; onchain prices react first.
+        </p>
+      )}
+
       <div className="border-line overflow-x-auto rounded-lg border bg-surface">
         <table className="w-full text-sm">
           <thead>
@@ -80,6 +97,12 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       </p>
     </>
   );
+}
+
+const earningsDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+
+function formatEarningsDate(ymd: string): string {
+  return earningsDate.format(new Date(`${ymd}T12:00:00Z`));
 }
 
 function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {

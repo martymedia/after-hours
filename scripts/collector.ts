@@ -13,6 +13,7 @@ import {
   latestSnapshots,
   listTokens,
   pruneSnapshots,
+  replaceEarnings,
   setMeta,
   upsertCandles,
   upsertTokens,
@@ -20,11 +21,13 @@ import {
 import { getPrices } from "../src/lib/jupiter.ts";
 import { MIN_LIQUIDITY_USD, buildUniverse } from "../src/lib/universe.ts";
 import { hourlyCandles, topPoolFor } from "../src/lib/geckoterminal.ts";
+import { fetchEarnings } from "../src/lib/earnings.ts";
 
 const SNAPSHOT_EVERY_MS = 60_000;
 const UNIVERSE_EVERY_MS = 6 * 3600_000;
 const CANDLES_EVERY_MS = 3600_000;
 const KEEP_SNAPSHOTS_MS = 14 * 86400_000;
+const EARNINGS_EVERY_MS = 12 * 3600_000;
 const GECKO_PACE_MS = 6000; // GeckoTerminal throttles hard; ~10 requests per minute is safe
 const GECKO_BACKOFF_MS = 65_000;
 
@@ -94,6 +97,14 @@ async function refreshCandles(): Promise<void> {
   log(`candles: refreshed ${tokens.length} tokens with ${calls} calls`);
 }
 
+async function refreshEarnings(): Promise<void> {
+  const symbols = new Set(listTokens().map((t) => t.underlying));
+  const events = await fetchEarnings(symbols, 30);
+  replaceEarnings(events);
+  setMeta("earnings_updated_at", String(Date.now()));
+  log(`earnings: ${events.length} upcoming in the universe`);
+}
+
 async function main(): Promise<void> {
   const universeAge = Date.now() - Number(getMeta("universe_updated_at") ?? 0);
   if (listTokens().length === 0 || universeAge > UNIVERSE_EVERY_MS) {
@@ -106,6 +117,10 @@ async function main(): Promise<void> {
   // Candle backfill runs alongside the snapshot loop so snapshots start now.
   const candleLoop = async () => {
     for (;;) {
+      const earningsAge = Date.now() - Number(getMeta("earnings_updated_at") ?? 0);
+      if (earningsAge >= EARNINGS_EVERY_MS) {
+        await refreshEarnings().catch((err) => log("earnings failed:", err.message));
+      }
       if (Date.now() - lastCandles >= CANDLES_EVERY_MS) {
         lastCandles = Date.now();
         await refreshCandles().catch((err) => log("candles failed:", err.message));
