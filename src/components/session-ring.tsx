@@ -17,16 +17,18 @@ function angleAt(minutes: number): number {
   return (minutes / 1440) * 360 - 90;
 }
 
+// Rounded on purpose: Safari's trig differs from Node's in the last bits, and
+// unrounded values in cx/cy/left/top would trip hydration on iPhones.
 function point(r: number, deg: number): [number, number] {
   const rad = (deg * Math.PI) / 180;
-  return [C + r * Math.cos(rad), C + r * Math.sin(rad)];
+  return [Number((C + r * Math.cos(rad)).toFixed(2)), Number((C + r * Math.sin(rad)).toFixed(2))];
 }
 
 function arc(r: number, fromMin: number, toMin: number): string {
   const [sx, sy] = point(r, angleAt(fromMin));
   const [ex, ey] = point(r, angleAt(toMin));
   const large = toMin - fromMin > 720 ? 1 : 0;
-  return `M${sx.toFixed(2)},${sy.toFixed(2)} A${r},${r} 0 ${large} 1 ${ex.toFixed(2)},${ey.toFixed(2)}`;
+  return `M${sx},${sy} A${r},${r} 0 ${large} 1 ${ex},${ey}`;
 }
 
 function Label({ minutes, text, tip }: { minutes: number; text: string; tip: string }) {
