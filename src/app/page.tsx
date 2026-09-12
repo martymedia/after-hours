@@ -25,11 +25,10 @@ export default function OverviewPage() {
   const data = getRadar();
   const now = Date.parse(data.generatedAt);
   const rows = data.rows.slice(0, 10);
-  const movers = [...data.rows]
-    .filter((r) => r.gapPct != null && r.spark.length > 2)
-    .sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))
-    .slice(0, 6);
-  const top = movers[0];
+  const withGap = data.rows.filter((r) => r.gapPct != null && r.spark.length > 2);
+  const cheaper = [...withGap].filter((r) => (r.gapPct ?? 0) < 0).sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0)).slice(0, 3);
+  const pricier = [...withGap].filter((r) => (r.gapPct ?? 0) > 0).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0)).slice(0, 3);
+  const top = [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))[0];
   const nextEarnings = data.earnings[0];
   const closed = data.phase.phase !== "open";
 
@@ -83,16 +82,29 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
-        <section className="card rise p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="font-semibold">Moved most</h2>
-            <span className="text-muted text-xs">since {data.reference.phrase}</span>
+        <section className="card rise self-start p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-semibold">Where the gap is</h2>
+            <span className="text-muted text-xs">vs {data.reference.phrase}</span>
           </div>
+          <p className="text-blue mb-2 text-xs font-medium">Cheaper onchain than on Wall Street</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {movers.map((m) => (
+            {cheaper.map((m) => (
               <TrendCard key={m.underlying} row={m} />
             ))}
+            {cheaper.length === 0 && <p className="text-muted col-span-full text-sm">Nothing trades at a discount right now.</p>}
           </div>
+          <p className="text-down mt-5 mb-2 text-xs font-medium">Pricier onchain than on Wall Street</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {pricier.map((m) => (
+              <TrendCard key={m.underlying} row={m} />
+            ))}
+            {pricier.length === 0 && <p className="text-muted col-span-full text-sm">Nothing trades at a premium right now.</p>}
+          </div>
+          <p className="text-muted mt-4 text-xs leading-relaxed">
+            A discount is where a buy gets you the stock below the last real print. It can also mean the onchain
+            market knows something; check the stock page before you act.
+          </p>
         </section>
 
         <section className="card rise p-5 lg:col-span-7" style={{ "--i": 6 } as React.CSSProperties}>
