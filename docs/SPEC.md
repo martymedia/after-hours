@@ -127,22 +127,37 @@ Button: green if net_edge > 0.30 percent and reference is live; amber if
 While closed the button is "Buy anyway" in neutral style with the drift
 warning, never green.
 
-## 6. Screens (three, minimal)
+## 6. Screens (minimal, Solana-branded)
 
-1. **Home.** One line of status at the top: "Nasdaq is closed. Opens in
-   38h 12m. 47 stocks are trading onchain right now." Under it the table:
+Branding: logo mark is a dark "night" disc with the three slanted Solana bars
+in the purple-to-green gradient, wordmark "After Hours", tagline "Trade
+stocks when Wall Street sleeps." The gradient is used for the logo, key words
+in the hero, the primary button, hairline rules under section labels and the
+"Built on Solana" badge. Everything else stays paper, ink and three signal
+colors. Every jargon term carries a hover tooltip in plain words.
+
+0. **Landing (/).** Hero with logo, tagline, one paragraph, gradient CTA to
+   /stocks, and the live phase line. Six live cards plus the biggest movers.
+   "How it works" in three steps, "Why this exists", "What we will not do".
+
+1. **Stocks (/stocks).** One line of status at the top: "Wall Street is
+   closed. 37 stocks are trading onchain anyway." Under it the table:
    ticker + issuer pill, onchain price, last close or live reference, drift
    in percent (color), freshness (e.g. "2m ago" or "stale 6h"), liquidity,
    net cost at 1k (percent), 7-day sparkline from GeckoTerminal. Filters:
    issuer, liquid only, movers. Auto-refresh 15 s. A small "Next earnings"
    strip: MU Sep 30 AMC, NKE Oct 1.
-2. **Ticker.** Header with underlying name and all issuer tokens as cards
-   (price, drift, liquidity, structure label, proof of reserves for xStocks).
-   Chart: 7 days hourly onchain price with the reference line and shaded
-   closed periods, so the weekend drift is visible. Right rail: size input,
-   net cost, execute button, next earnings date.
-3. **Execute drawer.** Route, out amount, impact, fee, net edge, disclaimer,
-   connect wallet, sign, tx link. Cross-issuer: direct route or two legs.
+2. **Stock (/stock/TSLA).** Header with name, issuer count, next earnings,
+   big onchain price with drift vs reference and freshness. Chart: 7 days of
+   hourly onchain price, shaded closed periods, dashed reference line,
+   hover shows date, time (ET) and price. Right rail: the "Is now a good
+   moment?" panel: amount presets, a real Jupiter quote, one verdict line
+   (fair moment / reasonable with a caveat / better wait) and four checks in
+   plain words: Price vs reference, Freshness, Size vs pool, Market state.
+   Below: issuer cards with the legal structure (tooltip explains it).
+3. **Buy.** Inside the panel: connect a Wallet Standard wallet, the server
+   builds the Jupiter swap, the browser signs and sends, Solscan link. No
+   wallet installed: plain Jupiter link.
 
 Add-ons only after the three screens are solid: Telegram alerts ("ping me
 if TSLAx drifts more than 2 percent this weekend"), positions.
