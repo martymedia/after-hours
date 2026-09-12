@@ -7,7 +7,7 @@ export default function NotFound() {
       <p className="text-muted mt-2 text-sm">
         Only stocks with real onchain liquidity are listed.
       </p>
-      <Link href="/stocks" className="mt-6 inline-block text-sm underline">
+      <Link href="/stocks" className="btn mt-6">
         Back to all stocks
       </Link>
     </div>

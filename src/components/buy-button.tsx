@@ -28,15 +28,15 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
   const [message, setMessage] = useState<string>("");
   const [signature, setSignature] = useState<string>("");
 
-  const baseClass = "inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium";
-  const primary = "btn text-sm";
+  const baseClass = "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium";
+  const primary = "btn w-full";
 
   if (disabled) {
-    return <span className={`${baseClass} bg-soft text-muted`}>No onchain market</span>;
+    return <span className={`${baseClass} w-full bg-soft text-muted`}>No onchain market</span>;
   }
 
   if (!ready) {
-    return <span className={`${baseClass} bg-soft text-muted`}>Checking wallets…</span>;
+    return <span className={`${baseClass} w-full bg-soft text-muted`}>Checking wallets…</span>;
   }
 
   if (!connected) {
@@ -62,7 +62,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
             type="button"
             disabled={connecting}
             onClick={() => connect(w)}
-            className={`${baseClass} border-line border bg-surface hover:bg-soft`}
+            className={`${baseClass} border border-line bg-card hover:bg-soft`}
           >
             {/* Wallet icons are data URIs from the extension; next/image adds nothing here. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,7 +117,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           className={primary}
@@ -130,7 +130,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
               ? "Confirm in wallet…"
               : `Buy ${formatUsd(usd, 0)} of ${symbol}`}
         </button>
-        <span className="text-muted num text-xs">{shortAddress(connected.account.address)}</span>
+        <span className="text-muted num text-center text-xs">Wallet {shortAddress(connected.account.address)}</span>
       </div>
       {step === "sent" && (
         <p className="text-up mt-3 text-sm">

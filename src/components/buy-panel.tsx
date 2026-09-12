@@ -10,15 +10,9 @@ import type { Phase } from "@/lib/market-phase";
 import { formatAgo, formatPct, formatUsd } from "@/lib/format";
 import { Tip } from "./tip";
 
-// Wallet discovery only exists in the browser; rendering the button on the
-// server would produce markup that never matches the client.
 const BuyButton = dynamic(() => import("./buy-button").then((m) => m.BuyButton), {
   ssr: false,
-  loading: () => (
-    <span className="inline-flex items-center rounded-md bg-soft px-4 py-2 text-sm font-medium text-muted">
-      Checking wallets…
-    </span>
-  ),
+  loading: () => <span className="btn w-full opacity-50">Checking wallets…</span>,
 });
 
 type Props = {
@@ -31,9 +25,10 @@ type Props = {
   disabled?: boolean;
 };
 
-const PRESETS = [100, 1000, 10000];
+const PRESETS = [100, 500, 1000, 5000];
 
-type Check = { label: string; detail: string; level: "good" | "ok" | "warn" };
+type Level = "good" | "ok" | "warn";
+type Check = { label: string; detail: string; level: Level };
 
 export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled }: Props) {
   const [usd, setUsd] = useState(1000);
@@ -67,34 +62,35 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
   const verdict = summarize(checks);
 
   return (
-    <section className="border-line rounded-lg border bg-surface p-5">
-      <h2 className="text-base font-semibold">Is now a good moment?</h2>
-      <p className="text-muted mt-1 text-xs">Pick an amount. We fetch a real quote and check four things.</p>
+    <section className="card sticky top-5 p-5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-semibold">Buy {symbol}</h2>
+        <span className="text-muted text-xs">via Jupiter</span>
+      </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex items-center gap-2 rounded-2xl bg-soft px-4 py-3">
+        <span className="text-muted text-lg">$</span>
+        <input
+          type="number"
+          min={1}
+          max={250000}
+          value={usd}
+          onChange={(e) => setUsd(Math.max(1, Math.min(250000, Number(e.target.value) || 0)))}
+          className="num w-full bg-transparent text-2xl font-semibold outline-none"
+          aria-label="Amount in USD"
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setUsd(p)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              usd === p ? "border-ink bg-ink text-paper" : "border-line text-ink hover:bg-soft"
-            }`}
+            className={`pill ${usd === p ? "pill-dark" : "bg-soft text-ink hover:bg-line"}`}
           >
             {formatUsd(p, 0)}
           </button>
         ))}
-        <label className="flex items-center gap-1 text-sm">
-          <span className="text-muted">$</span>
-          <input
-            type="number"
-            min={1}
-            max={250000}
-            value={usd}
-            onChange={(e) => setUsd(Math.max(1, Math.min(250000, Number(e.target.value) || 0)))}
-            className="border-line num w-28 rounded-md border bg-paper px-2 py-1 text-sm"
-          />
-        </label>
       </div>
 
       <div className="mt-5">
@@ -104,62 +100,68 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
           <p className="text-warn text-sm">No route found for this amount right now. Try a smaller amount.</p>
         ) : estimate ? (
           <>
-            <div className={`rounded-md px-3 py-2 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}>
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-muted">You get</span>
+              <span className="num font-semibold">
+                {estimate.shares.toFixed(4)} {symbol}
+              </span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between text-sm">
+              <span className="text-muted">Per share</span>
+              <span className="num">{formatUsd(estimate.execPrice)}</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between text-sm">
+              <span className="text-muted">
+                <Tip text="How much your order alone moves the pool price. Small is good; above 1% means the pool is too thin for this size.">Price impact</Tip>
+              </span>
+              <span className="num">{formatPct(estimate.impactPct)}</span>
+            </div>
+
+            <div className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}>
               {verdict.text}
             </div>
             <ul className="mt-3 space-y-2">
               {checks.map((c) => (
-                <li key={c.label} className="flex items-start gap-2 text-sm">
+                <li key={c.label} className="flex items-start gap-2.5 text-sm">
                   <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${DOT[c.level]}`} />
                   <span>
-                    <span className="font-medium">{c.label}.</span>{" "}
-                    <span className="text-muted">{c.detail}</span>
+                    <span className="font-medium">{c.label}.</span> <span className="text-muted">{c.detail}</span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-muted mt-4 text-xs">
-              {formatUsd(estimate.usd, 0)} buys <span className="num">{estimate.shares.toFixed(4)}</span> {symbol} at{" "}
-              <span className="num">{formatUsd(estimate.execPrice)}</span> each ·{" "}
-              <Tip text="How much your order alone moves the pool price. Small is good; above 1% means the pool is too thin for this size.">
-                price impact {formatPct(estimate.impactPct)}
-              </Tip>{" "}
-              · via {estimate.route.join(", ")}
-              {state === "loading" ? " · updating" : ""}
-            </p>
           </>
         ) : (
           <p className="text-muted text-sm">Getting a quote…</p>
         )}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-5">
         <BuyButton mint={mint} symbol={symbol} usd={usd} disabled={disabled} />
       </div>
-      <p className="text-muted mt-3 text-xs">
-        The swap runs through Jupiter and is signed in your own wallet. After Hours never holds your funds.
-        Not investment advice. Not available to US persons.
+      <p className="text-muted mt-3 text-xs leading-relaxed">
+        Signed in your own wallet. After Hours never holds your funds. Not investment advice. Not available to
+        US persons.
       </p>
     </section>
   );
 }
 
-const VERDICT_STYLE = {
+const VERDICT_STYLE: Record<Level, string> = {
   good: "bg-soft-up text-up",
   ok: "bg-soft text-ink",
   warn: "bg-soft-warn text-warn",
 };
 
-const DOT = {
+const DOT: Record<Level, string> = {
   good: "bg-up",
-  ok: "bg-muted",
+  ok: "bg-muted-2",
   warn: "bg-warn",
 };
 
 function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquidity: number, ref: string): Check[] {
   const checks: Check[] = [];
 
-  // 1. Price vs reference
   if (e.vsReferencePct == null) {
     checks.push({ label: "Price", detail: "No reference price available.", level: "ok" });
   } else {
@@ -181,7 +183,6 @@ function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquid
     }
   }
 
-  // 2. Freshness
   if (ageMs == null) {
     checks.push({ label: "Freshness", detail: "Unknown.", level: "ok" });
   } else if (ageMs < 5 * 60_000) {
@@ -192,16 +193,14 @@ function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquid
     checks.push({ label: "Freshness", detail: `Last trade ${formatAgo(ageMs)}. The price may be out of date.`, level: "warn" });
   }
 
-  // 3. Size vs pool
   if (e.impactPct < 0.3) {
     checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Easily absorbed.`, level: "good" });
   } else if (e.impactPct < 1) {
-    checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Acceptable, splitting it would be cheaper.`, level: "ok" });
+    checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Acceptable; splitting it would be cheaper.`, level: "ok" });
   } else {
     checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Too big for the pool (${formatUsd(liquidity, 0)}). Split it.`, level: "warn" });
   }
 
-  // 4. Market state
   if (phase === "open") {
     checks.push({ label: "Market", detail: "Wall Street is open. Onchain prices track the exchange closely.", level: "good" });
   } else if (phase === "after_hours") {
@@ -213,7 +212,7 @@ function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquid
   return checks;
 }
 
-function summarize(checks: Check[]): { text: string; level: "good" | "ok" | "warn" } {
+function summarize(checks: Check[]): { text: string; level: Level } {
   if (checks.length === 0) return { text: "", level: "ok" };
   if (checks.some((c) => c.level === "warn")) return { text: "Better to wait or change the amount.", level: "warn" };
   if (checks.every((c) => c.level === "good")) return { text: "Looks like a fair moment to buy.", level: "good" };

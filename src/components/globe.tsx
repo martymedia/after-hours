@@ -1,8 +1,8 @@
 "use client";
 
 // Earth at night. A dot-matrix globe on a dark ground: land is drawn as
-// points, and on the night side of the real terminator the points glow like
-// city lights. Where Wall Street sleeps, the lights are on. New York is
+// points, and on the night side of the real terminator the points glow blue
+// like city lights. Where Wall Street sleeps, the lights are on. New York is
 // marked. This is the one animation on the page and it means something.
 
 import { useEffect, useRef } from "react";
@@ -157,13 +157,13 @@ export function Globe({ className = "" }: { className?: string }) {
     scene.add(globe);
 
     // Body: a shade lighter than the ground so the disc reads, plus a soft rim.
-    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: 0x15161c })));
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshBasicMaterial({ color: 0x1b1c22 })));
     globe.add(
       new THREE.Mesh(
         new THREE.SphereGeometry(1.0, 64, 48),
         new THREE.ShaderMaterial({
           ...RIM_SHADER,
-          uniforms: { rimColor: { value: new THREE.Color(0x7d8394) } },
+          uniforms: { rimColor: { value: new THREE.Color(0x5b91ff) } },
           transparent: true,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
@@ -182,8 +182,8 @@ export function Globe({ className = "" }: { className?: string }) {
           uniforms: {
             sunDir: sunUniform,
             pixelRatio: { value: pixelRatio },
-            dayColor: { value: new THREE.Color(0x3a3d47) },
-            nightColor: { value: new THREE.Color(0xffc978) },
+            dayColor: { value: new THREE.Color(0x3b3e48) },
+            nightColor: { value: new THREE.Color(0x8fb3ff) },
           },
           transparent: true,
           depthWrite: false,
@@ -192,7 +192,7 @@ export function Globe({ className = "" }: { className?: string }) {
     );
 
     // New York, where the bell rings.
-    const amber = new THREE.Color(0xffb84d);
+    const amber = new THREE.Color(0xffffff);
     const marker = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: amber }));
     marker.position.copy(toVector(NEW_YORK.lon, NEW_YORK.lat, 1.012));
     globe.add(marker);
