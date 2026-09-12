@@ -51,6 +51,8 @@
 }
 
 html {
+  /* Keep the scrollbar gutter so short pages do not shift the layout. */
+  scrollbar-gutter: stable;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);

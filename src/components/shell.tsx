@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Home, LineChart, CalendarDays, BookOpen, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
 import { Logo, LogoMark } from "./logo";
 import { StockSearch } from "./stock-search";
+import { SiteFooter } from "./site-footer";
 
 const NAV = [
   { href: "/", label: "Overview", icon: Home, match: (p: string) => p === "/" },
@@ -107,10 +108,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1">{children}</main>
 
-        <footer className="text-muted mt-14 text-xs leading-relaxed">
-          After Hours runs on Solana and routes trades through Jupiter. It is a screener with a buy button; it
-          never holds your funds. Nothing here is investment advice. Not available to US persons.
-        </footer>
+        <SiteFooter />
       </div>
 
       {/* Bottom bar (phones) */}

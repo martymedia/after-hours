@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
 import { TRADABILITY_LABEL } from "@/lib/radar-types";
 import { formatAgo, formatDuration, formatPct, formatUsd } from "@/lib/format";
@@ -30,12 +31,30 @@ const TRADABILITY_TIP: Record<Tradability, string> = {
 const dayFormatter = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "long", hour: "numeric", minute: "2-digit" });
 const earningsDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
-type Filter = "all" | "xstocks" | "backpack";
+type Issuer = "all" | "xstocks" | "backpack";
+type Sort = "liquidity" | "move" | "cheaper" | "name";
+type Show = "all" | "easy" | "moved";
+
+const SORTS: { id: Sort; label: string }[] = [
+  { id: "liquidity", label: "Most liquid" },
+  { id: "move", label: "Biggest move" },
+  { id: "cheaper", label: "Cheapest vs close" },
+  { id: "name", label: "A to Z" },
+];
+
+const SHOWS: { id: Show; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "easy", label: "Easy to trade" },
+  { id: "moved", label: "Moved 1%+" },
+];
 
 export function RadarTable({ initial }: { initial: RadarData }) {
   const [data, setData] = useState(initial);
   const [now, setNow] = useState(() => Date.parse(initial.generatedAt));
-  const [filter, setFilter] = useState<Filter>("all");
+  const [issuer, setIssuer] = useState<Issuer>("all");
+  const [sort, setSort] = useState<Sort>("liquidity");
+  const [show, setShow] = useState<Show>("all");
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -55,44 +74,94 @@ export function RadarTable({ initial }: { initial: RadarData }) {
 
   const ref = data.reference;
   const closed = data.phase.phase !== "open";
-  const rows = data.rows.filter((r) => filter === "all" || r.issuer === filter);
+
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const list = data.rows.filter((r) => {
+      if (issuer !== "all" && r.issuer !== issuer) return false;
+      if (show === "easy" && r.tradability !== "easy") return false;
+      if (show === "moved" && Math.abs(r.gapPct ?? 0) < 1) return false;
+      if (needle && !(r.name.toLowerCase().includes(needle) || r.symbol.toLowerCase().includes(needle) || r.underlying.toLowerCase().includes(needle))) return false;
+      return true;
+    });
+    const by: Record<Sort, (a: RadarRow, b: RadarRow) => number> = {
+      liquidity: (a, b) => b.liquidity - a.liquidity,
+      move: (a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
+      cheaper: (a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0),
+      name: (a, b) => a.name.localeCompare(b.name),
+    };
+    return [...list].sort(by[sort]);
+  }, [data.rows, issuer, show, sort, q]);
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="card flex flex-wrap items-center justify-between gap-4 p-5">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">
-            {closed ? "Wall Street is closed." : "Wall Street is open."}{" "}
-            <span className="text-muted font-normal">{data.rows.length} stocks are trading onchain.</span>
-          </h2>
-          <p className="text-muted mt-1 text-sm">
-            {closed
-              ? `Opens ${dayFormatter.format(new Date(data.phase.nextOpen))} ET, in ${formatDuration(new Date(data.phase.nextOpen).getTime() - now)}. Prices compare to ${ref.phrase} and can drift.`
-              : "Onchain prices track the exchange closely right now."}
-            {data.earnings.length > 0 && (
-              <>
-                {" "}
-                Earnings ahead:{" "}
-                {data.earnings.map((e, i) => (
-                  <span key={`${e.underlying}-${e.date}`}>
-                    {i > 0 ? ", " : ""}
-                    <Link href={`/stock/${e.underlying}`} className="text-ink hover:underline">
-                      {e.name}
-                    </Link>{" "}
-                    {earningsDate.format(new Date(`${e.date}T12:00:00Z`))}
-                  </span>
-                ))}
-                .
-              </>
-            )}
-          </p>
-        </div>
-        <div className="seg" role="group" aria-label="Issuer">
-          {(["all", "xstocks", "backpack"] as Filter[]).map((f) => (
-            <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
-              {f === "all" ? "All" : f === "xstocks" ? "xStocks" : "Backpack"}
-            </button>
-          ))}
+      <section className="card p-5">
+        <h2 className="text-xl font-semibold tracking-tight">
+          {closed ? "Wall Street is closed." : "Wall Street is open."}{" "}
+          <span className="text-muted font-normal">{data.rows.length} stocks are trading onchain.</span>
+        </h2>
+        <p className="text-muted mt-1 text-sm">
+          {closed
+            ? `Opens ${dayFormatter.format(new Date(data.phase.nextOpen))} ET, in ${formatDuration(new Date(data.phase.nextOpen).getTime() - now)}. Prices compare to ${ref.phrase} and can drift.`
+            : "Onchain prices track the exchange closely right now."}
+          {data.earnings.length > 0 && (
+            <>
+              {" "}
+              Earnings ahead:{" "}
+              {data.earnings.map((e, i) => (
+                <span key={`${e.underlying}-${e.date}`}>
+                  {i > 0 ? ", " : ""}
+                  <Link href={`/stock/${e.underlying}`} className="text-ink hover:underline">
+                    {e.name}
+                  </Link>{" "}
+                  {earningsDate.format(new Date(`${e.date}T12:00:00Z`))}
+                </span>
+              ))}
+              .
+            </>
+          )}
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="flex h-9 items-center gap-2 rounded-full bg-soft px-3 text-sm">
+            <Search size={15} strokeWidth={1.75} className="text-muted" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Filter by name or ticker"
+              className="w-40 bg-transparent outline-none placeholder:text-muted sm:w-52"
+              aria-label="Filter stocks"
+            />
+          </label>
+          <div className="seg" role="group" aria-label="Issuer">
+            {(["all", "xstocks", "backpack"] as Issuer[]).map((f) => (
+              <button key={f} type="button" aria-pressed={issuer === f} onClick={() => setIssuer(f)}>
+                {f === "all" ? "All issuers" : f === "xstocks" ? "xStocks" : "Backpack"}
+              </button>
+            ))}
+          </div>
+          <div className="seg" role="group" aria-label="Show">
+            {SHOWS.map((s) => (
+              <button key={s.id} type="button" aria-pressed={show === s.id} onClick={() => setShow(s.id)}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <label className="text-muted flex items-center gap-2 text-sm">
+            Sort
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="text-ink h-9 rounded-full bg-soft px-3 text-sm font-medium outline-none"
+              aria-label="Sort"
+            >
+              {SORTS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
@@ -130,6 +199,13 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               {rows.map((row) => (
                 <Row key={row.underlying} row={row} elapsedMs={now - Date.parse(data.generatedAt)} />
               ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-muted px-5 py-8 text-center text-sm">
+                    Nothing matches. Loosen a filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -38,6 +38,7 @@ export default function OverviewPage() {
         <StatCard
           icon={Clock}
           label="Wall Street"
+          href="/how"
           value={closed ? "Closed" : "Open"}
           detail={closed ? `opens in ${formatDuration(new Date(data.phase.nextOpen).getTime() - now)}` : "regular session"}
           hint="Nasdaq and NYSE trade 9:30 to 16:00 New York time on weekdays. Outside that, tokenized stocks on Solana are the only place these shares change hands."
@@ -45,6 +46,7 @@ export default function OverviewPage() {
         <StatCard
           icon={Activity}
           label="Trading onchain"
+          href="/stocks"
           value={data.rows.length}
           detail="stocks with real liquidity"
           badge={<span className="pill pill-blue">24/7</span>}
@@ -53,6 +55,7 @@ export default function OverviewPage() {
         <StatCard
           icon={TrendingUp}
           label="Biggest move"
+          href={top ? `/stock/${top.underlying}` : "/stocks"}
           value={top ? top.name : "–"}
           badge={top && <span className={`pill ${(top.gapPct ?? 0) >= 0 ? "pill-dark" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
           detail={top ? `vs ${data.reference.phrase}` : undefined}
@@ -60,15 +63,12 @@ export default function OverviewPage() {
         <StatCard
           icon={CalendarDays}
           label="Next earnings"
+          href="/earnings"
           value={nextEarnings ? nextEarnings.name : "–"}
           detail={
-            nextEarnings ? (
-              <Link href="/earnings" className="hover:underline">
-                {earningsDate.format(new Date(`${nextEarnings.date}T12:00:00Z`))}, {nextEarnings.timing} · calendar
-              </Link>
-            ) : (
-              "none scheduled"
-            )
+            nextEarnings
+              ? `${earningsDate.format(new Date(`${nextEarnings.date}T12:00:00Z`))}, ${nextEarnings.timing}`
+              : "none scheduled"
           }
         />
       </div>
