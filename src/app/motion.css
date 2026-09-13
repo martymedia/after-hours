@@ -35,9 +35,9 @@
   --tt-delay: 80ms;
   --tt-scale: 0.98;
   /* stagger */
-  --stagger-dur: 500ms;
+  --stagger-dur: 400ms;
   --stagger-distance: 12px;
-  --stagger-stagger: 60ms;
+  --stagger-stagger: 50ms;
   --stagger-blur: 3px;
   /* badge */
   --badge-pop-dur: 500ms;
@@ -57,7 +57,7 @@
   /* shimmer */
   --shimmer-dur: 2000ms;
   /* reveal */
-  --reveal-dur: 400ms;
+  --reveal-dur: 300ms;
   --reveal-blur: 2px;
 }
 

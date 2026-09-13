@@ -24,7 +24,7 @@ type Props = {
   className?: string;
 };
 
-export function CountUp({ value, kind = "int", from = 0, durationMs = 900, className = "" }: Props) {
+export function CountUp({ value, kind = "int", from = 0, durationMs = 600, className = "" }: Props) {
   const format = FORMAT[kind];
   const [shown, setShown] = useState(value);
 
