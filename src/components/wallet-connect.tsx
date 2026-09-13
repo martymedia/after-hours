@@ -13,13 +13,15 @@ type Props = {
   label?: React.ReactNode;
   /** Render nothing when no wallet is installed (instead of the Phantom link). */
   hideWhenNoWallet?: boolean;
+  /** Text of the Phantom link when no wallet is installed; defaults to "Open in Phantom". */
+  noWalletLabel?: React.ReactNode;
   /** Shown as a small link when no wallet is installed. */
   fallbackHref?: string;
   fallbackLabel?: string;
   className?: string;
 };
 
-export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, fallbackHref, fallbackLabel, className = "btn w-full" }: Props) {
+export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, noWalletLabel, fallbackHref, fallbackLabel, className = "btn w-full" }: Props) {
   const ready = useIsWalletReady(solanaClient);
   const wallets = useWallets(solanaClient);
   const { dispatch: connect, isRunning: connecting } = useConnect(solanaClient);
@@ -34,8 +36,8 @@ export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, fall
     const here = typeof window === "undefined" ? "" : window.location.href;
     return (
       <div className="flex flex-col gap-2">
-        <a href={`https://phantom.app/ul/browse/${encodeURIComponent(here)}?ref=${encodeURIComponent(here)}`} className={className}>
-          Open in Phantom
+        <a href={`https://phantom.app/ul/browse/${encodeURIComponent(here)}?ref=${encodeURIComponent(here)}`} className={className} title="Open in Phantom">
+          {noWalletLabel ?? "Open in Phantom"}
         </a>
         {fallbackHref && (
           <a href={fallbackHref} target="_blank" rel="noreferrer" className="text-muted hover:text-ink text-center text-xs underline underline-offset-4">
