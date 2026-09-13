@@ -1,0 +1,94 @@
+// One trade, read from the chain by its signature: what moved, for how much
+// USDC, and how that compared to the reference price at the time. Powers the
+// shareable /trade/[signature] page and its card.
+
+import { listTokens, snapshotAt } from "./db.ts";
+import { ISSUERS, type IssuerId } from "./issuers.ts";
+import { USDC_MINT } from "./jupiter.ts";
+import { rpc, type RpcTransaction } from "./wallet.ts";
+
+export type Trade = {
+  signature: string;
+  ts: number;
+  owner: string;
+  kind: "bought" | "sold";
+  mint: string;
+  symbol: string;
+  name: string;
+  underlying: string;
+  issuerName: string;
+  logo: string | null;
+  amount: number;
+  usd: number;
+  perShare: number;
+  refAtTime: number | null;
+  /** perShare vs refAtTime, percent. Negative: paid less than the last print. */
+  vsRefPct: number | null;
+};
+
+const cache = new Map<string, { ts: number; trade: Trade | null }>();
+const CACHE_MS = 10 * 60_000;
+
+/** The tracked-token leg of a swap. `mint` picks one when a transaction moved several. */
+export async function getTrade(signature: string, mint?: string): Promise<Trade | null> {
+  const key = `${signature}|${mint ?? ""}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.ts < CACHE_MS) return hit.trade;
+
+  const tokens = new Map(listTokens().map((t) => [t.mint, t]));
+  let tx: RpcTransaction | null = null;
+  try {
+    tx = await rpc<RpcTransaction | null>("getTransaction", [signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+  } catch {
+    tx = null;
+  }
+  if (!tx?.meta || tx.meta.err) {
+    cache.set(key, { ts: Date.now(), trade: null });
+    return null;
+  }
+
+  // Owner: whoever holds the USDC side of the swap.
+  const owners = new Set<string>();
+  for (const b of [...tx.meta.preTokenBalances, ...tx.meta.postTokenBalances]) if (b.owner && b.mint === USDC_MINT) owners.add(b.owner);
+  let trade: Trade | null = null;
+  for (const owner of owners) {
+    const deltas = new Map<string, number>();
+    for (const b of tx.meta.preTokenBalances) if (b.owner === owner) deltas.set(b.mint, (deltas.get(b.mint) ?? 0) - (b.uiTokenAmount.uiAmount ?? 0));
+    for (const b of tx.meta.postTokenBalances) if (b.owner === owner) deltas.set(b.mint, (deltas.get(b.mint) ?? 0) + (b.uiTokenAmount.uiAmount ?? 0));
+    const usdcDelta = deltas.get(USDC_MINT) ?? 0;
+    if (Math.abs(usdcDelta) < 1e-6) continue;
+    for (const [m, delta] of deltas) {
+      const t = tokens.get(m);
+      if (!t || Math.abs(delta) < 1e-9) continue;
+      if (mint && m !== mint) continue;
+      const kind = delta > 0 && usdcDelta < 0 ? "bought" : delta < 0 && usdcDelta > 0 ? "sold" : null;
+      if (!kind) continue;
+      const amount = Math.abs(delta);
+      const usd = Math.abs(usdcDelta);
+      const ts = (tx.blockTime ?? 0) * 1000;
+      const perShare = usd / amount;
+      const refAtTime = ts ? (snapshotAt(m, ts)?.ref_price ?? null) : null;
+      trade = {
+        signature,
+        ts,
+        owner,
+        kind,
+        mint: m,
+        symbol: t.symbol,
+        name: t.name,
+        underlying: t.underlying,
+        issuerName: ISSUERS[t.issuer as IssuerId]?.name ?? t.issuer,
+        logo: t.logo ?? null,
+        amount,
+        usd,
+        perShare,
+        refAtTime,
+        vsRefPct: refAtTime ? (perShare / refAtTime - 1) * 100 : null,
+      };
+      break;
+    }
+    if (trade) break;
+  }
+  cache.set(key, { ts: Date.now(), trade });
+  return trade;
+}

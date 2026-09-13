@@ -44,6 +44,20 @@ export function WalletView({ address }: { address?: string }) {
   const [selling, setSelling] = useState<Holding | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const [sharedSig, setSharedSig] = useState<string | null>(null);
+  const shareTrade = async (a: Activity) => {
+    const url = `${window.location.origin}/trade/${a.signature}?mint=${a.mint}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${KIND_LABEL[a.kind]} ${a.symbol} on After Hours`, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setSharedSig(a.signature);
+      setTimeout(() => setSharedSig(null), 1500);
+    } catch {}
+  };
+
   const share = async () => {
     if (!owner) return;
     const url = `${window.location.origin}/wallet/${owner}`;
@@ -362,8 +376,8 @@ export function WalletView({ address }: { address?: string }) {
           ) : (
             <ul className="divide-y divide-line">
               {d.activity.map((a) => (
-                <li key={`${a.signature}-${a.mint}`}>
-                  <a href={`https://solscan.io/tx/${a.signature}`} target="_blank" rel="noreferrer" className="group flex items-center gap-3 py-3 transition hover:opacity-80">
+                <li key={`${a.signature}-${a.mint}`} className="flex items-center gap-1">
+                  <a href={`https://solscan.io/tx/${a.signature}`} target="_blank" rel="noreferrer" className="group flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80">
                     <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
@@ -385,6 +399,17 @@ export function WalletView({ address }: { address?: string }) {
                       <ArrowUpRight size={16} strokeWidth={1.75} />
                     </span>
                   </a>
+                  {(a.kind === "bought" || a.kind === "sold") && (
+                    <button
+                      type="button"
+                      onClick={() => shareTrade(a)}
+                      className={`icon-badge h-8 w-8 shrink-0 hover:bg-soft ${sharedSig === a.signature ? "border-ink bg-ink text-white" : "text-muted"}`}
+                      aria-label={`Share this ${a.kind === "bought" ? "buy" : "sale"}`}
+                      title={sharedSig === a.signature ? "Link copied" : "Share as a card"}
+                    >
+                      <Share2 size={14} strokeWidth={1.75} />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

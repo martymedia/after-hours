@@ -106,12 +106,12 @@ const cache = new Map<string, { ts: number; data: WalletData }>();
 
 type RpcTokenAccount = { account: { data: { parsed: { info: { mint: string; tokenAmount: { uiAmount: number | null } } } } } };
 type RpcTokenBalance = { mint: string; owner?: string; uiTokenAmount: { uiAmount: number | null } };
-type RpcTransaction = {
+export type RpcTransaction = {
   blockTime: number | null;
   meta: { err: unknown; fee: number; preTokenBalances: RpcTokenBalance[]; postTokenBalances: RpcTokenBalance[] } | null;
 };
 
-async function rpc<T>(method: string, params: unknown[]): Promise<T> {
+export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   let lastError: Error | null = null;
   for (const url of RPC_URLS) {
     const res = await fetch(url, {
