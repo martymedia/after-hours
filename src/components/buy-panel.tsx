@@ -29,8 +29,8 @@ type Props = {
 
 const PRESETS = [5, 25, 100, 500];
 
-type Level = "good" | "ok" | "warn";
-type Check = { label: string; detail: string; level: Level };
+export type Level = "good" | "ok" | "warn";
+export type Check = { label: string; detail: string; level: Level };
 
 export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled, embedded = false }: Props) {
   const [usd, setUsd] = useState(5);
@@ -162,19 +162,19 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
   );
 }
 
-const VERDICT_STYLE: Record<Level, string> = {
+export const VERDICT_STYLE: Record<Level, string> = {
   good: "bg-soft-up text-up",
   ok: "bg-soft text-ink",
   warn: "bg-soft-warn text-warn",
 };
 
-const DOT: Record<Level, string> = {
+export const DOT: Record<Level, string> = {
   good: "bg-up",
   ok: "bg-muted-2",
   warn: "bg-warn",
 };
 
-function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquidity: number, ref: string): Check[] {
+export function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquidity: number, ref: string): Check[] {
   const checks: Check[] = [];
 
   if (e.vsReferencePct == null) {
@@ -227,7 +227,7 @@ function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquid
   return checks;
 }
 
-function summarize(checks: Check[]): { text: string; level: Level } {
+export function summarize(checks: Check[]): { text: string; level: Level } {
   if (checks.length === 0) return { text: "", level: "ok" };
   if (checks.some((c) => c.level === "warn")) return { text: "Better to wait or change the amount.", level: "warn" };
   if (checks.every((c) => c.level === "good")) return { text: "Looks like a fair moment to buy.", level: "good" };

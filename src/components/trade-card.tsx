@@ -10,7 +10,7 @@ import { MoonStar } from "lucide-react";
 import type { CostEstimate } from "@/lib/stock-types";
 import type { Phase } from "@/lib/market-phase";
 import { formatUsd, gapTone, gapWords } from "@/lib/format";
-import { BuyPanel } from "./buy-panel";
+import { BuyPanel, DOT, VERDICT_STYLE, buildChecks, summarize } from "./buy-panel";
 import { Modal, ModalClose } from "./modal";
 import { TickerBadge } from "./ticker-badge";
 
@@ -56,6 +56,8 @@ export function TradeCard(props: Props) {
 
   const vs = estimate?.vsReferencePct ?? null;
   const tone = gapTone(vs);
+  const checks = estimate ? buildChecks(estimate, props.phase, props.ageMs, props.liquidity, referencePhrase) : [];
+  const verdict = checks.length ? summarize(checks) : null;
 
   return (
     <section className="card p-5 lg:sticky lg:top-5">
@@ -101,6 +103,21 @@ export function TradeCard(props: Props) {
             <MoonStar size={14} strokeWidth={1.75} className="mr-1.5 text-blue" />
             Set a price and sleep
           </button>
+          {verdict && (
+            <div className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}>{verdict.text}</div>
+          )}
+          {checks.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {checks.map((c) => (
+                <li key={c.label} className="flex items-start gap-2.5 text-sm">
+                  <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${DOT[c.level]}`} />
+                  <span>
+                    <span className="font-medium">{c.label}.</span> <span className="text-muted">{c.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           <p className={`mt-3 text-xs ${tone === "text-muted" ? "text-muted" : tone}`}>
             {vs != null && vs > 0.25 ? "Pricier than the last print right now. A limit order waits for a better price." : "Signed in your own wallet. After Hours never holds your funds."}
           </p>

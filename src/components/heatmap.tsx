@@ -69,45 +69,60 @@ function fill(gap: number | null): string {
   return gap < 0 ? `rgba(91,145,255,${alpha.toFixed(2)})` : `rgba(229,72,77,${alpha.toFixed(2)})`;
 }
 
+// Two layouts: phones get fewer, squarer tiles; wider screens get more.
+const DESKTOP = { aspect: 4, max: 24, className: "hidden h-56 sm:block" };
+const PHONE = { aspect: 1.5, max: 12, className: "h-52 sm:hidden" };
+
 export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; referencePhrase: string }) {
-  const items = rows
+  const eligible = rows
     .filter((r) => r.price != null && r.gapPct != null && !gapIsOutlier(r.gapPct) && (r.tradability === "easy" || r.tradability === "ok"))
-    .map((r) => ({ row: r, value: Math.sqrt(Math.max(r.liquidity, 1)) }));
-  const tiles = squarify(items, { x: 0, y: 0, w: 100, h: 100 });
-  const cheaper = items.filter((i) => (i.row.gapPct ?? 0) < -0.25).length;
-  const pricier = items.filter((i) => (i.row.gapPct ?? 0) > 0.25).length;
+    .sort((a, b) => b.liquidity - a.liquidity);
+  const cheaper = eligible.filter((r) => (r.gapPct ?? 0) < -0.25).length;
+  const pricier = eligible.filter((r) => (r.gapPct ?? 0) > 0.25).length;
 
   return (
     <section className="card p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-muted text-xs">
           At a glance: <span className="text-blue">{cheaper} cheaper</span>, <span className="text-down">{pricier} pricier</span>,{" "}
-          {items.length - cheaper - pricier} in line with {referencePhrase}. Tile size follows liquidity.
+          {eligible.length - cheaper - pricier} in line with {referencePhrase}. The deepest pools, tile size follows liquidity; the full list is below.
         </p>
         <Tip text="Colour is the gap between the onchain price and the reference: blue below, red above, grey within a quarter percent. Bigger tiles are deeper pools, so their colour means more." underline={false} className="text-muted-2 hover:text-ink text-xs">
           How to read it
         </Tip>
       </div>
-      <div className="relative h-36 w-full sm:h-44" role="list" aria-label="Stocks by liquidity and price gap">
-        {tiles.map(({ row, rect }) => {
-          const big = rect.w * rect.h > 90;
-          const gap = row.gapPct ?? 0;
-          const label = Math.abs(gap) < 0.25 ? "in line" : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
-          return (
-            <Link
-              key={row.underlying}
-              href={`/stock/${row.underlying}`}
-              role="listitem"
-              title={`${row.name}: ${label} vs ${referencePhrase}`}
-              className="absolute flex flex-col justify-end overflow-hidden rounded-md p-1 text-ink transition hover:z-10 hover:brightness-95 sm:p-1.5"
-              style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `calc(${rect.w}% - 3px)`, height: `calc(${rect.h}% - 3px)`, background: fill(row.gapPct) }}
-            >
-              <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>
-              {big && <span className="num text-muted truncate text-[10px]">{label}</span>}
-            </Link>
-          );
-        })}
-      </div>
+      <Strip rows={eligible} referencePhrase={referencePhrase} {...DESKTOP} />
+      <Strip rows={eligible} referencePhrase={referencePhrase} {...PHONE} />
     </section>
+  );
+}
+
+function Strip({ rows, referencePhrase, aspect, max, className }: { rows: RadarRow[]; referencePhrase: string; aspect: number; max: number; className: string }) {
+  const items = rows.slice(0, max).map((r) => ({ row: r, value: Math.sqrt(Math.max(r.liquidity, 1)) }));
+  const tiles = squarify(items, { x: 0, y: 0, w: 100 * aspect, h: 100 });
+  return (
+    <div className={`relative w-full ${className}`} role="list" aria-label="Stocks by liquidity and price gap">
+      {tiles.map(({ row, rect }) => {
+        // Percent of the strip: symbol needs a tile at least ~12% tall and 8% wide, the gap line more.
+        const wPct = rect.w / aspect;
+        const showSymbol = rect.h >= 12 && wPct >= 8;
+        const big = rect.h >= 24 && wPct >= 12;
+        const gap = row.gapPct ?? 0;
+        const label = Math.abs(gap) < 0.25 ? "in line" : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
+        return (
+          <Link
+            key={row.underlying}
+            href={`/stock/${row.underlying}`}
+            role="listitem"
+            title={`${row.name}: ${label} vs ${referencePhrase}`}
+            className="absolute flex flex-col justify-end overflow-hidden rounded-md p-1 text-ink transition hover:z-10 hover:brightness-95 sm:p-1.5"
+            style={{ left: `${rect.x / aspect}%`, top: `${rect.y}%`, width: `calc(${wPct}% - 3px)`, height: `calc(${rect.h}% - 3px)`, background: fill(row.gapPct) }}
+          >
+            {showSymbol && <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>}
+            {big && <span className="num text-muted truncate text-[10px]">{label}</span>}
+          </Link>
+        );
+      })}
+    </div>
   );
 }
