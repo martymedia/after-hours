@@ -6,6 +6,11 @@ import { gapStatsAcross } from "@/lib/gap-stats";
 import { formatAgo, formatUsd, gapSentence, gapTone } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { SessionTimeline } from "@/components/session-timeline";
+import { DayRingPanel } from "@/components/day-ring-panel";
+import { GapDraw, type GapPoint } from "@/components/gap-draw";
+import { CountUp } from "@/components/count-up";
+import { Tilt } from "@/components/motion";
+import { snapshotsSince } from "@/lib/db";
 import { TickerBadge } from "@/components/ticker-badge";
 
 export const dynamic = "force-dynamic";
@@ -29,107 +34,203 @@ export default function HowPage() {
   const data = getRadar();
   const across = gapStatsAcross(data.rows.map((r) => r.mint));
   const sample = data.rows[0];
-  const discount = [...data.rows].filter((r) => (r.gapPct ?? 0) < -0.25).sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0))[0];
-  const premium = [...data.rows].filter((r) => (r.gapPct ?? 0) > 0.25).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))[0];
+  const discount = [...data.rows]
+    .filter((r) => (r.gapPct ?? 0) < -0.25)
+    .sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0))[0];
+  const premium = [...data.rows]
+    .filter((r) => (r.gapPct ?? 0) > 0.25)
+    .sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))[0];
   const tileStock = discount ?? premium ?? sample;
+  // The gap, drawn: one day of real snapshots for the featured stock, thinned to about 120 points.
+  const dayAgo = Date.parse(data.generatedAt) - 24 * 3600_000;
+  const raw = tileStock
+    ? snapshotsSince(tileStock.mint, dayAgo).filter(
+        (r) => r.usd_price && r.ref_price,
+      )
+    : [];
+  const step = Math.max(1, Math.ceil(raw.length / 120));
+  const gapPoints: GapPoint[] = raw
+    .filter((_, i) => i % step === 0 || i === raw.length - 1)
+    .map((r) => ({ t: r.ts, onchain: r.usd_price!, ref: r.ref_price! }));
 
   return (
     <div className="flex flex-col gap-5">
       {/* The day, explained by the clock itself */}
-      <section className="card-dark p-6 sm:p-10">
-        <p className="text-blue-light text-sm font-medium">How it works</p>
-        <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl">
-          Wall Street trades six and a half hours a day. Solana trades all of them.
-        </h2>
-        <p className="text-on-dark-muted mt-4 max-w-2xl leading-relaxed">
-          Regulated issuers hold real shares with a custodian and put one token per share on Solana. Those
-          tokens change hands in onchain pools every hour of the week. After Hours watches those pools,
-          compares them with the last real Wall Street print, and lets you buy from your own wallet when the
-          numbers make sense.
-        </p>
-        <SessionTimeline />
+      <section className="card-dark overflow-hidden p-6 sm:p-10">
+        <div className="grid items-center gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <p className="text-blue-light text-sm font-medium">How it works</p>
+            <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl">
+              Wall Street trades six and a half hours a day. Solana trades all
+              of them.
+            </h2>
+            <p className="text-on-dark-muted mt-4 max-w-2xl leading-relaxed">
+              Regulated issuers hold real shares with a custodian and put one
+              token per share on Solana. Those tokens change hands in onchain
+              pools every hour of the week. After Hours watches those pools,
+              compares them with the last real Wall Street print, and lets you
+              buy from your own wallet when the numbers make sense.
+            </p>
+            <SessionTimeline />
+          </div>
+          <div className="lg:col-span-5">
+            <DayRingPanel />
+          </div>
+        </div>
       </section>
 
       {/* The one number */}
       <section className="card grid items-center gap-8 p-6 sm:p-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <div className="num text-blue text-[6rem] leading-none font-semibold tracking-tight sm:text-[8rem]">55%</div>
-          <p className="mt-2 text-lg font-medium">of tokenized-stock trading already happens outside US market hours.</p>
-          <p className="text-muted mt-1 text-sm">Blockworks and RWA.xyz, August 2026. About 95 percent of it settles on Solana.</p>
+          <div className="num text-blue text-[6rem] leading-none font-semibold tracking-tight sm:text-[8rem]">
+            <CountUp value={55} kind="int" durationMs={1100} />%
+          </div>
+          <p className="mt-2 text-lg font-medium">
+            of tokenized-stock trading already happens outside US market hours.
+          </p>
+          <p className="text-muted mt-1 text-sm">
+            Blockworks and RWA.xyz, August 2026. About 95 percent of it settles
+            on Solana.
+          </p>
         </div>
         <div className="text-muted lg:col-span-7 lg:pl-8 lg:border-l lg:border-line">
           <p className="leading-relaxed">
-            Brokerage apps close at four and stay dark all weekend. News does not: earnings land after the
-            bell, headlines break on Sunday. The flip side is the reason this app exists. While Wall Street
-            is closed the onchain price floats on thin pools and can drift a few percent from the last real
-            print. Sometimes that is a discount, sometimes a premium, and most apps show you neither. They
-            show a number and a buy button.
+            Brokerage apps close at four and stay dark all weekend. News does
+            not: earnings land after the bell, headlines break on Sunday. The
+            flip side is the reason this app exists. While Wall Street is closed
+            the onchain price floats on thin pools and can drift a few percent
+            from the last real print. Sometimes that is a discount, sometimes a
+            premium, and most apps show you neither. They show a number and a
+            buy button.
           </p>
         </div>
       </section>
 
+      {/* The gap, drawn from real snapshots */}
+      {tileStock && gapPoints.length > 10 && (
+        <section className="card p-6 sm:p-8">
+          <p className="text-blue text-sm font-medium">The gap, drawn</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            {tileStock.name}, the last 24 hours.
+          </h2>
+          <p className="text-muted mt-2 max-w-2xl text-sm leading-relaxed">
+            The onchain price against {data.reference.phrase}. Blue where
+            onchain was cheaper, red where it was pricier. These are our own
+            snapshots, taken every few minutes, not a smoothed chart.
+          </p>
+          <GapDraw
+            points={gapPoints}
+            symbol={tileStock.symbol}
+            referenceShort={data.reference.short}
+          />
+        </section>
+      )}
+
       {/* Three steps, each with a live piece of the real app */}
       <section className="flex flex-col gap-5">
-        <Step n="01" title="Pick a stock" text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it how, and how deep the pool behind it is.`}>
+        <Step
+          n="01"
+          title="Pick a stock"
+          text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it how, and how deep the pool behind it is.`}
+        >
           <div className="flex flex-wrap gap-2">
             {data.rows.slice(0, 12).map((r) => (
-              <Link key={r.underlying} href={`/stock/${r.underlying}`} className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2">
+              <Link
+                key={r.underlying}
+                href={`/stock/${r.underlying}`}
+                className="card flex items-center gap-2 py-1.5 pr-3 pl-1.5 text-sm transition hover:border-muted-2"
+              >
                 <TickerBadge symbol={r.symbol} logo={r.logo} size={26} />
                 {r.name}
               </Link>
             ))}
-            <Link href="/stocks" className="text-muted self-center px-2 text-sm hover:text-ink">
+            <Link
+              href="/stocks"
+              className="text-muted self-center px-2 text-sm hover:text-ink"
+            >
               and {Math.max(0, data.rows.length - 12)} more
             </Link>
           </div>
         </Step>
 
-        <Step n="02" title="Check the price is real" text="Every price carries the time of its last trade and its distance from the last Wall Street print. A stale price is labeled stale, a thin market thin. Blue means cheaper than Wall Street, red means pricier. The gap radar on each stock page shows how that distance moved over the last two days.">
+        <Step
+          n="02"
+          title="Check the price is real"
+          text="Every price carries the time of its last trade and its distance from the last Wall Street print. A stale price is labeled stale, a thin market thin. Blue means cheaper than Wall Street, red means pricier. The gap radar on each stock page shows how that distance moved over the last two days."
+        >
           {sample && (
             <div className="rounded-2xl bg-soft p-4">
               <div className="flex items-center gap-3">
-                <TickerBadge symbol={sample.symbol} logo={sample.logo} size={36} />
+                <TickerBadge
+                  symbol={sample.symbol}
+                  logo={sample.logo}
+                  size={36}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">{sample.name}</div>
                   <div className="text-muted text-xs">
                     {sample.symbol} · {sample.issuerName}
                   </div>
                 </div>
-                <span className={`pill ${PILL[sample.tradability]}`}>{TRADABILITY_LABEL[sample.tradability]}</span>
+                <span className={`pill ${PILL[sample.tradability]}`}>
+                  {TRADABILITY_LABEL[sample.tradability]}
+                </span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                 <div>
                   <div className="text-muted text-xs">Onchain</div>
-                  <div className="num font-semibold">{formatUsd(sample.price)}</div>
+                  <div className="num font-semibold">
+                    {formatUsd(sample.price)}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-muted text-xs">{data.reference.short}</div>
-                  <div className="num font-semibold">{formatUsd(sample.reference)}</div>
+                  <div className="text-muted text-xs">
+                    {data.reference.short}
+                  </div>
+                  <div className="num font-semibold">
+                    {formatUsd(sample.reference)}
+                  </div>
                 </div>
                 <div>
                   <div className="text-muted text-xs">Updated</div>
-                  <div className="num font-semibold">{sample.ageMs == null ? "–" : formatAgo(sample.ageMs)}</div>
+                  <div className="num font-semibold">
+                    {sample.ageMs == null ? "–" : formatAgo(sample.ageMs)}
+                  </div>
                 </div>
               </div>
-              <div className={`num mt-3 text-sm font-medium ${gapTone(sample.gapPct)}`}>
-                {gapSentence(sample.gapPct, data.reference.phrase)}. Live, right now.
+              <div
+                className={`num mt-3 text-sm font-medium ${gapTone(sample.gapPct)}`}
+              >
+                {gapSentence(sample.gapPct, data.reference.phrase)}. Live, right
+                now.
               </div>
             </div>
           )}
         </Step>
 
-        <Step n="03" title="Buy from your own wallet" text="Enter an amount. We fetch a real quote from Jupiter, including how much your order moves the pool, and say in one line whether you are getting the stock cheaper or pricier than on Wall Street. Then you sign in Phantom, Backpack or Solflare. We never touch your money.">
+        <Step
+          n="03"
+          title="Buy from your own wallet"
+          text="Enter an amount. We fetch a real quote from Jupiter, including how much your order moves the pool, and say in one line whether you are getting the stock cheaper or pricier than on Wall Street. Then you sign in Phantom, Backpack or Solflare. We never touch your money."
+        >
           {tileStock && (
             <div className="rounded-2xl bg-soft p-4">
-              <div className={`rounded-2xl p-4 text-white ${(tileStock.gapPct ?? 0) < 0 ? "bg-blue" : "bg-down"}`}>
+              <div
+                className={`rounded-2xl p-4 text-white ${(tileStock.gapPct ?? 0) < 0 ? "bg-blue" : "bg-down"}`}
+              >
                 <div className="num text-2xl font-semibold">
-                  {Math.abs(tileStock.gapPct ?? 0).toFixed(2)}% {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "pricier"}
+                  {Math.abs(tileStock.gapPct ?? 0).toFixed(2)}%{" "}
+                  {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "pricier"}
                 </div>
                 <div className="mt-0.5 text-sm text-white/80">
-                  {tileStock.name} than {data.reference.phrase}, right now, before price impact.
+                  {tileStock.name} than {data.reference.phrase}, right now,
+                  before price impact.
                 </div>
               </div>
-              <Link href={`/stock/${tileStock.underlying}`} className="btn mt-3 w-full">
+              <Link
+                href={`/stock/${tileStock.underlying}`}
+                className="btn mt-3 w-full"
+              >
                 Open {tileStock.name}
               </Link>
             </div>
@@ -139,19 +240,25 @@ export default function HowPage() {
 
       {/* Issuers */}
       <section className="card p-6 sm:p-8">
-        <h3 className="text-xl font-semibold tracking-tight">Who issues the tokens</h3>
+        <h3 className="text-xl font-semibold tracking-tight">
+          Who issues the tokens
+        </h3>
         <p className="text-muted mt-1 max-w-2xl text-sm">
-          Same company, different wrappers. The legal structure decides what you actually hold, so we name it
-          on every stock page.
+          Same company, different wrappers. The legal structure decides what you
+          actually hold, so we name it on every stock page.
         </p>
         <ul className="mt-5 divide-y divide-line border-y border-line">
           {ISSUER_ORDER.filter((id) => ISSUERS[id].enabled).map((id) => (
             <li key={id} className="grid gap-2 py-5 sm:grid-cols-12 sm:gap-6">
               <div className="sm:col-span-3">
                 <div className="font-semibold">{ISSUERS[id].name}</div>
-                <span className="pill mt-1 bg-soft text-ink">{ISSUERS[id].structureShort}</span>
+                <span className="pill mt-1 bg-soft text-ink">
+                  {ISSUERS[id].structureShort}
+                </span>
               </div>
-              <p className="text-muted text-sm leading-relaxed sm:col-span-9">{ISSUERS[id].structure}</p>
+              <p className="text-muted text-sm leading-relaxed sm:col-span-9">
+                {ISSUERS[id].structure}
+              </p>
             </li>
           ))}
         </ul>
@@ -162,21 +269,30 @@ export default function HowPage() {
         <p className="text-blue text-sm font-medium">Does the gap close?</p>
         {across.samples === 0 ? (
           <>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">We are measuring it, one open at a time.</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+              We are measuring it, one open at a time.
+            </h2>
             <p className="text-muted mt-3 max-w-2xl leading-relaxed">
-              For every stock and every Wall Street open we record the gap one minute before the bell and thirty minutes
-              after. The first reads land after the next open; each stock page shows its own history as it grows. Until
-              then we make no claim about which way a gap goes.
+              For every stock and every Wall Street open we record the gap one
+              minute before the bell and thirty minutes after. The first reads
+              land after the next open; each stock page shows its own history as
+              it grows. Until then we make no claim about which way a gap goes.
             </p>
           </>
         ) : (
           <>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              <span className="num">{Math.round((across.closedShare ?? 0) * 100)}%</span> of gaps at least halved within thirty minutes of the open.
+              <span className="num">
+                {Math.round((across.closedShare ?? 0) * 100)}%
+              </span>{" "}
+              of gaps at least halved within thirty minutes of the open.
             </h2>
             <p className="text-muted mt-3 max-w-2xl leading-relaxed">
-              Across {across.samples} stock-opens over {across.opens} {across.opens === 1 ? "trading day" : "trading days"}: an average gap of {across.avgBefore?.toFixed(2)}% before the bell became{" "}
-              {across.avgAfter?.toFixed(2)}% thirty minutes after. Each stock page shows its own record. A pattern, not a promise.
+              Across {across.samples} stock-opens over {across.opens}{" "}
+              {across.opens === 1 ? "trading day" : "trading days"}: an average
+              gap of {across.avgBefore?.toFixed(2)}% before the bell became{" "}
+              {across.avgAfter?.toFixed(2)}% thirty minutes after. Each stock
+              page shows its own record. A pattern, not a promise.
             </p>
           </>
         )}
@@ -185,25 +301,36 @@ export default function HowPage() {
       {/* Money */}
       <section className="card p-6 sm:p-8">
         <p className="text-blue text-sm font-medium">How we make money</p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">A quarter of a percent, and nothing else.</h2>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          A quarter of a percent, and nothing else.
+        </h2>
         <p className="text-muted mt-3 max-w-2xl leading-relaxed">
-          Every buy and sell routed through After Hours carries a 0.25% fee that Jupiter pays out to us from the swap.
-          It is inside every number you see before you sign, so the price on the button is the price you get. No
-          subscription, no spread of our own, no data sales. Limit orders carry only Jupiter&apos;s 0.1% on fills. A 25 USD
-          buy costs about six cents.
+          Every buy and sell routed through After Hours carries a 0.25% fee that
+          Jupiter pays out to us from the swap. It is inside every number you
+          see before you sign, so the price on the button is the price you get.
+          No subscription, no spread of our own, no data sales. Limit orders
+          carry only Jupiter&apos;s 0.1% on fills. A 25 USD buy costs about six
+          cents.
         </p>
       </section>
 
       {/* The rules, as a manifesto */}
       <section className="card-dark p-6 sm:p-10">
-        <p className="text-blue-light text-sm font-medium">What we will not do</p>
+        <p className="text-blue-light text-sm font-medium">
+          What we will not do
+        </p>
         <ul className="mt-4 grid gap-x-10 gap-y-4 text-lg font-medium leading-snug sm:grid-cols-2">
           <li>Hold your money. Every trade is signed in your wallet.</li>
           <li>List a token with less than 50k USD of real liquidity.</li>
           <li>Call a price fresh when it last traded an hour ago.</li>
-          <li>Call a weekend drift an opportunity without saying it can reverse at the open.</li>
+          <li>
+            Call a weekend drift an opportunity without saying it can reverse at
+            the open.
+          </li>
           <li>Pretend a synthetic pre-IPO token is a share.</li>
-          <li>Give investment advice. We show numbers and say what they mean.</li>
+          <li>
+            Give investment advice. We show numbers and say what they mean.
+          </li>
         </ul>
         <div className="mt-8">
           <Link href="/stocks" className="btn btn-white">
@@ -215,7 +342,17 @@ export default function HowPage() {
   );
 }
 
-function Step({ n, title, text, children }: { n: string; title: string; text: string; children: React.ReactNode }) {
+function Step({
+  n,
+  title,
+  text,
+  children,
+}: {
+  n: string;
+  title: string;
+  text: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="card grid gap-6 p-6 sm:p-8 lg:grid-cols-12 lg:gap-10">
       <div className="lg:col-span-5">
@@ -223,7 +360,9 @@ function Step({ n, title, text, children }: { n: string; title: string; text: st
         <h3 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h3>
         <p className="text-muted mt-3 leading-relaxed">{text}</p>
       </div>
-      <div className="lg:col-span-7">{children}</div>
+      <div className="lg:col-span-7">
+        <Tilt>{children}</Tilt>
+      </div>
     </div>
   );
 }
