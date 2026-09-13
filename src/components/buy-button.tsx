@@ -216,7 +216,7 @@ function trimShares(n: number): string {
 const stamp = () => Date.now();
 
 /** Poll the signature for up to 45 s. True once confirmed or finalized. */
-async function waitForConfirmation(sig: string): Promise<boolean> {
+export async function waitForConfirmation(sig: string): Promise<boolean> {
   const deadline = Date.now() + 45_000;
   while (Date.now() < deadline) {
     try {
@@ -233,7 +233,7 @@ async function waitForConfirmation(sig: string): Promise<boolean> {
 }
 
 /** Turn wallet and RPC error strings into a title and a next step. */
-function explainError(raw: string): [string, string] {
+export function explainError(raw: string): [string, string] {
   const t = raw.toLowerCase();
   if (t.includes("user rejected") || t.includes("rejected the request") || t.includes("cancel")) {
     return ["Cancelled in your wallet.", "Nothing was sent and nothing was charged."];

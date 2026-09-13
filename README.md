@@ -43,6 +43,18 @@ moment, summed over your buys), allocation, best position, next earnings in
 your holdings, per-position sparkline and cost, and every buy or sell with a
 Solscan link. Nothing is stored; disconnecting removes the entry.
 
+## Sell, limit orders, share cards, heatmap
+
+- Sell from the Wallet page: a real quote for the size against the reference,
+  then the same signing flow as buying (quote and swap routes take `side=sell`).
+- Limit orders ("Set a price and sleep") on every stock page: a Jupiter
+  Trigger V1 order owned by the user's wallet, non-custodial, fills if the
+  onchain price reaches the target, cancel from the Wallet page. No API key.
+- `/wallet/[address]` is a read-only view of any wallet; `/trade/[signature]`
+  is a shareable page for one swap with its own Open Graph card.
+- The overview has a treemap of tradable stocks: area by liquidity, colour by
+  gap to the reference.
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.

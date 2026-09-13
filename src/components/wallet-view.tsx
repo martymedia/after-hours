@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lucide-react";
 import { SellPanel } from "./sell-panel";
+import { OpenOrders } from "./open-orders";
 import { useConnectedWallet, useDisconnect, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
@@ -327,6 +328,8 @@ export function WalletView({ address }: { address?: string }) {
           hint="Earnings land after the bell and the onchain price reacts first. This is your soonest one."
         />
       </div>
+
+      <OpenOrders owner={owner} readOnly={readOnly} />
 
       {selling && (
         <SellPanel
