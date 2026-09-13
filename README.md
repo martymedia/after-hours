@@ -34,11 +34,14 @@ The collector fills `data/after-hours.db`. The web app only reads it.
 
 ## Wallet
 
-Once a wallet is connected, a Wallet entry appears in the menu. The page
-reads the wallet live (server-side RPC, cached 45 s): tokenized stocks it
-holds priced at the last onchain trade and compared to the reference, USDC
-and SOL balances, and the recent buys and sells with Solscan links. Nothing
-is stored; disconnecting removes the entry.
+Once a wallet is connected, a "Your wallet" group appears in the menu and a
+short address chip in the top bar. The page reads the wallet live (server-side
+RPC, cached 45 s): stocks value, gain since purchase from an average-cost
+basis over the last 50 transactions, 24-hour change, realized gains, the
+After Hours edge (what you paid per share versus the reference price at that
+moment, summed over your buys), allocation, best position, next earnings in
+your holdings, per-position sparkline and cost, and every buy or sell with a
+Solscan link. Nothing is stored; disconnecting removes the entry.
 
 ## Honesty rules
 

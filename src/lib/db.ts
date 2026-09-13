@@ -277,3 +277,11 @@ export function setMeta(key: string, value: string): void {
 export function pruneSnapshots(olderThanTs: number): void {
   getDb().prepare("DELETE FROM snapshots WHERE ts < ?").run(olderThanTs);
 }
+
+/** Latest snapshot at or before ts, if one exists within the last three hours before it. */
+export function snapshotAt(mint: string, ts: number): SnapshotRow | null {
+  const row = getDb()
+    .prepare("SELECT * FROM snapshots WHERE mint = ? AND ts <= ? AND ts >= ? ORDER BY ts DESC LIMIT 1")
+    .get(mint, ts, ts - 3 * 3600_000) as SnapshotRow | undefined;
+  return row ?? null;
+}
