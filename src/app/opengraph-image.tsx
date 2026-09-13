@@ -1,12 +1,13 @@
 import { ImageResponse } from "next/og";
-import { BLUE, DESCRIPTION, INK, MOON_PATHS, TAGLINE } from "@/lib/brand";
+import { BLUE, INK, MOON_PATHS, TAGLINE } from "@/lib/brand";
 import { outfitFonts } from "@/lib/og-font";
+import { OgGlobe } from "@/components/og-globe";
 
 export const alt = "After Hours. Trade stocks when Wall Street sleeps.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** Share card for the site: mark, wordmark, tagline, and a glowing session ring. */
+/** Share card for the site: mark, wordmark, tagline, and the dot globe with its session ring. */
 export default async function OpenGraphImage() {
   const fonts = await outfitFonts();
   return new ImageResponse(
@@ -23,23 +24,9 @@ export default async function OpenGraphImage() {
           overflow: "hidden",
         }}
       >
-        {/* session ring, right side */}
-        <div
-          style={{
-            position: "absolute",
-            right: -140,
-            top: 75,
-            width: 480,
-            height: 480,
-            borderRadius: 240,
-            border: `10px solid ${BLUE}`,
-            boxShadow: `0 0 90px rgba(91,145,255,0.55)`,
-            display: "flex",
-          }}
-        />
-        <div style={{ position: "absolute", right: 96, top: 100, width: 28, height: 28, borderRadius: 14, background: "#ffffff", display: "flex" }} />
+        <OgGlobe size={470} left={690} top={80} />
 
-        <div style={{ display: "flex", flexDirection: "column", padding: "72px 80px", width: 820 }}>
+        <div style={{ display: "flex", flexDirection: "column", padding: "72px 80px", width: 700 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
             <svg width="64" height="64" viewBox="0 0 40 40">
               {MOON_PATHS.map((d) => (
@@ -53,17 +40,17 @@ export default async function OpenGraphImage() {
               </span>
             </div>
           </div>
-          <div style={{ display: "flex", marginTop: 72, fontSize: 68, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>{TAGLINE}</div>
-          <div style={{ display: "flex", marginTop: 28, fontSize: 27, lineHeight: 1.35, color: "#9a9ea8", fontWeight: 400 }}>{DESCRIPTION}</div>
+          <div style={{ display: "flex", marginTop: 84, fontSize: 72, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>{TAGLINE}</div>
+          <div style={{ display: "flex", marginTop: 26, fontSize: 30, lineHeight: 1.3, color: "#9a9ea8", fontWeight: 400 }}>
+            Tokenized stocks on Solana, 24/7.
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "auto", fontSize: 24, color: "#9a9ea8" }}>
             <div style={{ width: 12, height: 12, borderRadius: 6, background: BLUE, display: "flex" }} />
             <span>after-hour.net</span>
-            <span style={{ color: "#5b6070" }}>·</span>
-            <span>Tokenized stocks on Solana, 24/7</span>
           </div>
         </div>
       </div>
     ),
-    { ...size, fonts },
+    { ...size, ...(fonts.length ? { fonts } : {}) },
   );
 }

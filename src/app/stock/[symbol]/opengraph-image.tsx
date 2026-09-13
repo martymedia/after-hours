@@ -3,6 +3,7 @@ import { BLUE, INK, MOON_PATHS } from "@/lib/brand";
 import { outfitFonts } from "@/lib/og-font";
 import { formatUsd, gapWords } from "@/lib/format";
 import { getStock } from "@/lib/stock";
+import { OgGlobe } from "@/components/og-globe";
 
 export const alt = "Tokenized stock on Solana, priced after hours";
 export const size = { width: 1200, height: 630 };
@@ -38,19 +39,7 @@ export default async function StockImage({ params }: { params: Promise<{ symbol:
           overflow: "hidden",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            right: -180,
-            bottom: -220,
-            width: 560,
-            height: 560,
-            borderRadius: 280,
-            border: `10px solid ${gap != null && gap < 0 ? BLUE : gap != null && gap > 0.25 ? DOWN : "#2f3340"}`,
-            boxShadow: gap != null && gap < 0 ? "0 0 90px rgba(91,145,255,0.5)" : "none",
-            display: "flex",
-          }}
-        />
+        <OgGlobe size={420} left={930} top={230} dots={4000} />
         <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 26, color: "#9a9ea8" }}>
           <svg width="34" height="34" viewBox="0 0 40 40">
             {MOON_PATHS.map((d) => (
@@ -80,9 +69,9 @@ export default async function StockImage({ params }: { params: Promise<{ symbol:
         </div>
 
         {p && (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 24, marginTop: 56 }}>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 48, width: 800 }}>
             <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -3, lineHeight: 1 }}>{formatUsd(p.price)}</div>
-            <div style={{ display: "flex", fontSize: 40, fontWeight: 600, color: tone }}>
+            <div style={{ display: "flex", marginTop: 14, fontSize: 38, fontWeight: 600, color: tone }}>
               {words === "in line" ? `in line with ${stock?.reference.phrase}` : `${words} than ${stock?.reference.phrase}`}
             </div>
           </div>
@@ -96,6 +85,6 @@ export default async function StockImage({ params }: { params: Promise<{ symbol:
         </div>
       </div>
     ),
-    { ...size, fonts },
+    { ...size, ...(fonts.length ? { fonts } : {}) },
   );
 }
