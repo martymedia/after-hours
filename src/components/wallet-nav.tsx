@@ -28,7 +28,23 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
     return () => clearTimeout(id);
   }, [connected]);
   if (!connected) {
-    if (variant !== "rail" || !ready) return null;
+    if (!ready || variant === "chip") return null;
+    if (variant === "tab") {
+      return (
+        <ConnectButton
+          hideWhenNoWallet
+          className="text-muted flex flex-col items-center gap-1 rounded-xl px-3 py-1 text-[11px] font-medium"
+          label={
+            <>
+              <span className="icon-badge h-8 w-8 border-ink bg-ink text-white">
+                <Wallet size={16} strokeWidth={1.75} />
+              </span>
+              Connect
+            </>
+          }
+        />
+      );
+    }
     return (
       <div className="rise mt-4 border-t border-line pt-4">
         {expanded && <p className="text-muted-2 mb-2 pl-2 text-[11px] font-medium">Your wallet</p>}

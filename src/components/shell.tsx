@@ -13,14 +13,15 @@ import { SiteFooter } from "./site-footer";
 import { useSlidingPill } from "./motion";
 import dynamic from "next/dynamic";
 
-// Client-only: the entry exists only once a wallet is connected.
+// Client-only: wallet entries depend on the browser's wallets.
 const WalletNavLink = dynamic(() => import("./wallet-nav").then((m) => m.WalletNavLink), { ssr: false });
 
 const NAV = [
   { href: "/", label: "Overview", icon: Home, match: (p: string) => p === "/" },
   { href: "/stocks", label: "Stocks", icon: LineChart, match: (p: string) => p.startsWith("/stock") },
   { href: "/earnings", label: "Earnings", icon: CalendarDays, match: (p: string) => p.startsWith("/earnings") },
-  { href: "/how", label: "How it works", icon: BookOpen, match: (p: string) => p.startsWith("/how") },
+  // Not in the phone tab bar: that row has room for four, and the wallet takes the fourth.
+  { href: "/how", label: "How it works", icon: BookOpen, match: (p: string) => p.startsWith("/how"), phone: false },
 ];
 
 const TITLES: [(p: string) => boolean, string][] = [
@@ -130,7 +131,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Bottom bar (phones) */}
       <nav ref={tabBarRef} className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden">
         <span ref={tabPillRef} className="t-tabbar-pill" aria-hidden="true" />
-        {NAV.map((n) => {
+        {NAV.filter((n) => n.phone !== false).map((n) => {
           const active = n.match(pathname);
           return (
             <Link
