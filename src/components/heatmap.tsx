@@ -11,7 +11,10 @@ import { Tip } from "./tip";
 type Rect = { x: number; y: number; w: number; h: number };
 type Tile = { row: RadarRow; rect: Rect };
 
-function squarify(items: { row: RadarRow; value: number }[], rect: Rect): Tile[] {
+function squarify(
+  items: { row: RadarRow; value: number }[],
+  rect: Rect,
+): Tile[] {
   const total = items.reduce((s, i) => s + i.value, 0);
   if (!items.length || total <= 0) return [];
   const out: Tile[] = [];
@@ -48,7 +51,9 @@ function squarify(items: { row: RadarRow; value: number }[], rect: Rect): Tile[]
       const along = a / len;
       out.push({
         row: i.row,
-        rect: horizontal ? { x: r.x, y: r.y + offset, w: len, h: along } : { x: r.x + offset, y: r.y, w: along, h: len },
+        rect: horizontal
+          ? { x: r.x, y: r.y + offset, w: len, h: along }
+          : { x: r.x + offset, y: r.y, w: along, h: len },
       });
       offset += along;
     }
@@ -66,16 +71,30 @@ function fill(gap: number | null): string {
   if (gap == null || Math.abs(gap) < 0.25) return "var(--soft)";
   const k = Math.min(1, (Math.abs(gap) - 0.25) / 5); // full colour at 5.25 % and beyond
   const alpha = 0.14 + 0.5 * k;
-  return gap < 0 ? `rgba(91,145,255,${alpha.toFixed(2)})` : `rgba(229,72,77,${alpha.toFixed(2)})`;
+  return gap < 0
+    ? `rgba(91,145,255,${alpha.toFixed(2)})`
+    : `rgba(229,72,77,${alpha.toFixed(2)})`;
 }
 
 // Two layouts: phones get fewer, squarer tiles; wider screens get more.
 const DESKTOP = { aspect: 4, max: 24, className: "hidden h-56 sm:block" };
 const PHONE = { aspect: 1.5, max: 12, className: "h-52 sm:hidden" };
 
-export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; referencePhrase: string }) {
+export function Heatmap({
+  rows,
+  referencePhrase,
+}: {
+  rows: RadarRow[];
+  referencePhrase: string;
+}) {
   const eligible = rows
-    .filter((r) => r.price != null && r.gapPct != null && !gapIsOutlier(r.gapPct) && (r.tradability === "easy" || r.tradability === "ok"))
+    .filter(
+      (r) =>
+        r.price != null &&
+        r.gapPct != null &&
+        !gapIsOutlier(r.gapPct) &&
+        (r.tradability === "easy" || r.tradability === "ok"),
+    )
     .sort((a, b) => b.liquidity - a.liquidity);
   const cheaper = eligible.filter((r) => (r.gapPct ?? 0) < -0.25).length;
   const pricier = eligible.filter((r) => (r.gapPct ?? 0) > 0.25).length;
@@ -84,10 +103,17 @@ export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; reference
     <section className="card p-4 sm:p-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-muted text-xs">
-          At a glance: <span className="text-blue">{cheaper} cheaper</span>, <span className="text-down">{pricier} pricier</span>,{" "}
-          {eligible.length - cheaper - pricier} in line with {referencePhrase}. The deepest pools, tile size follows liquidity; the full list is below.
+          At a glance: <span className="text-blue">{cheaper} cheaper</span>,{" "}
+          <span className="text-down">{pricier} pricier</span>,{" "}
+          {eligible.length - cheaper - pricier} in line with {referencePhrase}.
+          Deepest pools only; tile size follows liquidity. The full list is
+          below.
         </p>
-        <Tip text="Colour is the gap between the onchain price and the reference: blue below, red above, grey within a quarter percent. Bigger tiles are deeper pools, so their colour means more." underline={false} className="text-muted-2 hover:text-ink text-xs">
+        <Tip
+          text="Colour is the gap between the onchain price and the reference: blue below, red above, grey within a quarter percent. Bigger tiles are deeper pools, so their colour means more."
+          underline={false}
+          className="text-muted-2 hover:text-ink text-xs"
+        >
           How to read it
         </Tip>
       </div>
@@ -97,17 +123,38 @@ export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; reference
   );
 }
 
-function Strip({ rows, referencePhrase, aspect, max, className }: { rows: RadarRow[]; referencePhrase: string; aspect: number; max: number; className: string }) {
-  const items = rows.slice(0, max).map((r) => ({ row: r, value: Math.sqrt(Math.max(r.liquidity, 1)) }));
+function Strip({
+  rows,
+  referencePhrase,
+  aspect,
+  max,
+  className,
+}: {
+  rows: RadarRow[];
+  referencePhrase: string;
+  aspect: number;
+  max: number;
+  className: string;
+}) {
+  const items = rows
+    .slice(0, max)
+    .map((r) => ({ row: r, value: Math.sqrt(Math.max(r.liquidity, 1)) }));
   const tiles = squarify(items, { x: 0, y: 0, w: 100 * aspect, h: 100 });
   return (
-    <div className={`relative w-full ${className}`} role="list" aria-label="Stocks by liquidity and price gap">
+    <div
+      className={`relative w-full ${className}`}
+      role="list"
+      aria-label="Stocks by liquidity and price gap"
+    >
       {tiles.map(({ row, rect }) => {
         // Every tile carries its ticker; the gap line only where it fits.
         const wPct = rect.w / aspect;
         const big = rect.h >= 20 && wPct >= 9;
         const gap = row.gapPct ?? 0;
-        const label = Math.abs(gap) < 0.25 ? "in line" : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
+        const label =
+          Math.abs(gap) < 0.25
+            ? "in line"
+            : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
         return (
           <Link
             key={row.underlying}
@@ -115,10 +162,22 @@ function Strip({ rows, referencePhrase, aspect, max, className }: { rows: RadarR
             role="listitem"
             title={`${row.name}: ${label} vs ${referencePhrase}`}
             className="absolute flex flex-col justify-end overflow-hidden rounded-md p-1 text-ink transition hover:z-10 hover:brightness-95 sm:p-1.5"
-            style={{ left: `${rect.x / aspect}%`, top: `${rect.y}%`, width: `calc(${wPct}% - 3px)`, height: `calc(${rect.h}% - 3px)`, background: fill(row.gapPct) }}
+            style={{
+              left: `${rect.x / aspect}%`,
+              top: `${rect.y}%`,
+              width: `calc(${wPct}% - 3px)`,
+              height: `calc(${rect.h}% - 3px)`,
+              background: fill(row.gapPct),
+            }}
           >
-            <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>
-            {big && <span className="num text-muted truncate text-[10px]">{label}</span>}
+            <span className="num truncate text-[10px] font-semibold sm:text-[11px]">
+              {row.underlying}
+            </span>
+            {big && (
+              <span className="num text-muted truncate text-[10px]">
+                {label}
+              </span>
+            )}
           </Link>
         );
       })}

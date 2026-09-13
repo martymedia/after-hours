@@ -1,4 +1,7 @@
-export function formatUsd(value: number | null | undefined, digits = 2): string {
+export function formatUsd(
+  value: number | null | undefined,
+  digits = 2,
+): string {
   if (value == null || !Number.isFinite(value)) return "–";
   return value.toLocaleString("en-US", {
     style: "currency",
@@ -8,7 +11,10 @@ export function formatUsd(value: number | null | undefined, digits = 2): string 
   });
 }
 
-export function formatPct(value: number | null | undefined, digits = 2): string {
+export function formatPct(
+  value: number | null | undefined,
+  digits = 2,
+): string {
   if (value == null || !Number.isFinite(value)) return "–";
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(digits)}%`;
@@ -52,7 +58,8 @@ export function gapIsOutlier(gap: number | null | undefined): boolean {
 }
 
 export function gapTone(gap: number | null | undefined): string {
-  if (gap == null || !Number.isFinite(gap) || Math.abs(gap) < 0.25) return "text-muted";
+  if (gap == null || !Number.isFinite(gap) || Math.abs(gap) < 0.25)
+    return "text-muted";
   return gap < 0 ? "text-blue" : "text-down";
 }
 
@@ -75,14 +82,21 @@ export function formatDurationWords(ms: number): string {
   const h = Math.floor((totalMin % 1440) / 60);
   const m = totalMin % 60;
   const unit = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
-  if (d > 0) return `${unit(d, "day")} ${unit(h, "hour")}`;
-  if (h > 0) return `${unit(h, "hour")} ${unit(m, "minute")}`;
+  if (d > 0)
+    return h > 0 ? `${unit(d, "day")} ${unit(h, "hour")}` : unit(d, "day");
+  if (h > 0)
+    return m > 0 ? `${unit(h, "hour")} ${unit(m, "minute")}` : unit(h, "hour");
   return unit(m, "minute");
 }
 
 /** "0.68% pricier than Friday's close" or "in line with Friday's close". */
-export function gapSentence(gap: number | null | undefined, phrase: string): string {
+export function gapSentence(
+  gap: number | null | undefined,
+  phrase: string,
+): string {
   const words = gapWords(gap);
   if (words === "–") return `no comparison to ${phrase}`;
-  return words === "in line" ? `in line with ${phrase}` : `${words} than ${phrase}`;
+  return words === "in line"
+    ? `in line with ${phrase}`
+    : `${words} than ${phrase}`;
 }

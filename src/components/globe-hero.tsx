@@ -37,7 +37,7 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
     phase.phase === "open"
       ? "Wall Street is open"
       : phase.phase === "after_hours"
-        ? "Wall Street is closed for the night"
+        ? "Wall Street is closed, onchain is open"
         : "Wall Street is closed";
 
   return (
@@ -45,56 +45,91 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
       <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-12">
         <div className="lg:col-span-6">
           <StaggerReveal>
-          <p className="t-stagger-line t-stagger-line--1 text-blue-light text-sm font-medium">Trade stocks when Wall Street sleeps.</p>
-          <h2 className="t-stagger-line t-stagger-line--2 mt-2 text-[2.4rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
-            Solana After Hours
-          </h2>
-          <p className="t-stagger-line t-stagger-line--3 text-on-dark-muted mt-5 max-w-md leading-relaxed">
-            Real stocks, tokenized on Solana, keep trading after the bell and all weekend. See what is moving,
-            whether the price is fresh, and how much <span className="text-blue-light font-medium">cheaper</span> or{" "}
-            <span className="text-down font-medium">pricier</span> it is than the last Wall Street print.
-            Then buy from your own wallet.
-          </p>
+            <p className="t-stagger-line t-stagger-line--1 text-blue-light text-sm font-medium">
+              Trade stocks when Wall Street sleeps.
+            </p>
+            <h2 className="t-stagger-line t-stagger-line--2 mt-2 text-[2.4rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
+              Solana After Hours
+            </h2>
+            <p className="t-stagger-line t-stagger-line--3 text-on-dark-muted mt-5 max-w-md leading-relaxed">
+              Real stocks, tokenized on Solana, keep trading after the bell and
+              all weekend. See what is moving, whether the price is fresh, and
+              how much{" "}
+              <span className="text-blue-light font-medium">cheaper</span> or{" "}
+              <span className="text-down font-medium">pricier</span> it is than
+              the last Wall Street print. Then buy from your own wallet.
+            </p>
           </StaggerReveal>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <Link href="/stocks" className="btn btn-white">
               See what is trading
             </Link>
-            <Link href="/how" className="text-on-dark-muted text-sm hover:text-white">
+            <Link
+              href="/how"
+              className="text-on-dark-muted text-sm hover:text-white"
+            >
               How it works
             </Link>
           </div>
           <div className="mt-8 text-sm">
             <div>
-              <span className="num font-medium">{nyClock.format(new Date(now))}</span> in New York. {status}.
-              {phase.phase !== "open" && <span className="text-on-dark-muted"> Opens in {untilOpen}.</span>}
+              <span className="num font-medium">
+                {nyClock.format(new Date(now))}
+              </span>{" "}
+              in New York. {status}.
+              {phase.phase !== "open" && (
+                <span className="text-on-dark-muted">
+                  {" "}
+                  Opens in {untilOpen}.
+                </span>
+              )}
             </div>
             <div className="text-blue-light font-medium">
-              <CountUp value={stockCount} kind="int" /> stocks are trading onchain right now.
+              <CountUp value={stockCount} kind="int" />{" "}
+              {stockCount === 1 ? "stock is" : "stocks are"} trading onchain
+              right now.
             </div>
           </div>
         </div>
         <div className="lg:col-span-6">
           <div className="relative mx-auto max-w-[540px] lg:translate-x-8">
             <Globe />
-            <SessionRing now={now} tradingDay={phase.phase !== "closed" || phase.msUntilOpen < 16 * 3600_000} />
+            <SessionRing
+              now={now}
+              tradingDay={
+                phase.phase !== "closed" || phase.msUntilOpen < 16 * 3600_000
+              }
+            />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="rounded-2xl bg-ink/70 px-4 py-3 text-center backdrop-blur-sm">
                 {phase.phase === "open" ? (
                   <>
-                    <div className="text-sm font-semibold">Wall Street open</div>
+                    <div className="text-sm font-semibold">
+                      Wall Street open
+                    </div>
                     <div className="text-on-dark-muted text-xs">
                       After Hours begins in{" "}
                       <span className="num text-white">
-                        {phase.nextClose ? formatDurationWords(new Date(phase.nextClose).getTime() - now) : "a few hours"}
+                        {phase.nextClose
+                          ? formatDurationWords(
+                              new Date(phase.nextClose).getTime() - now,
+                            )
+                          : "a few hours"}
                       </span>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="text-blue-light text-sm font-semibold">After Hours active</div>
+                    <div className="text-blue-light text-sm font-semibold">
+                      After Hours active
+                    </div>
                     <div className="text-on-dark-muted text-xs">
-                      Wall Street opens in <span className="num text-white">{formatDurationWords(new Date(phase.nextOpen).getTime() - now)}</span>
+                      Wall Street opens in{" "}
+                      <span className="num text-white">
+                        {formatDurationWords(
+                          new Date(phase.nextOpen).getTime() - now,
+                        )}
+                      </span>
                     </div>
                   </>
                 )}

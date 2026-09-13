@@ -13,9 +13,7 @@ import {
   getBase64Encoder,
   getTransactionDecoder,
 } from "@solana/kit";
-import {
-  useConnectedWallet,
-} from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { solanaClient } from "@/lib/solana-client";
@@ -215,7 +213,10 @@ export function OrderPanel({
       const sig = getBase58Decoder().decode(raw);
       setStep("confirming");
       const confirmed = await waitForConfirmation(sig, 120_000);
-      if (!confirmed) throw new Error("unconfirmed: the network has not confirmed this yet. Check the Wallet page in a minute before placing it again.");
+      if (!confirmed)
+        throw new Error(
+          "unconfirmed: the network has not confirmed this yet. Check the Wallet page in a minute before placing it again.",
+        );
       setPlaced({
         signature: sig,
         shares: body.shares ?? shares,
@@ -293,8 +294,8 @@ export function OrderPanel({
         </div>
         <p className="text-on-dark-muted mt-3 text-xs">
           The order account belongs to your wallet. Cancel any time from the
-          Wallet page; {sell ? "unsold shares" : "unfilled USDC"} come straight
-          back.
+          Wallet page; {sell ? "unsold shares come" : "unfilled USDC comes"}{" "}
+          straight back.
         </p>
       </div>
     );

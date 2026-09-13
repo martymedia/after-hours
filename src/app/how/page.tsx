@@ -15,6 +15,8 @@ import { TickerBadge } from "@/components/ticker-badge";
 
 export const dynamic = "force-dynamic";
 
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export const metadata: Metadata = {
   title: "How it works",
   description:
@@ -62,7 +64,7 @@ export default function HowPage() {
             <p className="text-blue-light text-sm font-medium">How it works</p>
             <h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-tight sm:text-5xl">
               Wall Street trades six and a half hours a day. Solana trades all
-              of them.
+              twenty-four.
             </h2>
             <p className="text-on-dark-muted mt-4 max-w-2xl leading-relaxed">
               Regulated issuers hold real shares with a custodian and put one
@@ -131,7 +133,7 @@ export default function HowPage() {
         <Step
           n="01"
           title="Pick a stock"
-          text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it how, and how deep the pool behind it is.`}
+          text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it and how, and how deep the pool behind it is.`}
         >
           <div className="flex flex-wrap gap-2">
             {data.rows.slice(0, 12).map((r) => (
@@ -144,12 +146,14 @@ export default function HowPage() {
                 {r.name}
               </Link>
             ))}
-            <Link
-              href="/stocks"
-              className="text-muted self-center px-2 text-sm hover:text-ink"
-            >
-              and {Math.max(0, data.rows.length - 12)} more
-            </Link>
+            {data.rows.length > 12 && (
+              <Link
+                href="/stocks"
+                className="text-muted self-center px-2 text-sm hover:text-ink"
+              >
+                and {data.rows.length - 12} more
+              </Link>
+            )}
           </div>
         </Step>
 
@@ -201,8 +205,8 @@ export default function HowPage() {
               <div
                 className={`num mt-3 text-sm font-medium ${gapTone(sample.gapPct)}`}
               >
-                {gapSentence(sample.gapPct, data.reference.phrase)}. Live, right
-                now.
+                {capitalise(gapSentence(sample.gapPct, data.reference.phrase))}.
+                Live, right now.
               </div>
             </div>
           )}
@@ -223,7 +227,7 @@ export default function HowPage() {
                   {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "pricier"}
                 </div>
                 <div className="mt-0.5 text-sm text-white/80">
-                  {tileStock.name} than {data.reference.phrase}, right now,
+                  {tileStock.name} against {data.reference.phrase}, right now,
                   before price impact.
                 </div>
               </div>

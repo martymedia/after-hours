@@ -45,7 +45,7 @@ export function OpenOrders({
         orders?: OpenOrder[];
         error?: string;
       };
-      if (!res.ok) throw new Error(body.error ?? "could not read orders");
+      if (!res.ok) throw new Error(body.error ?? "");
       setOrders(body.orders ?? []);
       setError(null);
     } catch (err) {
@@ -115,7 +115,8 @@ export function OpenOrders({
       </div>
       {error ? (
         <p className="text-muted text-sm">
-          Could not read the orders right now. {error}
+          Could not read the orders right now.
+          {error ? ` ${error.charAt(0).toUpperCase()}${error.slice(1)}.` : ""}
         </p>
       ) : !orders ? (
         <div className="h-16 animate-pulse rounded-2xl bg-soft" />

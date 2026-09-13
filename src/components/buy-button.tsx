@@ -447,8 +447,14 @@ export function explainError(raw: string): [string, string] {
   }
   if (t.includes("0x177e") || t.includes("6014")) {
     return [
-      "The route was built the old way.",
-      "Jupiter rejected the fee setup for this token. Try again; the quote is rebuilt.",
+      "The route needs rebuilding.",
+      "Jupiter rejected the fee setup for this token. Try again and a fresh route is built.",
+    ];
+  }
+  if (t.startsWith("unconfirmed:")) {
+    return [
+      "Not confirmed yet.",
+      "The network has not picked this up. Check the Wallet page in a minute before placing it again, so you do not place it twice.",
     ];
   }
   if (t.startsWith("simulation:")) {

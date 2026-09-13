@@ -59,7 +59,7 @@ export function DayRingPanel() {
                   <span className="text-blue-light font-medium">
                     After Hours
                   </span>{" "}
-                  · opens in{" "}
+                  · Wall Street opens in{" "}
                   <span className="text-white">
                     {formatDurationWords(
                       new Date(phase.nextOpen).getTime() - now,
@@ -77,11 +77,11 @@ export function DayRingPanel() {
           session
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="h-1.5 w-4 rounded-full bg-blue/60" /> onchain, all
+          <span className="h-1.5 w-4 rounded-full bg-blue/60" /> Onchain, all
           day
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-white" /> now
+          <span className="h-2 w-2 rounded-full bg-white" /> Now
         </li>
       </ul>
     </div>

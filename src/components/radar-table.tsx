@@ -5,7 +5,16 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
 import { TRADABILITY_LABEL } from "@/lib/radar-types";
-import { GAP_OUTLIER_PCT, formatAgo, formatDuration, formatPct, formatUsd, gapIsOutlier, gapTone, gapWords } from "@/lib/format";
+import {
+  GAP_OUTLIER_PCT,
+  formatAgo,
+  formatDuration,
+  formatPct,
+  formatUsd,
+  gapIsOutlier,
+  gapTone,
+  gapWords,
+} from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { PopNumber, Seg } from "./motion";
@@ -25,14 +34,24 @@ const TRADABILITY_TIP: Record<Tradability, string> = {
   easy: "More than 500k USD in pools. Orders up to a few thousand dollars barely move the price.",
   ok: "Between 50k and 500k USD in pools. Fine for small amounts; large orders move the price.",
   thin: "Liquidity dropped under 50k USD since we listed it. Expect a bad price on anything but tiny orders.",
-  stale: "Last trade more than an hour ago. The price may not be where it would trade now.",
+  stale:
+    "Last trade more than an hour ago. The price may not be where it would trade now.",
   none: "No pool with real liquidity on Solana.",
 };
 
 const OUTLIER_TIP = `More than ${GAP_OUTLIER_PCT}% from the reference. A gap this wide is a thin pool or a one-off trade, not a discount or premium you can act on.`;
 
-const dayFormatter = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "long", hour: "numeric", minute: "2-digit" });
-const earningsDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const dayFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  weekday: "long",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const earningsDate = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
 
 type Issuer = "all" | "xstocks" | "backpack";
 type Sort = "liquidity" | "move" | "cheaper" | "name";
@@ -41,7 +60,7 @@ type Show = "all" | "easy" | "moved";
 const SORTS: { id: Sort; label: string }[] = [
   { id: "liquidity", label: "Most liquid" },
   { id: "move", label: "Biggest move" },
-  { id: "cheaper", label: "Cheapest vs close" },
+  { id: "cheaper", label: "Cheapest vs Wall Street" },
   { id: "name", label: "A to Z" },
 ];
 
@@ -90,14 +109,30 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       if (issuer !== "all" && r.issuer !== issuer) return false;
       if (show === "easy" && r.tradability !== "easy") return false;
       if (show === "moved" && Math.abs(r.gapPct ?? 0) < 1) return false;
-      if (needle && !(r.name.toLowerCase().includes(needle) || r.symbol.toLowerCase().includes(needle) || r.underlying.toLowerCase().includes(needle))) return false;
+      if (
+        needle &&
+        !(
+          r.name.toLowerCase().includes(needle) ||
+          r.symbol.toLowerCase().includes(needle) ||
+          r.underlying.toLowerCase().includes(needle)
+        )
+      )
+        return false;
       return true;
     });
     // Outliers (gap beyond the sanity band) sort last: they are not deals.
-    const tier = (r: RadarRow) => (gapIsOutlier(r.gapPct) ? 3 : r.tradability === "easy" || r.tradability === "ok" ? 0 : r.tradability === "stale" ? 1 : 2);
+    const tier = (r: RadarRow) =>
+      gapIsOutlier(r.gapPct)
+        ? 3
+        : r.tradability === "easy" || r.tradability === "ok"
+          ? 0
+          : r.tradability === "stale"
+            ? 1
+            : 2;
     const by: Record<Sort, (a: RadarRow, b: RadarRow) => number> = {
       liquidity: (a, b) => b.liquidity - a.liquidity,
-      move: (a, b) => tier(a) - tier(b) || Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
+      move: (a, b) =>
+        tier(a) - tier(b) || Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
       cheaper: (a, b) => tier(a) - tier(b) || (a.gapPct ?? 0) - (b.gapPct ?? 0),
       name: (a, b) => a.name.localeCompare(b.name),
     };
@@ -109,7 +144,11 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       <section className="card p-5">
         <h2 className="text-xl font-semibold tracking-tight">
           {closed ? "Wall Street is closed." : "Wall Street is open."}{" "}
-          <span className="text-muted font-normal">{data.rows.length} stocks are trading onchain.</span>
+          <span className="text-muted font-normal">
+            {data.rows.length}{" "}
+            {data.rows.length === 1 ? "stock is" : "stocks are"} trading
+            onchain.
+          </span>
         </h2>
         <p className="text-muted mt-1 text-sm">
           {closed
@@ -122,7 +161,10 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               {data.earnings.map((e, i) => (
                 <span key={`${e.underlying}-${e.date}`}>
                   {i > 0 ? ", " : ""}
-                  <Link href={`/stock/${e.underlying}`} className="text-ink hover:underline">
+                  <Link
+                    href={`/stock/${e.underlying}`}
+                    className="text-ink hover:underline"
+                  >
                     {e.name}
                   </Link>{" "}
                   {earningsDate.format(new Date(`${e.date}T12:00:00Z`))}
@@ -134,7 +176,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         </p>
 
         <div className="mt-4 flex items-center gap-3">
-        <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-soft px-3 text-base sm:max-w-80 sm:text-sm">
+          <label className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-full bg-soft px-3 text-base sm:max-w-80 sm:text-sm">
             <Search size={15} strokeWidth={1.75} className="text-muted" />
             <input
               ref={inputRef}
@@ -146,7 +188,12 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               aria-label="Filter stocks"
             />
             {q && (
-              <button type="button" onClick={() => setQ("")} aria-label="Clear" className="text-muted hover:text-ink text-xs">
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                aria-label="Clear"
+                className="text-muted hover:text-ink text-xs"
+              >
                 clear
               </button>
             )}
@@ -172,12 +219,16 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                   +{rows.length - 4}
                 </span>
               )}
-              {rows.length === 0 && <span className="text-muted text-sm">No match</span>}
+              {rows.length === 0 && (
+                <span className="text-muted text-sm">No match</span>
+              )}
             </div>
           )}
         </div>
 
-        <div className={`mt-3 flex flex-wrap items-center gap-3 ${q.trim() ? "hidden sm:flex" : ""}`}>
+        <div
+          className={`mt-3 flex flex-wrap items-center gap-3 ${q.trim() ? "hidden sm:flex" : ""}`}
+        >
           <Seg
             ariaLabel="Issuer"
             value={issuer}
@@ -188,7 +239,12 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               { id: "backpack", label: "Backpack" },
             ]}
           />
-          <Seg ariaLabel="Show" value={show} onChange={setShow} options={SHOWS.map((s) => ({ id: s.id, label: s.label }))} />
+          <Seg
+            ariaLabel="Show"
+            value={show}
+            onChange={setShow}
+            options={SHOWS.map((s) => ({ id: s.id, label: s.label }))}
+          />
           <label className="text-muted flex items-center gap-2 text-sm">
             Sort
             <select
@@ -210,14 +266,24 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       {/* Phones: one compact row per stock, no sideways scrolling. */}
       <section className="card divide-y divide-line md:hidden">
         {rows.map((row) => {
-          const ageMs = row.ageMs == null ? null : row.ageMs + (now - Date.parse(data.generatedAt));
+          const ageMs =
+            row.ageMs == null
+              ? null
+              : row.ageMs + (now - Date.parse(data.generatedAt));
           return (
-            <Link key={row.underlying} href={`/stock/${row.underlying}`} className="flex items-center gap-3 px-4 py-3 active:bg-soft">
+            <Link
+              key={row.underlying}
+              href={`/stock/${row.underlying}`}
+              className="flex items-center gap-3 px-4 py-3 active:bg-soft"
+            >
               <TickerBadge symbol={row.symbol} logo={row.logo} size={36} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{row.name}</span>
+                <span className="block truncate text-sm font-medium">
+                  {row.name}
+                </span>
                 <span className="text-muted block truncate text-xs">
-                  {row.symbol} · {row.issuerName} · {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
+                  {row.symbol} · {row.issuerName} ·{" "}
+                  {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
                 </span>
               </span>
               <span className="text-right">
@@ -225,13 +291,23 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                   <PopNumber value={row.price} format={formatUsd} />
                 </span>
                 <span className={`num block text-xs ${gapTone(row.gapPct)}`}>
-                  {gapIsOutlier(row.gapPct) ? <span className="text-warn">far off · {gapWords(row.gapPct)}</span> : gapWords(row.gapPct)}
+                  {gapIsOutlier(row.gapPct) ? (
+                    <span className="text-warn">
+                      far off · {gapWords(row.gapPct)}
+                    </span>
+                  ) : (
+                    gapWords(row.gapPct)
+                  )}
                 </span>
               </span>
             </Link>
           );
         })}
-        {rows.length === 0 && <p className="text-muted px-4 py-8 text-center text-sm">Nothing matches. Loosen a filter.</p>}
+        {rows.length === 0 && (
+          <p className="text-muted px-4 py-8 text-center text-sm">
+            Nothing matches. Loosen a filter.
+          </p>
+        )}
       </section>
 
       <section className="card hidden overflow-hidden md:block">
@@ -241,21 +317,35 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               <tr className="text-muted border-b border-line text-left text-xs">
                 <th className="px-5 py-3 font-medium">Stock</th>
                 <th className="px-4 py-3 text-right font-medium">
-                  <Tip text="The last trade of the most liquid token for this stock on Solana.">Onchain</Tip>
+                  <Tip text="The last trade of the most liquid token for this stock on Solana.">
+                    Onchain
+                  </Tip>
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  <Tip text={data.liveReference ? "The live exchange or overnight-venue price." : `${ref.short} is the last regular-session price. While the exchange is shut, onchain can drift from it.`}>
+                  <Tip
+                    text={
+                      data.liveReference
+                        ? "The live exchange or overnight-venue price."
+                        : `${ref.short} is the last regular-session price. While the exchange is shut, onchain can drift from it.`
+                    }
+                  >
                     {ref.short}
                   </Tip>
                 </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  <Tip text={`Onchain price versus ${ref.phrase}. Blue and negative: cheaper onchain than on Wall Street. Red and positive: pricier. Within a quarter percent counts as in line.`}>
+                  <Tip
+                    text={`Onchain price versus ${ref.phrase}. Blue and negative: cheaper onchain than on Wall Street. Red and positive: pricier. Within a quarter percent counts as in line.`}
+                  >
                     Difference
                   </Tip>
                 </th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Last 48h</th>
+                <th className="hidden px-4 py-3 font-medium md:table-cell">
+                  Last 48h
+                </th>
                 <th className="px-4 py-3 text-right font-medium">
-                  <Tip text="Time since the most recent onchain trade. Old means the price may be out of date.">Updated</Tip>
+                  <Tip text="Time since the most recent onchain trade. Old means the price may be out of date.">
+                    Updated
+                  </Tip>
                 </th>
                 <th className="px-4 py-3 pr-5 font-medium">
                   <Tip text="How much money sits in this token's pools, in plain words. It decides how big an order can be before the price moves.">
@@ -266,11 +356,18 @@ export function RadarTable({ initial }: { initial: RadarData }) {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <Row key={row.underlying} row={row} elapsedMs={now - Date.parse(data.generatedAt)} />
+                <Row
+                  key={row.underlying}
+                  row={row}
+                  elapsedMs={now - Date.parse(data.generatedAt)}
+                />
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-muted px-5 py-8 text-center text-sm">
+                  <td
+                    colSpan={7}
+                    className="text-muted px-5 py-8 text-center text-sm"
+                  >
                     Nothing matches. Loosen a filter.
                   </td>
                 </tr>
@@ -288,10 +385,15 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
   return (
     <tr className="border-b border-line last:border-b-0">
       <td className="px-5 py-3">
-        <Link href={`/stock/${row.underlying}`} className="group flex items-center gap-3">
+        <Link
+          href={`/stock/${row.underlying}`}
+          className="group flex items-center gap-3"
+        >
           <TickerBadge symbol={row.symbol} logo={row.logo} size={32} />
           <span className="flex flex-col">
-            <span className="font-medium group-hover:underline">{row.name}</span>
+            <span className="font-medium group-hover:underline">
+              {row.name}
+            </span>
             <span className="text-muted text-xs">
               {row.symbol} · {row.issuerName}
               {row.issuerCount > 1 ? ` · +${row.issuerCount - 1}` : ""}
@@ -302,8 +404,12 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
       <td className="num px-4 py-3 text-right font-medium">
         <PopNumber value={row.price} format={formatUsd} />
       </td>
-      <td className="num text-muted px-4 py-3 text-right">{formatUsd(row.reference)}</td>
-      <td className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}>
+      <td className="num text-muted px-4 py-3 text-right">
+        {formatUsd(row.reference)}
+      </td>
+      <td
+        className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}
+      >
         {gapIsOutlier(row.gapPct) ? (
           <Tip text={OUTLIER_TIP} underline={false} className="text-warn">
             <span className="pill bg-soft-warn text-warn mr-2">far off</span>
@@ -316,13 +422,16 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
       <td className="hidden px-4 py-3 md:table-cell">
         <Sparkline values={row.spark} color="var(--blue)" />
       </td>
-      <td className="num text-muted px-4 py-3 text-right text-xs">{ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}</td>
+      <td className="num text-muted px-4 py-3 text-right text-xs">
+        {ageMs == null ? "–" : formatAgo(Math.max(0, ageMs))}
+      </td>
       <td className="px-4 py-3 pr-5">
         <Tip text={TRADABILITY_TIP[row.tradability]} underline={false}>
-          <span className={`pill ${PILL[row.tradability]}`}>{TRADABILITY_LABEL[row.tradability]}</span>
+          <span className={`pill ${PILL[row.tradability]}`}>
+            {TRADABILITY_LABEL[row.tradability]}
+          </span>
         </Tip>
       </td>
     </tr>
   );
 }
-
