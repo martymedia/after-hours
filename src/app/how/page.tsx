@@ -34,7 +34,7 @@ export default function HowPage() {
   const tileStock = discount ?? premium ?? sample;
 
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col gap-5">
       {/* The day, explained by the clock itself */}
       <section className="card-dark p-6 sm:p-10">
         <p className="text-blue-light text-sm font-medium">How it works</p>
@@ -69,7 +69,7 @@ export default function HowPage() {
       </section>
 
       {/* Three steps, each with a live piece of the real app */}
-      <section className="flex flex-col gap-6">
+      <section className="flex flex-col gap-5">
         <Step n="01" title="Pick a stock" text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it how, and how deep the pool behind it is.`}>
           <div className="flex flex-wrap gap-2">
             {data.rows.slice(0, 12).map((r) => (

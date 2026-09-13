@@ -38,7 +38,7 @@ export default function EarningsPage() {
   const strip = Array.from({ length: 28 }, (_, i) => addDays(today, i));
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-5">
       {/* Title row */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -114,7 +114,7 @@ export default function EarningsPage() {
         })}
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-12">
+      <div className="grid gap-5 lg:grid-cols-12">
         {/* Agenda */}
         <section className="card p-5 lg:col-span-7">
           <h3 className="font-semibold">Coming up</h3>
