@@ -1,5 +1,6 @@
-# Dropped into /opt/marty-media/deploy/conf.d/ on the server. The shared
-# Caddy imports conf.d/*.caddy and fetches the certificate on first hit.
+# Site block for the host's shared Caddy: drop it into that Caddy's conf.d/
+# (it imports conf.d/*.caddy) and reload; the certificate is fetched on the
+# first hit. The upstream is the web container's name on the shared network.
 after-hour.net {
 	encode gzip
 	reverse_proxy after-hours-web-1:3000

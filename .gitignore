@@ -8,3 +8,7 @@ data/*.db-*
 *.log
 tsconfig.tsbuildinfo
 next-env.d.ts
+
+# Local working notes and source artwork, not part of the public repo
+docs/PLAN.md
+Logo.png

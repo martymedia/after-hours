@@ -129,7 +129,7 @@ warning, never green.
 
 ## 6. Screens (brand guide: Outfit, blue, black, white)
 
-Brand (from Maik's reference dashboard, 2026-09-12): Outfit for everything,
+Brand (from the brand reference dashboard, 2026-09-12): Outfit for everything,
 blue #5B91FF as the one accent, black #121214 for buttons and dark panels,
 white cards with 20px radius on a light grey ground (#F4F4F6), pill buttons
 and pill badges, a dark chart panel with a white line. Green and red only

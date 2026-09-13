@@ -1,22 +1,23 @@
-# Deploy (Hetzner, shared box)
+# Deploy (a small VPS shared with other services)
 
-Server: `ssh root@167.233.192.162`, project dir `/opt/after-hours`.
-Own compose project; joins the `marty-media_default` network so the shared
-Caddy can proxy to it. Nothing here touches `/opt/marty-media`.
+Server: `ssh root@SERVER`, project dir `/opt/after-hours`. Own compose
+project; it joins the reverse proxy's external Docker network (set
+`PROXY_NETWORK` in `.env`, default `marty-media_default`) so the host's
+shared Caddy can proxy to it. Nothing here touches the proxy's own files.
 
 Local (Git Bash, from the repo root). Commit first: the tarball is the
 committed tree, which avoids shipping half-edited files.
 
 ```bash
 git archive --format=tar.gz -o after-hours.tar.gz HEAD
-scp after-hours.tar.gz root@167.233.192.162:/opt/after-hours/deploy.tar.gz
+scp after-hours.tar.gz root@SERVER:/opt/after-hours/deploy.tar.gz
 rm after-hours.tar.gz
 ```
 
 Server:
 
 ```bash
-ssh root@167.233.192.162
+ssh root@SERVER
 mkdir -p /opt/after-hours && cd /opt/after-hours
 rm -rf src scripts deploy public docs && tar xzf deploy.tar.gz
 test -f .env || cp .env.example .env
@@ -31,10 +32,10 @@ never deletes removed files.
 The build runs on the box (2 GB RAM plus swap). If it OOMs, build locally
 and `docker save | ssh ... docker load` instead.
 
-Domain: https://after-hour.net (live since 2026-09-13). Copy `deploy/afterhours.caddy` to
-`/opt/marty-media/deploy/conf.d/afterhours.caddy`,
-then `cd /opt/marty-media && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile`.
-DNS A record for the hostname must point at 167.233.192.162 first.
+Domain: https://after-hour.net (live since 2026-09-13). Copy `deploy/afterhours.caddy`
+into the shared Caddy's `conf.d/` and reload it
+(`docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile` in
+that compose project). The DNS A record must point at the server first.
 
 Disk hygiene after each build: `docker builder prune -f && df -h /`.
 
@@ -45,7 +46,7 @@ start. To rebuild now (after changing listing rules), clear the meta key and
 restart the collector; clearing alone does nothing until the restart.
 
 ```bash
-ssh root@167.233.192.162 'cd /opt/after-hours && docker compose exec -T collector node -e "const {DatabaseSync}=require(\"node:sqlite\");const db=new DatabaseSync(process.env.AFTER_HOURS_DB);db.prepare(\"DELETE FROM meta WHERE key=?\").run(\"universe_updated_at\")" && docker compose restart collector'
+ssh root@SERVER 'cd /opt/after-hours && docker compose exec -T collector node -e "const {DatabaseSync}=require(\"node:sqlite\");const db=new DatabaseSync(process.env.AFTER_HOURS_DB);db.prepare(\"DELETE FROM meta WHERE key=?\").run(\"universe_updated_at\")" && docker compose restart collector'
 ```
 
 Both services run the same `after-hours:latest` image, so `docker compose

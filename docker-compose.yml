@@ -1,6 +1,6 @@
-# Own compose project on the shared Hetzner box. No ports are published:
-# the shared Caddy (marty-media stack) reaches `web` over the external
-# network defined below. The collector writes the SQLite file, web reads it.
+# Own compose project on a shared box. No ports are published: the host's
+# reverse proxy (Caddy) reaches `web` over the external network named in
+# PROXY_NETWORK. The collector writes the SQLite file, web reads it.
 
 services:
   web:
@@ -18,7 +18,7 @@ services:
     volumes:
       - ah_data:/data
     networks:
-      - marty-media_default
+      - proxy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/radar').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 60s
@@ -35,11 +35,12 @@ services:
     volumes:
       - ah_data:/data
     networks:
-      - marty-media_default
+      - proxy
 
 volumes:
   ah_data:
 
 networks:
-  marty-media_default:
+  proxy:
+    name: ${PROXY_NETWORK:-marty-media_default}
     external: true
