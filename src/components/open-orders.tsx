@@ -123,7 +123,13 @@ export function OpenOrders({
         <ul className="divide-y divide-line">
           {orders.map((o) => (
             <li key={o.order} className="flex items-center gap-3 py-3">
-              <TickerBadge symbol={o.symbol} logo={o.logo} size={36} />
+              <Link
+                href={`/stock/${o.underlying}`}
+                className="shrink-0 transition hover:opacity-80"
+                aria-label={`${o.name} stock page`}
+              >
+                <TickerBadge symbol={o.symbol} logo={o.logo} size={36} />
+              </Link>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">
                   <span className="text-blue">

@@ -562,13 +562,19 @@ export function WalletView({ address }: { address?: string }) {
                   key={`${a.signature}-${a.mint}`}
                   className="flex items-center gap-1"
                 >
+                  <Link
+                    href={`/stock/${a.underlying}`}
+                    className="shrink-0 py-3 transition hover:opacity-80"
+                    aria-label={`${a.name} stock page`}
+                  >
+                    <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
+                  </Link>
                   <a
                     href={`https://solscan.io/tx/${a.signature}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="group flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80"
+                    className="group flex min-w-0 flex-1 items-center gap-3 py-3 pl-2 transition hover:opacity-80"
                   >
-                    <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
                         <span
