@@ -178,9 +178,10 @@ function applyToBook(book: Book, a: Activity): void {
   book.cost -= avg * taken;
 }
 
-export async function getWallet(owner: string): Promise<WalletData> {
+export async function getWallet(owner: string, fresh = false): Promise<WalletData> {
+  // fresh: right after the user's own trade, or the refresh button.
   const hit = cache.get(owner);
-  if (hit && Date.now() - hit.ts < CACHE_MS) return hit.data;
+  if (!fresh && hit && Date.now() - hit.ts < CACHE_MS) return hit.data;
 
   const now = Date.now();
   const tokens = new Map<string, TokenRow>(listTokens().map((t) => [t.mint, t]));

@@ -77,11 +77,12 @@ export function WalletView({ address }: { address?: string }) {
   // Keyed by owner so a wallet switch never shows the previous wallet's data.
   const data = stored && stored.owner === owner ? stored.data : null;
 
-  const load = useCallback(async () => {
+  // fresh skips the server's short cache: after a trade, or on the refresh button.
+  const load = useCallback(async (fresh = false) => {
     if (!owner) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/wallet?owner=${owner}`);
+      const res = await fetch(`/api/wallet?owner=${owner}${fresh ? "&fresh=1" : ""}`, fresh ? { cache: "no-store" } : undefined);
       const body = (await res.json()) as WalletData & { error?: string };
       if (!res.ok) throw new Error(body.error ?? "could not read the wallet");
       setStored({ owner, data: body });
@@ -143,7 +144,7 @@ export function WalletView({ address }: { address?: string }) {
       <div className="card p-6">
         <p className="font-medium">Could not read this wallet.</p>
         <p className="text-muted mt-1 text-sm">{error}</p>
-        <button type="button" onClick={load} className="btn btn-sm mt-4">
+        <button type="button" onClick={() => load(true)} className="btn btn-sm mt-4">
           Try again
         </button>
       </div>
@@ -177,7 +178,7 @@ export function WalletView({ address }: { address?: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={load} disabled={loading} className="icon-badge h-9 w-9 hover:bg-soft" aria-label="Refresh">
+          <button type="button" onClick={() => load(true)} disabled={loading} className="icon-badge h-9 w-9 hover:bg-soft" aria-label="Refresh">
             <RefreshCw size={15} strokeWidth={1.75} className={loading ? "animate-spin" : ""} />
           </button>
           <a href={`https://solscan.io/account/${owner}`} target="_blank" rel="noreferrer" className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
@@ -335,7 +336,7 @@ export function WalletView({ address }: { address?: string }) {
           price={selling.price}
           reference={selling.reference}
           onClose={() => setSelling(null)}
-          onSold={() => setTimeout(load, 1500)}
+          onSold={() => setTimeout(() => load(true), 1500)}
         />
       )}
 
