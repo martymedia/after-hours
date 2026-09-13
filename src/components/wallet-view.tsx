@@ -150,7 +150,6 @@ export function WalletView({ address }: { address?: string }) {
 
   const d = data!;
   const pnl = d.unrealized;
-  const pnlTone = pnl == null ? "text-on-dark-muted" : pnl >= 0 ? "text-up" : "text-down";
   const best = [...d.holdings].filter((h) => h.unrealizedPct != null).sort((a, b) => (b.unrealizedPct ?? 0) - (a.unrealizedPct ?? 0))[0];
   const nextReport = d.holdings
     .filter((h) => h.nextEarnings)
@@ -212,25 +211,10 @@ export function WalletView({ address }: { address?: string }) {
             <p className="num mt-2 text-5xl font-semibold tracking-tight sm:text-6xl">
               <CountUp value={d.totalValue} kind="usd" />
             </p>
-            <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-              <div>
-                <p className="text-on-dark-muted text-xs">Since you bought</p>
-                <p className={`num text-xl font-semibold ${pnlTone}`}>
-                  {pnl == null ? "–" : `${signed(pnl)} · ${formatPct(d.unrealizedPct)}`}
-                </p>
-              </div>
-              <div>
-                <p className="text-on-dark-muted text-xs">Last 24 hours</p>
-                <p className={`num text-xl font-semibold ${d.change24h == null ? "text-on-dark-muted" : d.change24h >= 0 ? "text-up" : "text-down"}`}>
-                  {d.change24h == null ? "–" : `${signed(d.change24h)} · ${formatPct(d.change24hPct)}`}
-                </p>
-              </div>
-              {d.realized !== 0 && (
-                <div>
-                  <p className="text-on-dark-muted text-xs">Realized</p>
-                  <p className={`num text-xl font-semibold ${d.realized >= 0 ? "text-up" : "text-down"}`}>{signed(d.realized)}</p>
-                </div>
-              )}
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <HeroStat label="Since you bought" value={pnl} pct={d.unrealizedPct} />
+              <HeroStat label="Last 24 hours" value={d.change24h} pct={d.change24hPct} />
+              {d.realized !== 0 && <HeroStat label="Realized" value={d.realized} pct={null} />}
             </div>
             {d.edgeUsd != null && d.edgeBuys > 0 && (
               <p className="mt-5 text-sm leading-relaxed">
@@ -424,6 +408,18 @@ export function WalletView({ address }: { address?: string }) {
   );
 }
 
+/** Money change with a coloured percent pill; the number itself stays white. */
+function HeroStat({ label, value, pct }: { label: string; value: number | null; pct: number | null }) {
+  const tone = value == null ? "" : value >= 0 ? "bg-up/20 text-up" : "bg-down/20 text-down";
+  return (
+    <div className="rounded-2xl bg-white/10 p-3">
+      <p className="text-on-dark-muted text-xs">{label}</p>
+      <p className="num mt-1 text-xl font-semibold">{value == null ? "–" : signed(value)}</p>
+      {pct != null && <span className={`num mt-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>{formatPct(pct)}</span>}
+    </div>
+  );
+}
+
 function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
   const tone = h.unrealized == null ? "text-muted" : h.unrealized >= 0 ? "text-up" : "text-down";
   return (
@@ -463,7 +459,7 @@ function Glow({ className = "" }: { className?: string }) {
 }
 
 function signed(n: number): string {
-  return `${n >= 0 ? "+" : "−"}${formatUsd(Math.abs(n))}`;
+  return `${n >= 0 ? "+" : "-"}${formatUsd(Math.abs(n))}`;
 }
 
 function formatSol(n: number): string {

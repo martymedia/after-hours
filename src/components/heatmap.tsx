@@ -63,9 +63,9 @@ function squarify(items: { row: RadarRow; value: number }[], rect: Rect): Tile[]
 }
 
 function fill(gap: number | null): string {
-  if (gap == null || Math.abs(gap) < 0.25) return "rgba(255,255,255,0.08)";
+  if (gap == null || Math.abs(gap) < 0.25) return "var(--soft)";
   const k = Math.min(1, (Math.abs(gap) - 0.25) / 5); // full colour at 5.25 % and beyond
-  const alpha = 0.28 + 0.62 * k;
+  const alpha = 0.14 + 0.5 * k;
   return gap < 0 ? `rgba(91,145,255,${alpha.toFixed(2)})` : `rgba(229,72,77,${alpha.toFixed(2)})`;
 }
 
@@ -78,22 +78,19 @@ export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; reference
   const pricier = items.filter((i) => (i.row.gapPct ?? 0) > 0.25).length;
 
   return (
-    <section className="card-dark rise p-5 sm:p-6" style={{ "--i": 4 } as React.CSSProperties}>
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <h2 className="font-semibold">The night at a glance</h2>
-          <p className="text-on-dark-muted text-xs">
-            Tile size follows liquidity. <span className="text-blue-light">{cheaper} cheaper</span>, <span className="text-down">{pricier} pricier</span>,{" "}
-            {items.length - cheaper - pricier} in line with {referencePhrase}.
-          </p>
-        </div>
-        <Tip text="Colour is the gap between the onchain price and the reference: blue below, red above, grey within a quarter percent. Bigger tiles are deeper pools, so their colour means more." tone="light" underline={false} className="text-on-dark-muted text-xs">
+    <section className="card p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-muted text-xs">
+          At a glance: <span className="text-blue">{cheaper} cheaper</span>, <span className="text-down">{pricier} pricier</span>,{" "}
+          {items.length - cheaper - pricier} in line with {referencePhrase}. Tile size follows liquidity.
+        </p>
+        <Tip text="Colour is the gap between the onchain price and the reference: blue below, red above, grey within a quarter percent. Bigger tiles are deeper pools, so their colour means more." underline={false} className="text-muted-2 hover:text-ink text-xs">
           How to read it
         </Tip>
       </div>
-      <div className="relative h-64 w-full sm:h-80" role="list" aria-label="Stocks by liquidity and price gap">
+      <div className="relative h-36 w-full sm:h-44" role="list" aria-label="Stocks by liquidity and price gap">
         {tiles.map(({ row, rect }) => {
-          const big = rect.w * rect.h > 60;
+          const big = rect.w * rect.h > 90;
           const gap = row.gapPct ?? 0;
           const label = Math.abs(gap) < 0.25 ? "in line" : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
           return (
@@ -102,11 +99,11 @@ export function Heatmap({ rows, referencePhrase }: { rows: RadarRow[]; reference
               href={`/stock/${row.underlying}`}
               role="listitem"
               title={`${row.name}: ${label} vs ${referencePhrase}`}
-              className="absolute flex flex-col justify-end overflow-hidden rounded-lg p-1.5 text-white transition hover:z-10 hover:brightness-125 sm:p-2"
+              className="absolute flex flex-col justify-end overflow-hidden rounded-md p-1 text-ink transition hover:z-10 hover:brightness-95 sm:p-1.5"
               style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `calc(${rect.w}% - 3px)`, height: `calc(${rect.h}% - 3px)`, background: fill(row.gapPct) }}
             >
-              <span className="num truncate text-[11px] font-semibold sm:text-xs">{row.underlying}</span>
-              {big && <span className="num truncate text-[10px] opacity-80">{label}</span>}
+              <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>
+              {big && <span className="num text-muted truncate text-[10px]">{label}</span>}
             </Link>
           );
         })}

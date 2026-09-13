@@ -23,6 +23,8 @@ type Props = {
   ageMs: number | null;
   liquidity: number;
   disabled?: boolean;
+  /** Rendered inside a modal: no card frame and no title. */
+  embedded?: boolean;
 };
 
 const PRESETS = [5, 25, 100, 500];
@@ -30,7 +32,7 @@ const PRESETS = [5, 25, 100, 500];
 type Level = "good" | "ok" | "warn";
 type Check = { label: string; detail: string; level: Level };
 
-export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled }: Props) {
+export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled, embedded = false }: Props) {
   const [usd, setUsd] = useState(5);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
@@ -62,11 +64,13 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
   const verdict = summarize(checks);
 
   return (
-    <section className="card p-5 lg:sticky lg:top-5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-semibold">Buy {symbol}</h2>
-        <span className="text-muted text-xs">via Jupiter</span>
-      </div>
+    <section className={embedded ? "" : "card p-5 lg:sticky lg:top-5"}>
+      {!embedded && (
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-semibold">Buy {symbol}</h2>
+          <span className="text-muted text-xs">via Jupiter</span>
+        </div>
+      )}
 
       <div className="mt-4 flex items-center gap-2 rounded-2xl bg-soft px-4 py-3">
         <span className="text-muted text-lg">$</span>

@@ -6,8 +6,7 @@ import { getStock } from "@/lib/stock";
 import { formatAgo, formatCompactUsd, formatUsd, gapSentence, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { PriceChart } from "@/components/price-chart";
-import { BuyPanel } from "@/components/buy-panel";
-import { OrderPanelLoader as OrderPanel } from "@/components/order-panel-loader";
+import { TradeCard } from "@/components/trade-card";
 import { StatCard } from "@/components/stat-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { GapChart } from "@/components/gap-chart";
@@ -78,21 +77,17 @@ export default async function StockPage({ params }: Props) {
 
       <div className="grid gap-5 lg:grid-cols-12">
         <div className="lg:order-2 lg:col-span-4">
-          <BuyPanel
+          <TradeCard
             mint={p.mint}
             symbol={p.symbol}
+            name={stock.name}
+            logo={p.logo}
             referencePhrase={stock.reference.phrase}
             phase={stock.phase.phase}
             ageMs={p.ageMs}
             liquidity={p.liquidity}
-            disabled={p.tradability === "none"}
-          />
-          <OrderPanel
-            mint={p.mint}
-            symbol={p.symbol}
             reference={p.reference}
             price={p.price}
-            referencePhrase={stock.reference.phrase}
             disabled={p.tradability === "none"}
           />
         </div>

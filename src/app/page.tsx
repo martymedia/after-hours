@@ -4,7 +4,6 @@ import { Clock, Activity, TrendingUp, CalendarDays } from "lucide-react";
 import { GlobeHero } from "@/components/globe-hero";
 import { StatCard } from "@/components/stat-card";
 import { TrendCard } from "@/components/trend-card";
-import { Heatmap } from "@/components/heatmap";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
@@ -96,11 +95,7 @@ export default function OverviewPage() {
         <GlobeHero phase={data.phase} stockCount={data.rows.length} generatedAt={data.generatedAt} />
       </div>
 
-      <div className="order-3">
-        <Heatmap rows={data.rows} referencePhrase={data.reference.phrase} />
-      </div>
-
-      <div className="order-4 grid gap-5 lg:grid-cols-12">
+      <div className="order-3 grid gap-5 lg:grid-cols-12">
         <section className="card rise flex flex-col p-5 lg:col-span-5" style={{ "--i": 5 } as React.CSSProperties}>
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Where the gap is</h2>

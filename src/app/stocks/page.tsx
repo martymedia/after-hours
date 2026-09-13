@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RadarTable } from "@/components/radar-table";
+import { Heatmap } from "@/components/heatmap";
 import { getRadar } from "@/lib/radar";
 
 export const dynamic = "force-dynamic";
@@ -13,5 +14,10 @@ export const metadata: Metadata = {
 
 export default function StocksPage() {
   const data = getRadar();
-  return <RadarTable initial={data} />;
+  return (
+    <div className="flex flex-col gap-5">
+      <Heatmap rows={data.rows} referencePhrase={data.reference.phrase} />
+      <RadarTable initial={data} />
+    </div>
+  );
 }
