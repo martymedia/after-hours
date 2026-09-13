@@ -13,8 +13,9 @@ import {
 } from "@solana/kit";
 import { X } from "lucide-react";
 import { SuccessCheck, SwapText } from "./motion";
-import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
+import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { ConnectButton, shortAddress } from "./wallet-connect";
 
@@ -35,7 +36,7 @@ type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
 type Result = { signature: string; shares: number | null; usd: number; ms: number; confirmed: boolean };
 
 export function BuyButton({ mint, symbol, usd, side = "buy", shares: sharesToSell = 0, disabled, onDone }: Props) {
-  const ready = useIsWalletReady(solanaClient);
+  const ready = useWalletReady();
   const connected = useConnectedWallet(solanaClient);
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<{ title: string; hint: string } | null>(null);

@@ -11,8 +11,9 @@ import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lu
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
 import { NotificationsCard } from "./notifications-card";
-import { useConnectedWallet, useDisconnect, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet, useDisconnect } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
+import { useWalletReady } from "@/lib/wallet-ready";
 import { formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
 import type { Activity, Holding, WalletData } from "@/lib/wallet";
 import { CountUp } from "./count-up";
@@ -34,7 +35,7 @@ const dayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeri
 const SEGMENT_COLORS = ["#5b91ff", "#8fb3ff", "#3d6fd6", "#c7d6ff", "#2f3340", "#6f7480"];
 
 export function WalletView({ address }: { address?: string }) {
-  const ready = useIsWalletReady(solanaClient);
+  const ready = useWalletReady();
   const connected = useConnectedWallet(solanaClient);
   const { dispatch: disconnect } = useDisconnect(solanaClient);
   const [stored, setStored] = useState<{ owner: string; data: WalletData } | null>(null);

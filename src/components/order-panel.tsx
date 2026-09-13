@@ -15,11 +15,11 @@ import {
 } from "@solana/kit";
 import {
   useConnectedWallet,
-  useIsWalletReady,
 } from "@solana/kit-plugin-wallet/react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { solanaClient } from "@/lib/solana-client";
+import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
 import { Seg, SuccessCheck, SwapText } from "./motion";
@@ -105,7 +105,7 @@ export function OrderPanel({
   const [pct, setPct] = useState(3);
   const [customText, setCustomText] = useState<string | null>(null);
   const [days, setDays] = useState<DayId>("7");
-  const ready = useIsWalletReady(solanaClient);
+  const ready = useWalletReady();
   const connected = useConnectedWallet(solanaClient);
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<{ title: string; hint: string } | null>(

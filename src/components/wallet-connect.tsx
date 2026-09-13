@@ -6,8 +6,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useConnect, useIsWalletReady, useWallets } from "@solana/kit-plugin-wallet/react";
+import { useConnect, useWallets } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
+import { useWalletReady } from "@/lib/wallet-ready";
 
 type Props = {
   label?: React.ReactNode;
@@ -22,10 +23,21 @@ type Props = {
 };
 
 export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, noWalletLabel, fallbackHref, fallbackLabel, className = "btn w-full" }: Props) {
-  const ready = useIsWalletReady(solanaClient);
+  const ready = useWalletReady();
   const wallets = useWallets(solanaClient);
   const { dispatch: connect, isRunning: connecting } = useConnect(solanaClient);
   const [pick, setPick] = useState(false);
+  // A connect request the wallet never answers (Phantom's in-app browser
+  // while it blocks a domain) should not look like a frozen button.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!connecting) return;
+    const id = setTimeout(() => setSlow(true), 10000);
+    return () => {
+      clearTimeout(id);
+      setSlow(false);
+    };
+  }, [connecting]);
 
   if (!ready) {
     return <span className={`${className} opacity-50`}>Checking wallets…</span>;
@@ -53,11 +65,16 @@ export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, noWa
       <button
         type="button"
         className={className}
-        disabled={connecting}
+        disabled={connecting && !slow}
         onClick={() => (wallets.length === 1 ? connect(wallets[0]) : setPick(true))}
       >
-        {connecting ? "Check your wallet…" : label}
+        {connecting && !slow ? "Check your wallet…" : label}
       </button>
+      {slow && (
+        <p className="text-muted mt-2 text-center text-xs">
+          Your wallet has not answered. If it shows a blocked-request screen, choose to proceed anyway, or tap again.
+        </p>
+      )}
       {pick && (
         <WalletPicker
           wallets={wallets.map((w) => ({ name: w.name, icon: w.icon }))}

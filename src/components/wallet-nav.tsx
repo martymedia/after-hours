@@ -10,8 +10,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
-import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
+import { useWalletReady } from "@/lib/wallet-ready";
 import { shortAddress } from "./wallet-connect";
 
 const ConnectButton = dynamic(() => import("./wallet-connect").then((m) => m.ConnectButton), { ssr: false });
@@ -20,7 +21,7 @@ type Props = { variant: "rail" | "tab" | "chip"; expanded?: boolean; pathname: s
 
 export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   const connected = useConnectedWallet(solanaClient);
-  const ready = useIsWalletReady(solanaClient);
+  const ready = useWalletReady();
   const [dotOpen, setDotOpen] = useState(false);
   useEffect(() => {
     if (!connected) return;
