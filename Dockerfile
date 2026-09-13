@@ -12,7 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Inlined into the browser bundle at build time; compose passes it from .env.
-ARG NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+ARG NEXT_PUBLIC_SOLANA_RPC_URL=https://solana-rpc.publicnode.com
 ENV NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL
 RUN npm run build
 
