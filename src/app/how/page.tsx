@@ -51,7 +51,7 @@ export default function HowPage() {
       </section>
 
       {/* The one number */}
-      <section className="grid items-center gap-8 lg:grid-cols-12">
+      <section className="card grid items-center gap-8 p-6 sm:p-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <div className="num text-blue text-[6rem] leading-none font-semibold tracking-tight sm:text-[8rem]">55%</div>
           <p className="mt-2 text-lg font-medium">of tokenized-stock trading already happens outside US market hours.</p>
@@ -69,7 +69,7 @@ export default function HowPage() {
       </section>
 
       {/* Three steps, each with a live piece of the real app */}
-      <section className="flex flex-col gap-12">
+      <section className="flex flex-col gap-6">
         <Step n="01" title="Pick a stock" text={`${data.rows.length} stocks with real onchain liquidity, issued by regulated companies and backed one to one by real shares. We show which company you are buying, which issuer wraps it how, and how deep the pool behind it is.`}>
           <div className="flex flex-wrap gap-2">
             {data.rows.slice(0, 12).map((r) => (
@@ -86,7 +86,7 @@ export default function HowPage() {
 
         <Step n="02" title="Check the price is real" text="Every price carries the time of its last trade and its distance from the last Wall Street print. A stale price is labeled stale, a thin market thin. Blue means cheaper than Wall Street, red means pricier. The gap radar on each stock page shows how that distance moved over the last two days.">
           {sample && (
-            <div className="card p-4">
+            <div className="rounded-2xl bg-soft p-4">
               <div className="flex items-center gap-3">
                 <TickerBadge symbol={sample.symbol} logo={sample.logo} size={36} />
                 <div className="min-w-0 flex-1">
@@ -120,7 +120,7 @@ export default function HowPage() {
 
         <Step n="03" title="Buy from your own wallet" text="Enter an amount. We fetch a real quote from Jupiter, including how much your order moves the pool, and say in one line whether you are getting the stock cheaper or pricier than on Wall Street. Then you sign in Phantom, Backpack or Solflare. We never touch your money.">
           {tileStock && (
-            <div className="card p-4">
+            <div className="rounded-2xl bg-soft p-4">
               <div className={`rounded-2xl p-4 text-white ${(tileStock.gapPct ?? 0) < 0 ? "bg-blue" : "bg-down"}`}>
                 <div className="num text-2xl font-semibold">
                   {Math.abs(tileStock.gapPct ?? 0).toFixed(2)}% {(tileStock.gapPct ?? 0) < 0 ? "cheaper" : "pricier"}
@@ -138,7 +138,7 @@ export default function HowPage() {
       </section>
 
       {/* Issuers */}
-      <section>
+      <section className="card p-6 sm:p-8">
         <h3 className="text-xl font-semibold tracking-tight">Who issues the tokens</h3>
         <p className="text-muted mt-1 max-w-2xl text-sm">
           Same company, different wrappers. The legal structure decides what you actually hold, so we name it
@@ -217,7 +217,7 @@ export default function HowPage() {
 
 function Step({ n, title, text, children }: { n: string; title: string; text: string; children: React.ReactNode }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
+    <div className="card grid gap-6 p-6 sm:p-8 lg:grid-cols-12 lg:gap-10">
       <div className="lg:col-span-5">
         <div className="num text-blue text-sm font-semibold">{n}</div>
         <h3 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h3>
