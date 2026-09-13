@@ -8,6 +8,7 @@ slippage and fees. It builds the swap through Jupiter; you sign it in your own
 wallet. Nothing is held for you.
 
 Built in one week for the Solana Foundation's Stocklana hackathon.
+Live at https://after-hour.net. MIT licensed.
 
 ## Run it
 
