@@ -31,8 +31,8 @@ never deletes removed files.
 The build runs on the box (2 GB RAM plus swap). If it OOMs, build locally
 and `docker save | ssh ... docker load` instead.
 
-Domain: copy `deploy/afterhours.caddy` to
-`/opt/marty-media/deploy/conf.d/afterhours.caddy` with the real hostname,
+Domain: after-hour.net. Copy `deploy/afterhours.caddy` to
+`/opt/marty-media/deploy/conf.d/afterhours.caddy`,
 then `cd /opt/marty-media && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile`.
 DNS A record for the hostname must point at 167.233.192.162 first.
 

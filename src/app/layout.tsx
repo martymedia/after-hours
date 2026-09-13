@@ -11,6 +11,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://after-hour.net"),
   title: { default: "After Hours", template: "%s | After Hours" },
   description:
     "Trade stocks when Wall Street sleeps. Tokenized stocks keep trading on Solana around the clock. See which ones, whether the price is real, and what a trade really costs.",
