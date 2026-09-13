@@ -9,6 +9,7 @@ import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { USDC_MINT } from "./jupiter.ts";
 import { nyYmd } from "./market-phase.ts";
 import { SITE_URL } from "./brand.ts";
+import { getRadar } from "./radar.ts";
 
 // Server-side reads. Helius checks the Origin header against the allowed
 // domains even for server calls (the IP allowlist alone still gets 403), so
@@ -79,6 +80,8 @@ export type Activity = {
 export type WalletData = {
   owner: string;
   generatedAt: string;
+  /** "Friday's close", "Wall Street", ... for the current market phase. */
+  referencePhrase: string;
   sol: number;
   usdc: number;
   totalValue: number;
@@ -113,7 +116,9 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   for (const url of RPC_URLS) {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json", origin: SITE_URL },
+      // Helius matches the Origin against its allowed domains; the Foundation
+      // endpoint refuses requests that carry one, so only Helius gets it.
+      headers: { "content-type": "application/json", ...(url.includes("helius") ? { origin: SITE_URL } : {}) },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(15_000),
     });
@@ -302,6 +307,7 @@ export async function getWallet(owner: string): Promise<WalletData> {
   const data: WalletData = {
     owner,
     generatedAt: new Date(now).toISOString(),
+    referencePhrase: getRadar().reference.phrase,
     sol: lamports.value / 1e9,
     usdc: amounts.get(USDC_MINT) ?? 0,
     totalValue,

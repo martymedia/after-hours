@@ -18,12 +18,23 @@ import { solanaClient } from "@/lib/solana-client";
 import { formatUsd } from "@/lib/format";
 import { ConnectButton, shortAddress } from "./wallet-connect";
 
-type Props = { mint: string; symbol: string; usd: number; disabled?: boolean };
+type Props = {
+  mint: string;
+  symbol: string;
+  /** USDC to spend when buying. */
+  usd: number;
+  side?: "buy" | "sell";
+  /** Shares to sell. */
+  shares?: number;
+  disabled?: boolean;
+  /** Called from the result card's secondary action. */
+  onDone?: () => void;
+};
 
 type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
-type Result = { signature: string; shares: number | null; ms: number; confirmed: boolean };
+type Result = { signature: string; shares: number | null; usd: number; ms: number; confirmed: boolean };
 
-export function BuyButton({ mint, symbol, usd, disabled }: Props) {
+export function BuyButton({ mint, symbol, usd, side = "buy", shares: sharesToSell = 0, disabled, onDone }: Props) {
   const ready = useIsWalletReady(solanaClient);
   const connected = useConnectedWallet(solanaClient);
   const [step, setStep] = useState<Step>("idle");
@@ -57,11 +68,13 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
       const res = await fetch("/api/swap", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mint, usd, userPublicKey: connected.account.address }),
+        body: JSON.stringify({ mint, usd, side, shares: sharesToSell, userPublicKey: connected.account.address }),
       });
       const body = (await res.json()) as { swapTransaction?: string; outAmount?: string; decimals?: number; error?: string };
       if (!res.ok || !body.swapTransaction) throw new Error(body.error ?? "could not build the swap");
-      const shares = body.outAmount != null && body.decimals != null ? Number(body.outAmount) / 10 ** body.decimals : null;
+      const outUi = body.outAmount != null && body.decimals != null ? Number(body.outAmount) / 10 ** body.decimals : null;
+      const shares = side === "buy" ? outUi : sharesToSell;
+      const usdMoved = side === "buy" ? usd : (outUi ?? 0);
 
       setStep("signing");
       const bytes = getBase64Encoder().encode(body.swapTransaction);
@@ -82,7 +95,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
 
       setStep("confirming");
       const confirmed = await waitForConfirmation(sig);
-      setResult({ signature: sig, shares, ms: stamp() - startedAt, confirmed });
+      setResult({ signature: sig, shares, usd: usdMoved, ms: stamp() - startedAt, confirmed });
       setStep("done");
     } catch (err) {
       const [title, hint] = explainError((err as Error).message ?? String(err));
@@ -98,7 +111,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
   const busy = step === "building" || step === "signing" || step === "confirming";
 
   if (step === "done" && result) {
-    const perShare = result.shares ? usd / result.shares : null;
+    const perShare = result.shares ? result.usd / result.shares : null;
     return (
       <div className="rise rounded-3xl bg-ink p-5 text-white">
         <div className="flex items-center gap-3">
@@ -106,7 +119,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
             <SuccessCheck size={22} />
           </span>
           <div className="min-w-0">
-            <p className="text-lg leading-tight font-semibold">You own {symbol} now.</p>
+            <p className="text-lg leading-tight font-semibold">{side === "buy" ? `You own ${symbol} now.` : `Sold. USDC is back in your wallet.`}</p>
             <p className="text-on-dark-muted text-sm">
               {result.confirmed ? `Confirmed onchain in ${(result.ms / 1000).toFixed(1)} s.` : "Sent. Confirmation is taking a moment."}
             </p>
@@ -114,13 +127,13 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
         </div>
         <dl className="num mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl bg-white/10 p-3">
-            <dt className="text-on-dark-muted text-xs">Shares</dt>
+            <dt className="text-on-dark-muted text-xs">{side === "buy" ? "Shares" : "Sold"}</dt>
             <dd className="mt-0.5 font-semibold">{result.shares == null ? "–" : result.shares.toFixed(4)}</dd>
           </div>
           <div className="rounded-2xl bg-white/10 p-3">
-            <dt className="text-on-dark-muted text-xs">Paid</dt>
+            <dt className="text-on-dark-muted text-xs">{side === "buy" ? "Paid" : "Received"}</dt>
             <dd className="mt-0.5 font-semibold">
-              {formatUsd(usd, 2)}
+              {formatUsd(result.usd, 2)}
               {perShare && <span className="text-on-dark-muted font-normal"> · {formatUsd(perShare)} each</span>}
             </dd>
           </div>
@@ -129,11 +142,13 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
           <a href={`https://solscan.io/tx/${result.signature}`} target="_blank" rel="noreferrer" className="btn btn-white btn-sm flex-1">
             View on Solscan
           </a>
-          <button type="button" onClick={() => setStep("idle")} className="btn btn-sm flex-1 border border-white/20 bg-transparent hover:bg-white/10">
-            Buy more
+          <button type="button" onClick={() => (onDone ? onDone() : setStep("idle"))} className="btn btn-sm flex-1 border border-white/20 bg-transparent hover:bg-white/10">
+            {side === "buy" ? "Buy more" : "Done"}
           </button>
         </div>
-        <p className="text-on-dark-muted mt-3 text-xs">The tokens sit in your wallet {shortAddress(connected.account.address)}. Sell any time on Jupiter.</p>
+        <p className="text-on-dark-muted mt-3 text-xs">
+          {side === "buy" ? `The tokens sit in your wallet ${shortAddress(connected.account.address)}. Sell any time from the Wallet page.` : `Settled in wallet ${shortAddress(connected.account.address)}.`}
+        </p>
       </div>
     );
   }
@@ -154,7 +169,9 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
                   ? "Confirm in your wallet…"
                   : step === "confirming"
                     ? "Confirming onchain…"
-                    : `Buy ${formatUsd(usd, 0)} of ${symbol}`
+                    : side === "buy"
+                      ? `Buy ${formatUsd(usd, 0)} of ${symbol}`
+                      : `Sell ${trimShares(sharesToSell)} ${symbol}`
             }
           />
         </button>
@@ -189,6 +206,10 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
       )}
     </div>
   );
+}
+
+function trimShares(n: number): string {
+  return n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(3) : n.toFixed(4);
 }
 
 /** Wall clock, kept out of the component so the compiler lint stays quiet. */

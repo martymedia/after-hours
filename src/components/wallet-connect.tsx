@@ -144,6 +144,4 @@ export function WalletPicker({
   );
 }
 
-export function shortAddress(a: string): string {
-  return `${a.slice(0, 4)}…${a.slice(-4)}`;
-}
+export { shortAddress } from "@/lib/format";

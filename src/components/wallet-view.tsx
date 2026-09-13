@@ -7,7 +7,8 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Wallet } from "lucide-react";
+import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lucide-react";
+import { SellPanel } from "./sell-panel";
 import { useConnectedWallet, useDisconnect, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
@@ -30,14 +31,32 @@ const clock = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-dig
 const dayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const SEGMENT_COLORS = ["#5b91ff", "#8fb3ff", "#3d6fd6", "#c7d6ff", "#2f3340", "#6f7480"];
 
-export function WalletView() {
+export function WalletView({ address }: { address?: string }) {
   const ready = useIsWalletReady(solanaClient);
   const connected = useConnectedWallet(solanaClient);
   const { dispatch: disconnect } = useDisconnect(solanaClient);
   const [stored, setStored] = useState<{ owner: string; data: WalletData } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const owner = connected?.account.address ?? null;
+  // A public address makes the page read-only: no sell, no disconnect.
+  const readOnly = Boolean(address);
+  const owner = address ?? connected?.account.address ?? null;
+  const [selling, setSelling] = useState<Holding | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const share = async () => {
+    if (!owner) return;
+    const url = `${window.location.origin}/wallet/${owner}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "My tokenized stocks on After Hours", url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
   // Keyed by owner so a wallet switch never shows the previous wallet's data.
   const data = stored && stored.owner === owner ? stored.data : null;
 
@@ -131,7 +150,10 @@ export function WalletView() {
             <Wallet size={18} strokeWidth={1.75} />
           </span>
           <div>
-            <p className="num font-medium">{shortAddress(owner)}</p>
+            <p className="num font-medium">
+              {shortAddress(owner)}
+              {readOnly && <span className="text-muted ml-2 text-xs font-normal">read-only view</span>}
+            </p>
             <p className="text-muted text-xs">
               Updated {clock.format(new Date(d.generatedAt))}
               {loading ? " · refreshing" : ""}
@@ -145,9 +167,17 @@ export function WalletView() {
           <a href={`https://solscan.io/account/${owner}`} target="_blank" rel="noreferrer" className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
             Solscan
           </a>
-          <button type="button" onClick={() => disconnect()} className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
-            Disconnect
-          </button>
+          {!readOnly && (
+            <button type="button" onClick={share} className="btn btn-sm border border-line bg-card text-ink hover:bg-soft" aria-label="Share this wallet">
+              <Share2 size={14} strokeWidth={1.75} className="mr-1.5" />
+              {copied ? "Link copied" : "Share"}
+            </button>
+          )}
+          {!readOnly && (
+            <button type="button" onClick={() => disconnect()} className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
+              Disconnect
+            </button>
+          )}
         </div>
       </div>
 
@@ -284,6 +314,19 @@ export function WalletView() {
         />
       </div>
 
+      {selling && (
+        <SellPanel
+          mint={selling.mint}
+          symbol={selling.symbol}
+          name={selling.name}
+          logo={selling.logo}
+          held={selling.amount}
+          referencePhrase={d.referencePhrase}
+          onClose={() => setSelling(null)}
+          onSold={() => setTimeout(load, 1500)}
+        />
+      )}
+
       <div className="grid gap-5 lg:grid-cols-12">
         {/* Holdings */}
         <section className="card p-5 lg:col-span-7">
@@ -302,7 +345,7 @@ export function WalletView() {
           ) : (
             <ul className="divide-y divide-line">
               {d.holdings.map((h) => (
-                <HoldingRow key={h.mint} h={h} />
+                <HoldingRow key={h.mint} h={h} onSell={readOnly ? undefined : () => setSelling(h)} />
               ))}
             </ul>
           )}
@@ -353,11 +396,11 @@ export function WalletView() {
   );
 }
 
-function HoldingRow({ h }: { h: Holding }) {
+function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
   const tone = h.unrealized == null ? "text-muted" : h.unrealized >= 0 ? "text-up" : "text-down";
   return (
-    <li>
-      <Link href={`/stock/${h.underlying}`} className="flex items-center gap-3 py-3 transition hover:opacity-80">
+    <li className="flex items-center gap-2">
+      <Link href={`/stock/${h.underlying}`} className="flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80">
         <TickerBadge symbol={h.symbol} logo={h.logo} size={40} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{h.name}</span>
@@ -377,6 +420,11 @@ function HoldingRow({ h }: { h: Holding }) {
           </span>
         </span>
       </Link>
+      {onSell && (
+        <button type="button" onClick={onSell} className="pill shrink-0 border border-line bg-card text-ink hover:border-ink" aria-label={`Sell ${h.symbol}`}>
+          Sell
+        </button>
+      )}
     </li>
   );
 }

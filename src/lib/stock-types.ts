@@ -42,6 +42,8 @@ export type StockData = {
 };
 
 export type CostEstimate = {
+  side?: "buy" | "sell";
+  /** USDC paid (buy) or received (sell). */
   usd: number;
   shares: number;
   /** Effective price per share for this size. */

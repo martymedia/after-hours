@@ -65,6 +65,10 @@ export function gapWords(gap: number | null | undefined): string {
 }
 
 /** "2 days 3 hours", "4 hours 12 minutes", "38 minutes". */
+export function shortAddress(a: string): string {
+  return `${a.slice(0, 4)}…${a.slice(-4)}`;
+}
+
 export function formatDurationWords(ms: number): string {
   const totalMin = Math.max(0, Math.round(ms / 60000));
   const d = Math.floor(totalMin / 1440);
