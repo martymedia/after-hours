@@ -88,6 +88,9 @@ export function WalletView({ address }: { address?: string }) {
   const owner = address ?? connected?.account.address ?? null;
   const [selling, setSelling] = useState<Holding | null>(null);
   const [copied, setCopied] = useState(false);
+  // Activity is paged ten at a time; the API returns up to 50.
+  const PAGE = 10;
+  const [shown, setShown] = useState(PAGE);
 
   const [sharedSig, setSharedSig] = useState<string | null>(null);
   const shareTrade = async (a: Activity) => {
@@ -543,8 +546,9 @@ export function WalletView({ address }: { address?: string }) {
         <section className="card p-5 lg:col-span-5">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Recent activity</h2>
-            <span className="text-muted text-xs">
-              last 50 transactions scanned
+            <span className="text-muted num text-xs">
+              {Math.min(shown, d.activity.length)} of {d.activity.length} · last
+              50 transactions scanned
             </span>
           </div>
           {d.activity.length === 0 ? (
@@ -553,7 +557,7 @@ export function WalletView({ address }: { address?: string }) {
             </p>
           ) : (
             <ul className="divide-y divide-line">
-              {d.activity.map((a) => (
+              {d.activity.slice(0, shown).map((a) => (
                 <li
                   key={`${a.signature}-${a.mint}`}
                   className="flex items-center gap-1"
@@ -624,6 +628,28 @@ export function WalletView({ address }: { address?: string }) {
                 </li>
               ))}
             </ul>
+          )}
+          {d.activity.length > PAGE && (
+            <div className="mt-3 flex gap-2">
+              {shown < d.activity.length && (
+                <button
+                  type="button"
+                  onClick={() => setShown((n) => n + PAGE)}
+                  className="btn btn-sm flex-1 border border-line bg-card text-ink hover:bg-soft"
+                >
+                  Show {Math.min(PAGE, d.activity.length - shown)} more
+                </button>
+              )}
+              {shown > PAGE && (
+                <button
+                  type="button"
+                  onClick={() => setShown(PAGE)}
+                  className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
+                >
+                  Show fewer
+                </button>
+              )}
+            </div>
           )}
           <p className="text-muted mt-3 text-xs">
             Every row opens the transaction on Solscan. This is your wallet read
