@@ -11,7 +11,6 @@ import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lu
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
 import { NotificationsCard } from "./notifications-card";
-import { FollowWalletForm } from "./follow-wallet";
 import { useConnectedWallet, useDisconnect } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { useWalletReady } from "@/lib/wallet-ready";
@@ -135,7 +134,6 @@ export function WalletView({ address }: { address?: string }) {
           <ConnectButton className="btn btn-white w-full" />
         </div>
         <p className="text-on-dark-muted relative mt-4 text-xs">Read-only. Nothing is signed until you buy.</p>
-        <FollowWalletForm />
       </div>
     );
   }
@@ -324,8 +322,7 @@ export function WalletView({ address }: { address?: string }) {
       </div>
 
       <OpenOrders owner={owner} readOnly={readOnly} />
-      {/* Own wallet, or a followed one in a browser that has no wallet (the Home Screen icon). */}
-      {(!readOnly || !connected) && <NotificationsCard owner={owner} stocks={d.stocks} />}
+      {!readOnly && <NotificationsCard owner={owner} stocks={d.stocks} />}
 
       {selling && (
         <SellPanel

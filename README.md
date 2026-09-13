@@ -54,10 +54,7 @@ Solscan link. Nothing is stored; disconnecting removes the entry.
   The order form needs a connected wallet; on the sell side it reads the
   holding from chain (`/api/holding`) and offers 10 / 25 / 50 % / All presets.
 - `/wallet/[address]` is a read-only view of any wallet; `/trade/[signature]`
-  is a shareable page for one swap with its own Open Graph card. A browser
-  without a wallet (the iPhone Home Screen icon) can follow a wallet by
-  address and subscribe to its notifications there, since iOS only delivers
-  push to the installed icon and never inside a wallet app's browser.
+  is a shareable page for one swap with its own Open Graph card.
 - The overview has a treemap of tradable stocks: area by liquidity, colour by
   gap to the reference.
 

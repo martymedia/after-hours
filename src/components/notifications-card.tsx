@@ -9,8 +9,6 @@ import {
   Bell,
   BellOff,
   BellRing,
-  Compass,
-  Copy,
   Share,
   SquarePlus,
   Trash2,
@@ -178,15 +176,13 @@ export function NotificationsCard({
               ? "Checking this device…"
               : state === "unsupported"
                 ? "This browser cannot receive push messages."
-                : state === "in-wallet-browser"
-                  ? "Phones get push messages from the Home Screen icon, not from the wallet's browser. Set it up once in Safari:"
-                  : state === "needs-install"
-                    ? "On iPhone, add After Hours to your Home Screen first (Share, then Add to Home Screen). Notifications work from the installed icon."
-                    : state === "denied"
-                      ? "Blocked in your browser settings for this site."
-                      : on
-                        ? "Order fills, expiries and cancellations, plus your price alerts, arrive on this device."
-                        : "Get a message when a limit order fills or expires, and when a stock hits your price."}
+                : state === "needs-install"
+                  ? "On iPhone, add After Hours to your Home Screen first (Share, then Add to Home Screen). Notifications work from the installed icon."
+                  : state === "denied"
+                    ? "Blocked in your browser settings for this site."
+                    : on
+                      ? "Order fills, expiries and cancellations, plus your price alerts, arrive on this device."
+                      : "Get a message when a limit order fills or expires, and when a stock hits your price."}
           </p>
         </div>
         {(state === "on" || state === "off") && (
@@ -214,7 +210,6 @@ export function NotificationsCard({
       </div>
       {note && <p className="text-muted mt-3 text-sm">{note}</p>}
       {state === "needs-install" && <InstallSteps />}
-      {state === "in-wallet-browser" && <HandoffSteps owner={owner} />}
 
       {/* Price alerts: only once messages can actually arrive. */}
       {(on || (alerts && alerts.length > 0)) && (
@@ -334,65 +329,21 @@ export function NotificationsCard({
   );
 }
 
-type StepDef = { icon: typeof Share; label: string; hint: string };
-
 /** iPhone: three steps to the installed icon, where push works. */
 function InstallSteps() {
-  return (
-    <Steps
-      steps={[
-        { icon: Share, label: "Tap Share", hint: "in Safari's toolbar" },
-        {
-          icon: SquarePlus,
-          label: "Add to Home Screen",
-          hint: "a bit down the list",
-        },
-        {
-          icon: BellRing,
-          label: "Open from the icon",
-          hint: "then turn notifications on here",
-        },
-      ]}
-    />
-  );
-}
-
-/** Inside the wallet's browser: hand the address over to Safari's icon. */
-function HandoffSteps({ owner }: { owner: string }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(owner);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {}
-  };
-  return (
-    <>
-      <Steps
-        steps={[
-          { icon: Copy, label: "Copy your address", hint: "button below" },
-          {
-            icon: Compass,
-            label: "Open after-hour.net in Safari",
-            hint: "Share, then Add to Home Screen",
-          },
-          {
-            icon: BellRing,
-            label: "Follow this wallet there",
-            hint: "Wallet tab, paste the address, turn notifications on",
-          },
-        ]}
-      />
-      <button type="button" onClick={copy} className="btn btn-sm mt-3 w-full">
-        <Copy size={14} strokeWidth={2} />
-        {copied ? "Copied" : "Copy wallet address"}
-      </button>
-    </>
-  );
-}
-
-function Steps({ steps }: { steps: StepDef[] }) {
+  const steps = [
+    { icon: Share, label: "Tap Share", hint: "in Safari's toolbar" },
+    {
+      icon: SquarePlus,
+      label: "Add to Home Screen",
+      hint: "a bit down the list",
+    },
+    {
+      icon: BellRing,
+      label: "Open from the icon",
+      hint: "then turn notifications on here",
+    },
+  ];
   return (
     <ol className="mt-4 grid grid-cols-3 gap-2">
       {steps.map((s, i) => (

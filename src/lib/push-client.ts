@@ -2,7 +2,7 @@
 // subscribe with the server's VAPID key, and tell the server which wallet
 // the device belongs to.
 
-export type PushState = "unsupported" | "needs-install" | "in-wallet-browser" | "denied" | "off" | "on";
+export type PushState = "unsupported" | "needs-install" | "denied" | "off" | "on";
 
 function base64ToBytes(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -18,19 +18,6 @@ export function needsInstall(): boolean {
   return ios && !standalone;
 }
 
-/** Inside a wallet app's browser (Phantom, Solflare, Backpack) on iOS: no push there. */
-export function inWalletBrowser(): boolean {
-  if (typeof window === "undefined") return false;
-  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const w = window as Window & { phantom?: unknown; solflare?: unknown; backpack?: unknown };
-  return ios && Boolean(w.phantom || w.solflare || w.backpack);
-}
-
-function unavailableState(): PushState {
-  if (inWalletBrowser()) return "in-wallet-browser";
-  return needsInstall() ? "needs-install" : "unsupported";
-}
-
 export function pushSupported(): boolean {
   return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 }
@@ -42,7 +29,7 @@ async function registration(): Promise<ServiceWorkerRegistration> {
 }
 
 export async function currentState(owner: string): Promise<PushState> {
-  if (!pushSupported()) return unavailableState();
+  if (!pushSupported()) return needsInstall() ? "needs-install" : "unsupported";
   if (Notification.permission === "denied") return "denied";
   try {
     const reg = await navigator.serviceWorker.getRegistration("/");
@@ -57,7 +44,7 @@ export async function currentState(owner: string): Promise<PushState> {
 }
 
 export async function enablePush(owner: string): Promise<PushState> {
-  if (!pushSupported()) return unavailableState();
+  if (!pushSupported()) return needsInstall() ? "needs-install" : "unsupported";
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
   const keyRes = await fetch("/api/push");
