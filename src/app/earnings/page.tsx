@@ -115,7 +115,7 @@ export default function EarningsPage() {
 
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Agenda */}
-        <section className="lg:col-span-7">
+        <section className="card p-5 lg:col-span-7">
           <h3 className="font-semibold">Coming up</h3>
           {events.length === 0 ? (
             <p className="text-muted mt-2 text-sm">No reports in the next 60 days for the stocks we track.</p>
