@@ -152,7 +152,7 @@ export type RpcTransaction = {
 
 /** Jupiter Trigger (limit orders). Fills are signed by its keeper, and the
  *  funds come from the order account, not from the wallet directly. */
-const TRIGGER_PROGRAM = "j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X";
+export const TRIGGER_PROGRAM = "j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X";
 
 export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   let lastError: Error | null = null;

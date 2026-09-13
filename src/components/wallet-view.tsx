@@ -171,7 +171,27 @@ export function WalletView({ address }: { address?: string }) {
   if (!ready || (owner && !data && !error)) {
     return (
       <div className="flex flex-col gap-5">
-        <div className="card-dark h-64 animate-pulse" />
+        <div className="card-dark flex h-64 flex-col justify-center p-6 sm:p-8">
+          <div className="flex items-center gap-3">
+            <span className="icon-badge h-10 w-10 border-white/15 bg-white/10 text-white">
+              <Wallet size={18} strokeWidth={1.75} />
+            </span>
+            <div>
+              <p className="text-on-dark-muted text-xs">Your wallet</p>
+              <p className="num font-medium">
+                {owner ? shortAddress(owner) : "Checking wallets…"}
+              </p>
+            </div>
+          </div>
+          <p className="text-on-dark-muted mt-6 text-sm">
+            {owner
+              ? "Reading holdings and recent trades from the chain…"
+              : "Looking for a connected wallet…"}
+          </p>
+          <div className="mt-3 h-1 w-40 overflow-hidden rounded-full bg-white/10">
+            <div className="t-shimmer h-full w-full bg-white/40" />
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="card h-28 animate-pulse" />
