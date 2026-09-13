@@ -1,11 +1,9 @@
 "use client";
 
 // Connect a wallet, build the swap on the server, sign and send it here.
-// One installed wallet connects on the first click; several open a picker.
-// No wallet at all: open the page inside Phantom, or fall back to Jupiter.
+// Connecting lives in wallet-connect.tsx and is shared with the Wallet page.
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import {
   getBase58Decoder,
   getBase64EncodedWireTransaction,
@@ -14,9 +12,10 @@ import {
   signature as toSignature,
 } from "@solana/kit";
 import { Check, X } from "lucide-react";
-import { useConnect, useConnectedWallet, useIsWalletReady, useWallets } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { formatUsd } from "@/lib/format";
+import { ConnectButton, shortAddress } from "./wallet-connect";
 
 type Props = { mint: string; symbol: string; usd: number; disabled?: boolean };
 
@@ -25,10 +24,7 @@ type Result = { signature: string; shares: number | null; ms: number; confirmed:
 
 export function BuyButton({ mint, symbol, usd, disabled }: Props) {
   const ready = useIsWalletReady(solanaClient);
-  const wallets = useWallets(solanaClient);
   const connected = useConnectedWallet(solanaClient);
-  const { dispatch: connect, isRunning: connecting } = useConnect(solanaClient);
-  const [pickWallet, setPickWallet] = useState(false);
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<{ title: string; hint: string } | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -45,42 +41,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
   }
 
   if (!connected) {
-    if (wallets.length === 0) {
-      const here = typeof window === "undefined" ? "" : window.location.href;
-      return (
-        <div className="flex flex-col gap-2">
-          <a href={`https://phantom.app/ul/browse/${encodeURIComponent(here)}?ref=${encodeURIComponent(here)}`} className={primary}>
-            Open in Phantom to buy
-          </a>
-          <a href={`https://jup.ag/swap/USDC-${mint}`} target="_blank" rel="noreferrer" className="text-muted hover:text-ink text-center text-xs underline underline-offset-4">
-            or buy on Jupiter
-          </a>
-        </div>
-      );
-    }
-    return (
-      <>
-        <button
-          type="button"
-          className={primary}
-          disabled={connecting}
-          onClick={() => (wallets.length === 1 ? connect(wallets[0]) : setPickWallet(true))}
-        >
-          {connecting ? "Check your wallet…" : "Connect wallet to buy"}
-        </button>
-        {pickWallet && (
-          <WalletPicker
-            wallets={wallets.map((w) => ({ name: w.name, icon: w.icon }))}
-            busy={connecting}
-            onPick={(name) => {
-              const w = wallets.find((x) => x.name === name);
-              if (w) connect(w);
-            }}
-            onClose={() => setPickWallet(false)}
-          />
-        )}
-      </>
-    );
+    return <ConnectButton label="Connect wallet to buy" fallbackHref={`https://jup.ag/swap/USDC-${mint}`} fallbackLabel="or buy on Jupiter" />;
   }
 
   async function buy() {
@@ -274,71 +235,3 @@ function explainError(raw: string): [string, string] {
   return ["Something went wrong.", raw.length > 160 ? raw.slice(0, 160) + "…" : raw];
 }
 
-/** Centered picker for the rare case of several installed wallets. */
-function WalletPicker({
-  wallets,
-  busy,
-  onPick,
-  onClose,
-}: {
-  wallets: { name: string; icon: string }[];
-  busy: boolean;
-  onPick: (name: string) => void;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center" onClick={onClose} role="presentation">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Choose a wallet"
-        onClick={(e) => e.stopPropagation()}
-        className="rise w-full max-w-sm rounded-3xl bg-card p-5 shadow-2xl"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold tracking-tight">Choose a wallet</h3>
-            <p className="text-muted mt-1 text-sm">You sign in your own wallet. We never hold funds.</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="icon-badge h-8 w-8 shrink-0 hover:bg-soft">
-            <span aria-hidden="true" className="text-base leading-none">×</span>
-          </button>
-        </div>
-        <ul className="mt-4 flex flex-col gap-2">
-          {wallets.map((w) => (
-            <li key={w.name}>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onPick(w.name)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-line px-3 py-2.5 text-left transition hover:border-ink hover:bg-soft disabled:opacity-60"
-              >
-                {/* Wallet icons are data URIs from the extension; next/image adds nothing here. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={w.icon} alt="" className="h-9 w-9 rounded-xl" />
-                <span className="flex-1 font-medium">{w.name}</span>
-                <span className="text-muted text-xs">{busy ? "Connecting…" : "Detected"}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-function shortAddress(a: string): string {
-  return `${a.slice(0, 4)}…${a.slice(-4)}`;
-}

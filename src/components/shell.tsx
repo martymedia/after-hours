@@ -10,6 +10,10 @@ import { Home, LineChart, CalendarDays, BookOpen, ChevronsLeft, ChevronsRight, S
 import { Logo, LogoMark } from "./logo";
 import { StockSearch } from "./stock-search";
 import { SiteFooter } from "./site-footer";
+import dynamic from "next/dynamic";
+
+// Client-only: the entry exists only once a wallet is connected.
+const WalletNavLink = dynamic(() => import("./wallet-nav").then((m) => m.WalletNavLink), { ssr: false });
 
 const NAV = [
   { href: "/", label: "Overview", icon: Home, match: (p: string) => p === "/" },
@@ -23,6 +27,7 @@ const TITLES: [(p: string) => boolean, string][] = [
   [(p) => p.startsWith("/stock"), "Stocks"],
   [(p) => p.startsWith("/earnings"), "Earnings"],
   [(p) => p.startsWith("/how"), "How it works"],
+  [(p) => p.startsWith("/wallet"), "Wallet"],
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -80,6 +85,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          <WalletNavLink variant="rail" expanded={expanded} pathname={pathname} />
         </nav>
         <button
           type="button"
@@ -129,6 +135,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        <WalletNavLink variant="tab" pathname={pathname} />
       </nav>
     </div>
   );

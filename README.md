@@ -32,6 +32,14 @@ The collector fills `data/after-hours.db`. The web app only reads it.
 | Hourly price history | GeckoTerminal public API |
 | Earnings dates | Nasdaq public calendar |
 
+## Wallet
+
+Once a wallet is connected, a Wallet entry appears in the menu. The page
+reads the wallet live (server-side RPC, cached 45 s): tokenized stocks it
+holds priced at the last onchain trade and compared to the reference, USDC
+and SOL balances, and the recent buys and sells with Solscan links. Nothing
+is stored; disconnecting removes the entry.
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.
