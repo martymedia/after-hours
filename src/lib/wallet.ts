@@ -8,10 +8,12 @@ import { listTokens, latestSnapshots, nextEarningsFor, snapshotAt, sparkSeries, 
 import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { USDC_MINT } from "./jupiter.ts";
 import { nyYmd } from "./market-phase.ts";
+import { SITE_URL } from "./brand.ts";
 
-// Server-side reads. A domain-locked Helius key answers 403 to server calls
-// unless the server IP is allowlisted, and publicnode gates account scans, so
-// the Foundation endpoint (fine without a browser Origin) is the fallback.
+// Server-side reads. Helius checks the Origin header against the allowed
+// domains even for server calls (the IP allowlist alone still gets 403), so
+// we send our own site origin. publicnode gates account scans, so the
+// Foundation endpoint (fine without a browser Origin) stays as the fallback.
 const RPC_URLS = [
   process.env.SOLANA_RPC_SERVER_URL ?? process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "",
   "https://api.mainnet-beta.solana.com",
@@ -111,7 +113,7 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   for (const url of RPC_URLS) {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", origin: SITE_URL },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(15_000),
     });
