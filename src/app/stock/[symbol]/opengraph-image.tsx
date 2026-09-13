@@ -11,10 +11,25 @@ export const contentType = "image/png";
 export const dynamic = "force-dynamic";
 
 const DOWN = "#e5484d";
+// Crawlers give up after a few seconds; keep each rendered card for two
+// minutes so repeated fetches of the same stock are instant.
+const CACHE_MS = 120_000;
+const cache = new Map<string, { ts: number; png: ArrayBuffer }>();
 
 /** Share card for one stock: logo, name, onchain price and the gap to the reference. */
 export default async function StockImage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
+  const hit = cache.get(symbol);
+  if (hit && Date.now() - hit.ts < CACHE_MS) {
+    return new Response(hit.png, { headers: { "content-type": contentType, "cache-control": "public, max-age=120" } });
+  }
+  const res = await render(symbol);
+  const png = await res.arrayBuffer();
+  cache.set(symbol, { ts: Date.now(), png });
+  return new Response(png, { headers: { "content-type": contentType, "cache-control": "public, max-age=120" } });
+}
+
+async function render(symbol: string): Promise<ImageResponse> {
   const stock = getStock(symbol);
   const fonts = await outfitFonts();
   const p = stock?.primary;
