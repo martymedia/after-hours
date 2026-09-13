@@ -66,7 +66,8 @@ export type Holding = {
   nextEarnings: string | null;
 };
 
-export type ActivityKind = "bought" | "sold" | "received" | "sent";
+export type ActivityKind =
+  "bought" | "sold" | "received" | "sent" | "order_open" | "order_cancel";
 
 export type Activity = {
   signature: string;
@@ -211,6 +212,8 @@ async function mapLimit<T, R>(
 type Book = { units: number; cost: number; realized: number };
 
 function applyToBook(book: Book, a: Activity): void {
+  // Money or shares parked in a limit order still belong to the wallet.
+  if (a.kind === "order_open" || a.kind === "order_cancel") return;
   if (a.kind === "bought" && a.usd != null) {
     book.units += a.amount;
     book.cost += a.usd;
@@ -285,6 +288,30 @@ export async function getWallet(
       }
     },
   );
+  // Limit orders: which stock each order account was for, learned from the
+  // opening transaction (the wallet's stock account and the order's USDC
+  // account both appear there). Cancels only show the order account.
+  const orderStock = new Map<string, string>();
+  for (const { tx } of txs) {
+    if (
+      !tx?.meta ||
+      tx.meta.err ||
+      !tx.transaction?.message.instructions.some(
+        (i) => i.programId === TRIGGER_PROGRAM,
+      )
+    )
+      continue;
+    const stock = tx.meta.postTokenBalances.find(
+      (b) => b.owner === owner && tokens.has(b.mint),
+    )?.mint;
+    const orderOwner = [
+      ...tx.meta.postTokenBalances,
+      ...tx.meta.preTokenBalances,
+    ].find((b) => b.owner && b.owner !== owner && b.mint === USDC_MINT)?.owner;
+    if (stock && orderOwner && !orderStock.has(orderOwner))
+      orderStock.set(orderOwner, stock);
+  }
+
   const activity: Activity[] = [];
   for (const { signature, tx } of txs) {
     if (!tx?.meta || tx.meta.err) continue;
@@ -335,8 +362,14 @@ export async function getWallet(
             ? usdOut
             : null;
       const amount = Math.abs(delta);
-      const kind: ActivityKind =
-        delta > 0
+      // Shares moving into or out of an order without USDC: a sell order
+      // being placed (out) or cancelled (back).
+      const parked = fill && usd == null;
+      const kind: ActivityKind = parked
+        ? delta > 0
+          ? "order_cancel"
+          : "order_open"
+        : delta > 0
           ? usd != null
             ? "bought"
             : "received"
@@ -365,6 +398,45 @@ export async function getWallet(
             : null,
         feeSol: fill ? 0 : tx.meta.fee / 1e9,
       });
+    }
+    // USDC parked in a buy order (open) or coming back (cancel): no shares move.
+    if (
+      fill &&
+      !stockSeen &&
+      Math.abs(usdcDelta) > 1e-6 &&
+      ![...paidOut.keys()].some((m) => tokens.has(m))
+    ) {
+      const orderOwner = [
+        ...tx.meta.preTokenBalances,
+        ...tx.meta.postTokenBalances,
+      ].find(
+        (b) => b.owner && b.owner !== owner && b.mint === USDC_MINT,
+      )?.owner;
+      const stockMint =
+        (orderOwner && orderStock.get(orderOwner)) ??
+        tx.meta.postTokenBalances.find(
+          (b) => b.owner === owner && tokens.has(b.mint),
+        )?.mint ??
+        null;
+      const t = stockMint ? tokens.get(stockMint) : undefined;
+      activity.push({
+        signature,
+        ts,
+        kind: usdcDelta < 0 ? "order_open" : "order_cancel",
+        order: true,
+        mint: t?.mint ?? USDC_MINT,
+        symbol: t?.symbol ?? "USDC",
+        name: t?.name ?? "Limit order",
+        underlying: t?.underlying ?? "",
+        logo: t?.logo ?? null,
+        amount: Math.abs(usdcDelta),
+        usd: Math.abs(usdcDelta),
+        perShare: null,
+        refAtTime: null,
+        vsRefPct: null,
+        feeSol: tx.meta.fee / 1e9,
+      });
+      continue;
     }
     // Sell fill: the shares left the order account, only USDC reached the wallet.
     if (fill && !stockSeen && usdcDelta > 1e-6) {

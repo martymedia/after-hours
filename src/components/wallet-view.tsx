@@ -50,7 +50,11 @@ const KIND_LABEL: Record<Activity["kind"], string> = {
   sold: "Sold",
   received: "Received",
   sent: "Sent",
+  order_open: "Order placed",
+  order_cancel: "Order cancelled",
 };
+const ORDER_KINDS: Activity["kind"][] = ["order_open", "order_cancel"];
+const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const when = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -563,13 +567,19 @@ export function WalletView({ address }: { address?: string }) {
                   key={`${a.signature}-${a.mint}`}
                   className="flex items-center gap-1"
                 >
-                  <Link
-                    href={`/stock/${a.underlying}`}
-                    className="shrink-0 py-3 transition hover:opacity-80"
-                    aria-label={`${a.name} stock page`}
-                  >
-                    <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
-                  </Link>
+                  {a.underlying ? (
+                    <Link
+                      href={`/stock/${a.underlying}`}
+                      className="shrink-0 py-3 transition hover:opacity-80"
+                      aria-label={`${a.name} stock page`}
+                    >
+                      <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
+                    </Link>
+                  ) : (
+                    <span className="shrink-0 py-3">
+                      <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
+                    </span>
+                  )}
                   <a
                     href={`https://solscan.io/tx/${a.signature}`}
                     target="_blank"
@@ -580,22 +590,35 @@ export function WalletView({ address }: { address?: string }) {
                       <span className="block truncate text-sm font-medium">
                         <span
                           className={
-                            a.kind === "bought" || a.kind === "received"
-                              ? "text-blue"
-                              : "text-ink"
+                            ORDER_KINDS.includes(a.kind)
+                              ? "text-muted"
+                              : a.kind === "bought" || a.kind === "received"
+                                ? "text-blue"
+                                : "text-ink"
                           }
                         >
                           {KIND_LABEL[a.kind]}
                         </span>
-                        {a.order && (
-                          <span className="text-muted"> by order</span>
-                        )}{" "}
-                        {trimAmount(a.amount)} {a.symbol}
-                        {a.usd != null && (
+                        {ORDER_KINDS.includes(a.kind) ? (
                           <span className="text-muted font-normal">
                             {" "}
-                            for {formatUsd(a.usd)}
+                            {a.mint === USDC_MINT || a.usd != null
+                              ? `${formatUsd(a.usd ?? a.amount)} ${a.kind === "order_open" ? "reserved" : "back in the wallet"}${a.underlying ? ` · ${a.symbol}` : ""}`
+                              : `${trimAmount(a.amount)} ${a.symbol} ${a.kind === "order_open" ? "reserved" : "back in the wallet"}`}
                           </span>
+                        ) : (
+                          <>
+                            {a.order && (
+                              <span className="text-muted"> by order</span>
+                            )}{" "}
+                            {trimAmount(a.amount)} {a.symbol}
+                            {a.usd != null && (
+                              <span className="text-muted font-normal">
+                                {" "}
+                                for {formatUsd(a.usd)}
+                              </span>
+                            )}
+                          </>
                         )}
                       </span>
                       <span className="text-muted num block text-xs">
