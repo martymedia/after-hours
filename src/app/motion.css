@@ -71,7 +71,6 @@
     transform var(--text-swap-dur) ease-in-out,
     filter var(--text-swap-dur) ease-in-out,
     opacity var(--text-swap-dur) ease-in-out;
-  will-change: transform, filter, opacity;
 }
 .t-text-swap.is-exit {
   transform: translateY(calc(var(--text-swap-translate-y) * -1));
@@ -104,7 +103,6 @@
 }
 .t-digit {
   display: inline-block;
-  will-change: transform, opacity, filter;
 }
 .t-digit-group.is-animating .t-digit {
   animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
@@ -201,7 +199,6 @@
   transition:
     transform var(--tabs-dur) var(--ease-smooth-out),
     width var(--tabs-dur) var(--ease-smooth-out);
-  will-change: transform, width;
   z-index: 0;
   pointer-events: none;
 }
@@ -330,7 +327,6 @@
   transform: perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
   transform-style: preserve-3d;
   transition: transform var(--tilt-return) var(--ease-smooth-out);
-  will-change: transform;
 }
 .t-tilt-card.is-tilting {
   transition: transform var(--tilt-follow) var(--ease-smooth-out);

@@ -29,6 +29,7 @@ export function getDb(): DatabaseSync {
       updated_at  INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS tokens_underlying ON tokens(underlying);
+    CREATE INDEX IF NOT EXISTS snapshots_ts ON snapshots(ts);
 
     CREATE TABLE IF NOT EXISTS snapshots (
       mint            TEXT NOT NULL,
@@ -189,7 +190,9 @@ export function snapshotsSince(mint: string, sinceTs: number): SnapshotRow[] {
 export function sparkSeries(sinceTs: number, bucketMs: number): Map<string, number[]> {
   const rows = getDb()
     .prepare(
-      `SELECT mint, (ts / ?) * ? AS bucket, AVG(usd_price) AS price
+      // CAST: the bound number arrives as REAL, and REAL division would
+      // give every row its own bucket (that once made sparklines 1500 points).
+      `SELECT mint, CAST(ts / ? AS INTEGER) * ? AS bucket, AVG(usd_price) AS price
        FROM snapshots WHERE ts >= ? AND usd_price IS NOT NULL
        GROUP BY mint, bucket ORDER BY mint, bucket`,
     )
@@ -197,7 +200,8 @@ export function sparkSeries(sinceTs: number, bucketMs: number): Map<string, numb
   const out = new Map<string, number[]>();
   for (const r of rows) {
     const arr = out.get(r.mint) ?? [];
-    arr.push(r.price);
+    // Six significant digits are plenty for a sparkline and keep the JSON small.
+    arr.push(Number(r.price.toPrecision(6)));
     out.set(r.mint, arr);
   }
   return out;

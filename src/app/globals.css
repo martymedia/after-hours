@@ -189,11 +189,9 @@ body {
   from {
     opacity: 0;
     transform: translateY(10px);
-    filter: blur(3px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
     transform: none;
   }
 }

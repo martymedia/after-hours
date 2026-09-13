@@ -36,7 +36,19 @@ export function ageOf(snap: SnapshotRow | undefined, maxBlock: number, now: numb
   return Math.max(0, now - snap.ts + slotAge);
 }
 
+// The collector writes once a minute; pages and the API share one result
+// for a few seconds instead of scanning the snapshot table per request.
+const RADAR_CACHE_MS = 15_000;
+let radarCache: { ts: number; data: RadarData } | null = null;
+
 export function getRadar(): RadarData {
+  if (radarCache && Date.now() - radarCache.ts < RADAR_CACHE_MS) return radarCache.data;
+  const data = computeRadar();
+  radarCache = { ts: Date.now(), data };
+  return data;
+}
+
+function computeRadar(): RadarData {
   const now = Date.now();
   const phase = getPhase(new Date(now));
   const tokens = listTokens();
