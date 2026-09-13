@@ -31,7 +31,7 @@ never deletes removed files.
 The build runs on the box (2 GB RAM plus swap). If it OOMs, build locally
 and `docker save | ssh ... docker load` instead.
 
-Domain: after-hour.net. Copy `deploy/afterhours.caddy` to
+Domain: https://after-hour.net (live since 2026-09-13). Copy `deploy/afterhours.caddy` to
 `/opt/marty-media/deploy/conf.d/afterhours.caddy`,
 then `cd /opt/marty-media && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile`.
 DNS A record for the hostname must point at 167.233.192.162 first.
@@ -51,3 +51,7 @@ ssh root@167.233.192.162 'cd /opt/after-hours && docker compose exec -T collecto
 Both services run the same `after-hours:latest` image, so `docker compose
 build web` also refreshes the collector's code; the collector still needs the
 restart to pick it up.
+
+Gotcha: when a deploy script is piped in over `ssh 'bash -s'`, every
+`docker compose exec -T ...` swallows the rest of the script from stdin.
+Append `</dev/null` to each exec, or run those commands in a separate ssh call.
