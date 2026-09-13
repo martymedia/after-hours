@@ -44,6 +44,13 @@ export function formatDuration(ms: number): string {
 }
 
 /** Color class for a gap: cheaper onchain is blue, pricier is red, tiny is muted. */
+/** Beyond this the gap is no longer a market signal but a thin or one-off
+ *  trade; rankings skip it and the UI marks it. */
+export const GAP_OUTLIER_PCT = 25;
+export function gapIsOutlier(gap: number | null | undefined): boolean {
+  return gap != null && Number.isFinite(gap) && Math.abs(gap) > GAP_OUTLIER_PCT;
+}
+
 export function gapTone(gap: number | null | undefined): string {
   if (gap == null || !Number.isFinite(gap) || Math.abs(gap) < 0.25) return "text-muted";
   return gap < 0 ? "text-blue" : "text-down";

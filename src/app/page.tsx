@@ -6,7 +6,7 @@ import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
-import { formatDuration, formatPct, gapSentence, gapTone, gapWords } from "@/lib/format";
+import { formatDuration, formatPct, gapIsOutlier, gapSentence, gapTone, gapWords } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";
@@ -25,10 +25,16 @@ export default function OverviewPage() {
   const data = getRadar();
   const now = Date.parse(data.generatedAt);
   const rows = data.rows.slice(0, 10);
-  const withGap = data.rows.filter((r) => r.gapPct != null && r.spark.length > 2 && (r.tradability === "easy" || r.tradability === "ok"));
+  // Rankings only use stocks with a real market and a gap that is a signal,
+  // not a one-off trade far from the reference.
+  const withGap = data.rows.filter(
+    (r) => r.gapPct != null && !gapIsOutlier(r.gapPct) && r.spark.length > 2 && (r.tradability === "easy" || r.tradability === "ok"),
+  );
   const cheaper = [...withGap].filter((r) => (r.gapPct ?? 0) < 0).sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0)).slice(0, 3);
   const pricier = [...withGap].filter((r) => (r.gapPct ?? 0) > 0).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0)).slice(0, 3);
-  const top = [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))[0];
+  // Lead with the best discount when there is one; a premium is only news
+  // when nothing trades cheaper.
+  const top = cheaper[0] ?? [...withGap].sort((a, b) => Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0))[0];
   const nextEarnings = data.earnings[0];
   const closed = data.phase.phase !== "open";
 
@@ -57,7 +63,7 @@ export default function OverviewPage() {
         <StatCard
           index={2}
           icon={TrendingUp}
-          label="Biggest move"
+          label={top && (top.gapPct ?? 0) < 0 ? "Biggest discount" : "Biggest move"}
           href={top ? `/stock/${top.underlying}` : "/stocks"}
           value={top ? top.name : "–"}
           badge={top && <span className={`pill ${(top.gapPct ?? 0) < 0 ? "pill-blue" : "bg-soft-down text-down"}`}>{formatPct(top.gapPct)}</span>}
@@ -125,8 +131,10 @@ export default function OverviewPage() {
                       {r.symbol} · {r.issuerName}
                     </span>
                   </span>
-                  <span className={`pill hidden sm:inline-flex ${PILL[r.tradability]}`}>{TRADABILITY_LABEL[r.tradability]}</span>
-                  <span className="text-right">
+                  <span className="hidden w-44 shrink-0 sm:block">
+                    <span className={`pill ${PILL[r.tradability]}`}>{TRADABILITY_LABEL[r.tradability]}</span>
+                  </span>
+                  <span className="w-28 shrink-0 text-right">
                     <span className="num block text-sm font-semibold">
                       {r.price == null ? "–" : <CountUp value={r.price} from={0.9} kind="usd" />}
                     </span>

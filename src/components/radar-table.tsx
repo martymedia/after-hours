@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import type { RadarData, RadarRow, Tradability } from "@/lib/radar-types";
 import { TRADABILITY_LABEL } from "@/lib/radar-types";
-import { formatAgo, formatDuration, formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
+import { GAP_OUTLIER_PCT, formatAgo, formatDuration, formatPct, formatUsd, gapIsOutlier, gapTone, gapWords } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { Tip } from "./tip";
@@ -27,6 +27,8 @@ const TRADABILITY_TIP: Record<Tradability, string> = {
   stale: "Last trade more than an hour ago. The price may not be where it would trade now.",
   none: "No pool with real liquidity on Solana.",
 };
+
+const OUTLIER_TIP = `More than ${GAP_OUTLIER_PCT}% from the reference. A gap this wide is a thin pool or a one-off trade, not a discount or premium you can act on.`;
 
 const dayFormatter = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "long", hour: "numeric", minute: "2-digit" });
 const earningsDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -90,7 +92,8 @@ export function RadarTable({ initial }: { initial: RadarData }) {
       if (needle && !(r.name.toLowerCase().includes(needle) || r.symbol.toLowerCase().includes(needle) || r.underlying.toLowerCase().includes(needle))) return false;
       return true;
     });
-    const tier = (r: RadarRow) => (r.tradability === "easy" || r.tradability === "ok" ? 0 : r.tradability === "stale" ? 1 : 2);
+    // Outliers (gap beyond the sanity band) sort last: they are not deals.
+    const tier = (r: RadarRow) => (gapIsOutlier(r.gapPct) ? 3 : r.tradability === "easy" || r.tradability === "ok" ? 0 : r.tradability === "stale" ? 1 : 2);
     const by: Record<Sort, (a: RadarRow, b: RadarRow) => number> = {
       liquidity: (a, b) => b.liquidity - a.liquidity,
       move: (a, b) => tier(a) - tier(b) || Math.abs(b.gapPct ?? 0) - Math.abs(a.gapPct ?? 0),
@@ -221,7 +224,9 @@ export function RadarTable({ initial }: { initial: RadarData }) {
               </span>
               <span className="text-right">
                 <span className="num block text-sm font-semibold">{formatUsd(row.price)}</span>
-                <span className={`num block text-xs ${gapTone(row.gapPct)}`}>{gapWords(row.gapPct)}</span>
+                <span className={`num block text-xs ${gapTone(row.gapPct)}`}>
+                  {gapIsOutlier(row.gapPct) ? <span className="text-warn">far off · {gapWords(row.gapPct)}</span> : gapWords(row.gapPct)}
+                </span>
               </span>
             </Link>
           );
@@ -296,7 +301,16 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
       </td>
       <td className="num px-4 py-3 text-right font-medium">{formatUsd(row.price)}</td>
       <td className="num text-muted px-4 py-3 text-right">{formatUsd(row.reference)}</td>
-      <td className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}>{formatPct(row.gapPct)}</td>
+      <td className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}>
+        {gapIsOutlier(row.gapPct) ? (
+          <Tip text={OUTLIER_TIP} underline={false} className="text-warn">
+            <span className="pill bg-soft-warn text-warn mr-2">far off</span>
+            {formatPct(row.gapPct)}
+          </Tip>
+        ) : (
+          formatPct(row.gapPct)
+        )}
+      </td>
       <td className="hidden px-4 py-3 md:table-cell">
         <Sparkline values={row.spark} color="var(--blue)" />
       </td>
