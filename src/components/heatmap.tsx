@@ -103,10 +103,9 @@ function Strip({ rows, referencePhrase, aspect, max, className }: { rows: RadarR
   return (
     <div className={`relative w-full ${className}`} role="list" aria-label="Stocks by liquidity and price gap">
       {tiles.map(({ row, rect }) => {
-        // Percent of the strip: symbol needs a tile at least ~12% tall and 8% wide, the gap line more.
+        // Every tile carries its ticker; the gap line only where it fits.
         const wPct = rect.w / aspect;
-        const showSymbol = rect.h >= 12 && wPct >= 8;
-        const big = rect.h >= 24 && wPct >= 12;
+        const big = rect.h >= 20 && wPct >= 9;
         const gap = row.gapPct ?? 0;
         const label = Math.abs(gap) < 0.25 ? "in line" : `${gap < 0 ? "−" : "+"}${Math.abs(gap).toFixed(1)}%`;
         return (
@@ -118,7 +117,7 @@ function Strip({ rows, referencePhrase, aspect, max, className }: { rows: RadarR
             className="absolute flex flex-col justify-end overflow-hidden rounded-md p-1 text-ink transition hover:z-10 hover:brightness-95 sm:p-1.5"
             style={{ left: `${rect.x / aspect}%`, top: `${rect.y}%`, width: `calc(${wPct}% - 3px)`, height: `calc(${rect.h}% - 3px)`, background: fill(row.gapPct) }}
           >
-            {showSymbol && <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>}
+            <span className="num truncate text-[10px] font-semibold sm:text-[11px]">{row.underlying}</span>
             {big && <span className="num text-muted truncate text-[10px]">{label}</span>}
           </Link>
         );
