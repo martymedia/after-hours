@@ -102,23 +102,6 @@ export function NotificationsCard({
     }
   }
 
-  async function testPush() {
-    setBusy(true);
-    setNote(null);
-    try {
-      const n = await sendTestPush(owner);
-      setNote(
-        n > 0
-          ? "Sent. It should show up on this device within a few seconds."
-          : "No device accepted it. Turn notifications off and on again.",
-      );
-    } catch (err) {
-      setNote((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function addAlert() {
     if (!mint) return;
     setBusy(true);
@@ -177,26 +160,14 @@ export function NotificationsCard({
           </p>
         </div>
         {(state === "on" || state === "off") && (
-          <div className="flex shrink-0 gap-2">
-            {on && (
-              <button
-                type="button"
-                onClick={testPush}
-                disabled={busy}
-                className="btn btn-sm"
-              >
-                Send a test
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={toggle}
-              disabled={busy}
-              className={`btn btn-sm ${on ? "border border-line bg-card text-ink hover:bg-soft" : ""}`}
-            >
-              {busy ? "…" : on ? "Turn off" : "Turn on"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={toggle}
+            disabled={busy}
+            className={`btn btn-sm shrink-0 ${on ? "border border-line bg-card text-ink hover:bg-soft" : ""}`}
+          >
+            {busy ? "…" : on ? "Turn off" : "Turn on"}
+          </button>
         )}
       </div>
       {note && <p className="text-muted mt-3 text-sm">{note}</p>}
