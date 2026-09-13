@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lucide-react";
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
+import { NotificationsCard } from "./notifications-card";
 import { useConnectedWallet, useDisconnect, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
@@ -320,6 +321,7 @@ export function WalletView({ address }: { address?: string }) {
       </div>
 
       <OpenOrders owner={owner} readOnly={readOnly} />
+      {!readOnly && <NotificationsCard owner={owner} stocks={d.stocks} />}
 
       {selling && (
         <SellPanel

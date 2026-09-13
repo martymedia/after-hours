@@ -100,6 +100,8 @@ export type WalletData = {
   feesSol: number;
   /** Stocks value over the last seven days at current holdings, hourly. */
   history: { ts: number; value: number }[];
+  /** Tradable stocks for the alert picker: mint, symbol, name. */
+  stocks: { mint: string; symbol: string; name: string }[];
   holdings: Holding[];
   activity: Activity[];
 };
@@ -344,6 +346,7 @@ export async function getWallet(owner: string): Promise<WalletData> {
     edgeBuys: buysWithRef.length,
     feesSol: activity.reduce((sum, a) => sum + a.feeSol, 0),
     history,
+    stocks: getRadar().rows.filter((r) => r.tradability === "easy" || r.tradability === "ok").map((r) => ({ mint: r.mint, symbol: r.symbol, name: r.name })),
     holdings,
     activity: [...activity].reverse(),
   };

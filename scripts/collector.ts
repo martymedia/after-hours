@@ -22,6 +22,7 @@ import { getPrices } from "../src/lib/jupiter.ts";
 import { MIN_LIST_LIQUIDITY_USD, buildUniverse } from "../src/lib/universe.ts";
 import { hourlyCandles, topPoolFor } from "../src/lib/geckoterminal.ts";
 import { fetchEarnings } from "../src/lib/earnings.ts";
+import { notificationSweep } from "../src/lib/notifications.ts";
 
 const SNAPSHOT_EVERY_MS = 60_000;
 const UNIVERSE_EVERY_MS = 6 * 3600_000;
@@ -129,6 +130,15 @@ async function main(): Promise<void> {
     }
   };
   void candleLoop();
+
+  // Notifications: order fills and price alerts, once a minute.
+  const notifyLoop = async () => {
+    for (;;) {
+      await notificationSweep().catch((err) => log("notifications failed:", (err as Error).message));
+      await sleep(60_000);
+    }
+  };
+  void notifyLoop();
 
   for (;;) {
     const started = Date.now();

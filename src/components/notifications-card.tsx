@@ -1,0 +1,175 @@
+"use client";
+
+// Wallet page: turn on push for this device, and manage price alerts.
+// Order fills, expiries and cancellations need no setup beyond the switch.
+
+import { useCallback, useEffect, useState } from "react";
+import { Bell, BellOff, Trash2 } from "lucide-react";
+import { formatPct } from "@/lib/format";
+import { currentState, disablePush, enablePush, needsInstall, sendTestPush, type PushState } from "@/lib/push-client";
+import { Seg } from "./motion";
+
+type Alert = { id: number; mint: string; kind: "cheaper" | "pricier"; threshold: number; fired_at: number | null; symbol: string; name: string; underlying: string };
+type StockOption = { mint: string; symbol: string; name: string };
+
+const THRESHOLDS = [
+  { id: "2", label: "2%" },
+  { id: "3", label: "3%" },
+  { id: "5", label: "5%" },
+  { id: "10", label: "10%" },
+];
+
+export function NotificationsCard({ owner, stocks }: { owner: string; stocks: StockOption[] }) {
+  const [state, setState] = useState<PushState | "loading">("loading");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<Alert[] | null>(null);
+  const [mint, setMint] = useState(stocks[0]?.mint ?? "");
+  const [kind, setKind] = useState<"cheaper" | "pricier">("cheaper");
+  const [threshold, setThreshold] = useState("3");
+
+  const loadAlerts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/alerts?owner=${owner}`, { cache: "no-store" });
+      const body = (await res.json()) as { alerts?: Alert[] };
+      setAlerts(body.alerts ?? []);
+    } catch {
+      setAlerts([]);
+    }
+  }, [owner]);
+
+  useEffect(() => {
+    const id = setTimeout(async () => {
+      setState(await currentState(owner));
+      await loadAlerts();
+    }, 0);
+    return () => clearTimeout(id);
+  }, [owner, loadAlerts]);
+
+  async function toggle() {
+    setBusy(true);
+    setNote(null);
+    try {
+      if (state === "on") {
+        await disablePush();
+        setState("off");
+        setNote("Notifications are off for this device.");
+      } else {
+        const next = await enablePush(owner);
+        setState(next);
+        if (next === "on") {
+          const n = await sendTestPush(owner);
+          setNote(n > 0 ? "On. A test message is on its way." : "On. The test message could not be delivered yet; try again in a moment.");
+        } else if (next === "denied") {
+          setNote("Your browser blocks notifications for this site. Allow them in the site settings, then try again.");
+        }
+      }
+    } catch (err) {
+      setNote((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function addAlert() {
+    if (!mint) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/alerts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner, mint, kind, threshold: Number(threshold) }) });
+      if (!res.ok) throw new Error("Could not save the alert.");
+      await loadAlerts();
+    } catch (err) {
+      setNote((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeAlert(id: number) {
+    await fetch("/api/alerts", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner, id }) });
+    await loadAlerts();
+  }
+
+  const on = state === "on";
+  return (
+    <section className="card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-semibold">
+            {on ? <Bell size={16} strokeWidth={1.75} className="text-blue" /> : <BellOff size={16} strokeWidth={1.75} className="text-muted" />}
+            Notifications
+          </h2>
+          <p className="text-muted mt-1 text-sm">
+            {state === "loading"
+              ? "Checking this device…"
+              : state === "unsupported"
+                ? "This browser cannot receive push messages."
+                : state === "needs-install"
+                  ? "On iPhone, add After Hours to your Home Screen first (Share, then Add to Home Screen). Notifications work from the installed icon."
+                  : state === "denied"
+                    ? "Blocked in your browser settings for this site."
+                    : on
+                      ? "Order fills, expiries and cancellations, plus your price alerts, arrive on this device."
+                      : "Get a message when a limit order fills or expires, and when a stock hits your price."}
+          </p>
+        </div>
+        {(state === "on" || state === "off") && (
+          <button type="button" onClick={toggle} disabled={busy} className={`btn btn-sm shrink-0 ${on ? "border border-line bg-card text-ink hover:bg-soft" : ""}`}>
+            {busy ? "…" : on ? "Turn off" : "Turn on"}
+          </button>
+        )}
+      </div>
+      {note && <p className="text-muted mt-3 text-sm">{note}</p>}
+      {needsInstall() && state !== "on" && (
+        <p className="text-muted mt-2 text-xs">Once installed, open After Hours from the Home Screen and come back here.</p>
+      )}
+
+      {/* Price alerts */}
+      <div className="mt-5 border-t border-line pt-4">
+        <p className="text-sm font-medium">Price alerts</p>
+        <p className="text-muted mt-0.5 text-xs">One message when the onchain price crosses your line against the last Wall Street print. Fires once, then stays listed until you remove it.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select value={mint} onChange={(e) => setMint(e.target.value)} className="h-9 min-w-0 flex-1 rounded-full bg-soft px-3 text-sm font-medium outline-none" aria-label="Stock">
+            {stocks.map((s) => (
+              <option key={s.mint} value={s.mint}>
+                {s.name} ({s.symbol})
+              </option>
+            ))}
+          </select>
+          <Seg
+            ariaLabel="Direction"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { id: "cheaper", label: "cheaper" },
+              { id: "pricier", label: "pricier" },
+            ]}
+          />
+          <Seg ariaLabel="Threshold" value={threshold} onChange={setThreshold} options={THRESHOLDS} />
+          <button type="button" onClick={addAlert} disabled={busy || !mint || !on} className="btn btn-sm" title={on ? undefined : "Turn notifications on first"}>
+            Add alert
+          </button>
+        </div>
+        {!on && state !== "loading" && <p className="text-muted mt-2 text-xs">Turn notifications on to add alerts.</p>}
+        {alerts && alerts.length > 0 && (
+          <ul className="mt-3 divide-y divide-line">
+            {alerts.map((a) => (
+              <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{a.name}</span>{" "}
+                  <span className="text-muted">
+                    {a.kind} than Wall Street by {formatPct(a.threshold).replace("+", "")}
+                    {a.fired_at ? " · sent" : " · waiting"}
+                  </span>
+                </span>
+                <button type="button" onClick={() => removeAlert(a.id)} className="icon-badge text-muted hover:text-ink h-8 w-8" aria-label="Remove alert">
+                  <Trash2 size={14} strokeWidth={1.75} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
