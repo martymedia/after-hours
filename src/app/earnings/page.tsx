@@ -42,7 +42,8 @@ export default function EarningsPage() {
       {/* Title row */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Earnings</h2>
+          {/* The shell shows the page title on desktop; phones need it here. */}
+          <h2 className="text-3xl font-semibold tracking-tight lg:hidden">Earnings</h2>
           <p className="text-muted mt-1 max-w-xl">
             When the stocks we track report. Results usually drop minutes after the 4 PM bell, and the onchain
             price is the first one to move.
@@ -62,7 +63,7 @@ export default function EarningsPage() {
       </div>
 
       {/* Four weeks, two rows on desktop, four on phones. Every day is a link. */}
-      <section className="grid grid-cols-7 gap-2 lg:grid-cols-[repeat(14,minmax(0,1fr))]">
+      <section className="card grid grid-cols-7 gap-2 p-3 lg:grid-cols-[repeat(14,minmax(0,1fr))]">
         {strip.map((ymd, i) => {
           const items = byDay.get(ymd) ?? [];
           const date = at(ymd);
@@ -71,8 +72,8 @@ export default function EarningsPage() {
           const isToday = i === 0;
           const firstOfMonth = Number(ymd.slice(-2)) === 1;
           const cls = `flex flex-col items-center rounded-2xl px-1 pt-3 pb-3 transition ${
-            items.length ? "bg-ink text-white hover:bg-black" : weekend ? "bg-blue-soft hover:bg-blue/20" : "card hover:border-muted-2"
-          } ${isToday ? "ring-2 ring-blue ring-offset-2 ring-offset-bg" : ""}`;
+            items.length ? "bg-ink text-white hover:bg-black" : weekend ? "bg-blue-soft hover:bg-blue/20" : "bg-soft hover:bg-line"
+          } ${isToday ? "ring-2 ring-blue ring-offset-2 ring-offset-card" : ""}`;
           const body = (
             <>
               <span className={`text-[10px] font-medium ${items.length ? "text-white/70" : "text-muted"}`}>
