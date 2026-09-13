@@ -4,7 +4,10 @@
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SOLANA_RPC_URL: ${NEXT_PUBLIC_SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}
     image: after-hours:latest
     restart: unless-stopped
     env_file: .env
