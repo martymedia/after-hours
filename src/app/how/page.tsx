@@ -9,7 +9,12 @@ import { TickerBadge } from "@/components/ticker-badge";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "How it works" };
+export const metadata: Metadata = {
+  title: "How it works",
+  description:
+    "Tokenized stocks from xStocks, Backpack and Ondo trade on Solana around the clock. How the after-hours market works, what the price gap means, and how a buy settles in your own wallet.",
+  alternates: { canonical: "/how" },
+};
 
 const PILL: Record<Tradability, string> = {
   easy: "bg-soft-up text-up",

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, Activity, TrendingUp, CalendarDays } from "lucide-react";
 import { GlobeHero } from "@/components/globe-hero";
@@ -10,6 +11,13 @@ import { formatDuration, formatPct, gapIsOutlier, gapSentence, gapTone, gapWords
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: { absolute: "After Hours: trade stocks when Wall Street sleeps" },
+  description:
+    "Which tokenized stocks trade on Solana right now, whether the onchain price is fresh, how far it drifts from the last Wall Street print, and what a buy really costs. Then buy from your own wallet.",
+  alternates: { canonical: "/" },
+};
 
 const PILL: Record<Tradability, string> = {
   easy: "bg-soft-up text-up",

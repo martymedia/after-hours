@@ -7,7 +7,11 @@ import { Tip } from "@/components/tip";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "Earnings calendar" };
+export const metadata: Metadata = {
+  title: "Earnings calendar",
+  description: "When the stocks that trade on Solana report earnings. Results drop after the 4 PM bell, and the onchain price is the first one to move.",
+  alternates: { canonical: "/earnings" },
+};
 
 const longDate = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
 const shortMonth = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });

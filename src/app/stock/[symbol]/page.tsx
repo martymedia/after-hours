@@ -19,7 +19,18 @@ type Props = { params: Promise<{ symbol: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { symbol } = await params;
   const stock = getStock(symbol);
-  return { title: stock ? `${stock.name} (${stock.underlying})` : "Not found" };
+  if (!stock) return { title: "Not found", robots: { index: false } };
+  const p = stock.primary;
+  const priceLine = p.price != null ? `${formatUsd(p.price)} onchain, ${gapSentence(p.gapPct, stock.reference.phrase)}.` : "";
+  const description = `${stock.name} (${stock.underlying}) as a tokenized stock on Solana. ${priceLine} ${stock.description} Buy from your own wallet, 24/7.`.replace(/\s+/g, " ").trim();
+  const title = `${stock.name} (${stock.underlying}) after hours`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/stock/${stock.underlying}` },
+    openGraph: { title: `${title} | After Hours`, description, url: `/stock/${stock.underlying}`, type: "website" },
+    twitter: { card: "summary_large_image", title: `${title} | After Hours`, description },
+  };
 }
 
 const PILL: Record<Tradability, string> = {
