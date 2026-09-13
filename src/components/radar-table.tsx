@@ -8,6 +8,7 @@ import { TRADABILITY_LABEL } from "@/lib/radar-types";
 import { GAP_OUTLIER_PCT, formatAgo, formatDuration, formatPct, formatUsd, gapIsOutlier, gapTone, gapWords } from "@/lib/format";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
+import { PopNumber, Seg } from "./motion";
 import { Tip } from "./tip";
 
 const REFRESH_MS = 15_000;
@@ -177,20 +178,17 @@ export function RadarTable({ initial }: { initial: RadarData }) {
         </div>
 
         <div className={`mt-3 flex flex-wrap items-center gap-3 ${q.trim() ? "hidden sm:flex" : ""}`}>
-          <div className="seg" role="group" aria-label="Issuer">
-            {(["all", "xstocks", "backpack"] as Issuer[]).map((f) => (
-              <button key={f} type="button" aria-pressed={issuer === f} onClick={() => setIssuer(f)}>
-                {f === "all" ? "All issuers" : f === "xstocks" ? "xStocks" : "Backpack"}
-              </button>
-            ))}
-          </div>
-          <div className="seg" role="group" aria-label="Show">
-            {SHOWS.map((s) => (
-              <button key={s.id} type="button" aria-pressed={show === s.id} onClick={() => setShow(s.id)}>
-                {s.label}
-              </button>
-            ))}
-          </div>
+          <Seg
+            ariaLabel="Issuer"
+            value={issuer}
+            onChange={setIssuer}
+            options={[
+              { id: "all", label: "All issuers" },
+              { id: "xstocks", label: "xStocks" },
+              { id: "backpack", label: "Backpack" },
+            ]}
+          />
+          <Seg ariaLabel="Show" value={show} onChange={setShow} options={SHOWS.map((s) => ({ id: s.id, label: s.label }))} />
           <label className="text-muted flex items-center gap-2 text-sm">
             Sort
             <select
@@ -223,7 +221,9 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                 </span>
               </span>
               <span className="text-right">
-                <span className="num block text-sm font-semibold">{formatUsd(row.price)}</span>
+                <span className="num block text-sm font-semibold">
+                  <PopNumber value={row.price} format={formatUsd} />
+                </span>
                 <span className={`num block text-xs ${gapTone(row.gapPct)}`}>
                   {gapIsOutlier(row.gapPct) ? <span className="text-warn">far off · {gapWords(row.gapPct)}</span> : gapWords(row.gapPct)}
                 </span>
@@ -299,7 +299,9 @@ function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
           </span>
         </Link>
       </td>
-      <td className="num px-4 py-3 text-right font-medium">{formatUsd(row.price)}</td>
+      <td className="num px-4 py-3 text-right font-medium">
+        <PopNumber value={row.price} format={formatUsd} />
+      </td>
       <td className="num text-muted px-4 py-3 text-right">{formatUsd(row.reference)}</td>
       <td className={`num px-4 py-3 text-right font-medium ${gapTone(row.gapPct)}`}>
         {gapIsOutlier(row.gapPct) ? (

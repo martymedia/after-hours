@@ -123,7 +123,7 @@ export function WalletView() {
     .sort((a, b) => (a.nextEarnings ?? "").localeCompare(b.nextEarnings ?? ""))[0];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="t-reveal flex flex-col gap-6">
       {/* Address row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">

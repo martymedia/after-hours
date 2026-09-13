@@ -76,8 +76,8 @@ export function Tip({ text, children, className = "", underline = true, tone = "
         createPortal(
           <span
             role="tooltip"
-            style={{ position: "fixed", left: pos.left, top: pos.top, width: WIDTH, transform: pos.above ? "translate(-50%, -100%)" : "translateX(-50%)" }}
-            className={`pointer-events-none z-[100] rounded-xl px-3 py-2 text-left text-xs leading-relaxed font-normal shadow-lg ${
+            style={{ position: "fixed", left: pos.left, top: pos.top, width: WIDTH, "--tt-transform": pos.above ? "translate(-50%, -100%)" : "translateX(-50%)" } as React.CSSProperties}
+            className={`t-tt pointer-events-none z-[100] rounded-xl px-3 py-2 text-left text-xs leading-relaxed font-normal shadow-lg ${
               tone === "dark" ? "bg-ink text-white" : "bg-white text-ink"
             }`}
           >

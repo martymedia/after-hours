@@ -4,6 +4,7 @@
 // a dashed reference line, a range control, and a hover readout with the
 // exact time and price.
 
+import { Seg } from "./motion";
 import { useState } from "react";
 import { getPhase } from "@/lib/market-phase";
 import { formatUsd } from "@/lib/format";
@@ -54,13 +55,15 @@ export function PriceChart({ candles, reference, referenceLabel, now, symbol }: 
             {symbol} on Solana. <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue/35 align-middle" /> After hours: Wall Street closed, onchain open. Hover for details.
           </p>
         </div>
-        <div className="seg" role="group" aria-label="Range">
-          {(["24h", "7d"] as Range[]).map((r) => (
-            <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>
-              {r}
-            </button>
-          ))}
-        </div>
+        <Seg
+          ariaLabel="Range"
+          value={range}
+          onChange={setRange}
+          options={[
+            { id: "24h", label: "24h" },
+            { id: "7d", label: "7d" },
+          ]}
+        />
       </div>
       {visible.length < 2 ? (
         <div className="text-on-dark-muted flex h-52 items-center justify-center text-sm">

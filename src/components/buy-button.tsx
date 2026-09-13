@@ -11,7 +11,8 @@ import {
   getTransactionDecoder,
   signature as toSignature,
 } from "@solana/kit";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
+import { SuccessCheck, SwapText } from "./motion";
 import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { formatUsd } from "@/lib/format";
@@ -102,7 +103,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
       <div className="rise rounded-3xl bg-ink p-5 text-white">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue">
-            <Check size={20} strokeWidth={2.5} />
+            <SuccessCheck size={22} />
           </span>
           <div className="min-w-0">
             <p className="text-lg leading-tight font-semibold">You own {symbol} now.</p>
@@ -144,13 +145,18 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
     <div>
       <div className="flex flex-col gap-2">
         <button type="button" className={primary} disabled={busy} onClick={buy}>
-          {step === "building"
-            ? "Getting the best route…"
-            : step === "signing"
-              ? "Confirm in your wallet…"
-              : step === "confirming"
-                ? "Confirming onchain…"
-                : `Buy ${formatUsd(usd, 0)} of ${symbol}`}
+          <SwapText
+            className={busy ? "t-shimmer" : ""}
+            text={
+              step === "building"
+                ? "Getting the best route…"
+                : step === "signing"
+                  ? "Confirm in your wallet…"
+                  : step === "confirming"
+                    ? "Confirming onchain…"
+                    : `Buy ${formatUsd(usd, 0)} of ${symbol}`
+            }
+          />
         </button>
         {busy ? (
           <ol className="flex items-center justify-center gap-3 text-xs" aria-live="polite">
@@ -169,7 +175,7 @@ export function BuyButton({ mint, symbol, usd, disabled }: Props) {
         )}
       </div>
       {step === "error" && error && (
-        <div className="rise mt-3 rounded-2xl border border-line bg-soft p-4">
+        <div key={error.title} className="rise t-shake mt-3 rounded-2xl border border-line bg-soft p-4">
           <div className="flex items-start gap-3">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-soft-down text-down">
               <X size={16} strokeWidth={2.5} />

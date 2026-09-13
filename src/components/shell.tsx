@@ -10,6 +10,7 @@ import { Home, LineChart, CalendarDays, BookOpen, ChevronsLeft, ChevronsRight, S
 import { Logo, LogoMark } from "./logo";
 import { StockSearch } from "./stock-search";
 import { SiteFooter } from "./site-footer";
+import { useSlidingPill } from "./motion";
 import dynamic from "next/dynamic";
 
 // Client-only: the entry exists only once a wallet is connected.
@@ -53,6 +54,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   };
 
   const title = TITLES.find(([m]) => m(pathname))?.[1] ?? "After Hours";
+  const activeTab = NAV.find((n) => n.match(pathname))?.href ?? (pathname.startsWith("/wallet") ? "/wallet" : null);
+  const { bar: tabBarRef, pill: tabPillRef } = useSlidingPill(activeTab);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-[1440px]">
@@ -93,7 +96,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
           aria-label={expanded ? "Collapse menu" : "Expand menu"}
           className="icon-badge text-muted hover:text-ink mt-auto ml-1 h-9 w-9"
         >
-          {expanded ? <ChevronsLeft size={16} strokeWidth={1.75} /> : <ChevronsRight size={16} strokeWidth={1.75} />}
+          <span className="t-icon-swap" data-state={expanded ? "a" : "b"}>
+            <span className="t-icon" data-icon="a">
+              <ChevronsLeft size={16} strokeWidth={1.75} />
+            </span>
+            <span className="t-icon" data-icon="b">
+              <ChevronsRight size={16} strokeWidth={1.75} />
+            </span>
+          </span>
         </button>
       </aside>
 
@@ -118,7 +128,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Bottom bar (phones) */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden">
+      <nav ref={tabBarRef} className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden">
+        <span ref={tabPillRef} className="t-tabbar-pill" aria-hidden="true" />
         {NAV.map((n) => {
           const active = n.match(pathname);
           return (
@@ -129,7 +140,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 active ? "text-ink" : "text-muted"
               }`}
             >
-              <span className={`icon-badge h-8 w-8 ${active ? "bg-ink text-white border-ink" : ""}`}>
+              <span data-pill-target={n.href} className={`icon-badge relative z-[1] h-8 w-8 ${active ? "border-transparent bg-transparent text-white" : ""}`}>
                 <n.icon size={16} strokeWidth={1.75} />
               </span>
               {n.label}

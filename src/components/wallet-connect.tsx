@@ -4,7 +4,7 @@
 // click; several open a picker; none at all offers Phantom's in-app browser
 // (phones) and a Jupiter fallback.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useConnect, useIsWalletReady, useWallets } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
@@ -80,8 +80,18 @@ export function WalletPicker({
   onPick: (name: string) => void;
   onClose: () => void;
 }) {
+  const [phase, setPhase] = useState<"open" | "closing" | "init">("init");
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const id = setTimeout(() => setPhase("open"), 20);
+    return () => clearTimeout(id);
+  }, []);
+  const close = useCallback(() => {
+    setPhase("closing");
+    setTimeout(onClose, 150);
+  }, [onClose]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -89,23 +99,24 @@ export function WalletPicker({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [close]);
 
+  const cls = phase === "open" ? "is-open" : phase === "closing" ? "is-closing" : "";
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center" onClick={onClose} role="presentation">
+    <div className={`t-backdrop ${cls} fixed inset-0 z-[90] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center`} onClick={close} role="presentation">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Choose a wallet"
         onClick={(e) => e.stopPropagation()}
-        className="rise w-full max-w-sm rounded-3xl bg-card p-5 shadow-2xl"
+        className={`t-modal ${cls} w-full max-w-sm rounded-3xl bg-card p-5 shadow-2xl`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold tracking-tight">Choose a wallet</h3>
             <p className="text-muted mt-1 text-sm">You sign in your own wallet. We never hold funds.</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="icon-badge h-8 w-8 shrink-0 hover:bg-soft">
+          <button type="button" onClick={close} aria-label="Close" className="icon-badge h-8 w-8 shrink-0 hover:bg-soft">
             <span aria-hidden="true" className="text-base leading-none">×</span>
           </button>
         </div>

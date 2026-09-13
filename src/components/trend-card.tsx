@@ -3,6 +3,7 @@ import type { RadarRow } from "@/lib/radar-types";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { CountUp } from "./count-up";
+import { Tilt } from "./motion";
 
 /** Dark tile: badge, name, sparkline, price, and whether onchain is cheaper
  *  or pricier than the last Wall Street print. Cheaper is blue, pricier red. */
@@ -10,7 +11,8 @@ export function TrendCard({ row }: { row: RadarRow }) {
   const gap = row.gapPct ?? 0;
   const cheaper = gap < 0;
   return (
-    <Link href={`/stock/${row.underlying}`} className="card-dark flex flex-col justify-between gap-4 p-4 transition hover:opacity-95">
+    <Tilt className="flex" cardClassName="card-dark flex w-full overflow-hidden">
+      <Link href={`/stock/${row.underlying}`} className="flex w-full flex-col justify-between gap-4 p-4">
       <div className="flex items-center gap-2.5">
         <TickerBadge symbol={row.symbol} logo={row.logo} size={32} dark />
         <div className="min-w-0">
@@ -27,6 +29,7 @@ export function TrendCard({ row }: { row: RadarRow }) {
           {Math.abs(gap).toFixed(2)}% {cheaper ? "cheaper" : "pricier"} than close
         </div>
       </div>
-    </Link>
+      </Link>
+    </Tilt>
   );
 }

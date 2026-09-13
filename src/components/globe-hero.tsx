@@ -3,6 +3,7 @@
 // The dark hero panel: headline and status on the left, the lit globe on the
 // right. Client-only because WebGL and the clock only exist in the browser.
 
+import { StaggerReveal } from "./motion";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -43,16 +44,18 @@ export function GlobeHero({ phase, stockCount, generatedAt }: Props) {
     <section className="card-dark relative overflow-hidden">
       <div className="grid items-center gap-6 p-6 sm:p-8 lg:grid-cols-12">
         <div className="lg:col-span-6">
-          <p className="text-blue-light text-sm font-medium">Trade stocks when Wall Street sleeps.</p>
-          <h2 className="mt-2 text-[2.4rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
+          <StaggerReveal>
+          <p className="t-stagger-line t-stagger-line--1 text-blue-light text-sm font-medium">Trade stocks when Wall Street sleeps.</p>
+          <h2 className="t-stagger-line t-stagger-line--2 mt-2 text-[2.4rem] leading-[1.02] font-semibold tracking-tight sm:text-6xl">
             Solana After Hours
           </h2>
-          <p className="text-on-dark-muted mt-5 max-w-md leading-relaxed">
+          <p className="t-stagger-line t-stagger-line--3 text-on-dark-muted mt-5 max-w-md leading-relaxed">
             Real stocks, tokenized on Solana, keep trading after the bell and all weekend. See what is moving,
             whether the price is fresh, and how much <span className="text-blue-light font-medium">cheaper</span> or{" "}
             <span className="text-down font-medium">pricier</span> it is than the last Wall Street print.
             Then buy from your own wallet.
           </p>
+          </StaggerReveal>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <Link href="/stocks" className="btn btn-white">
               See what is trading

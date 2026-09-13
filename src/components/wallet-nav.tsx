@@ -7,6 +7,7 @@
 //   chip: small address pill in the top bar
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
 import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
@@ -16,6 +17,12 @@ type Props = { variant: "rail" | "tab" | "chip"; expanded?: boolean; pathname: s
 
 export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   const connected = useConnectedWallet(solanaClient);
+  const [dotOpen, setDotOpen] = useState(false);
+  useEffect(() => {
+    if (!connected) return;
+    const id = setTimeout(() => setDotOpen(true), 20);
+    return () => clearTimeout(id);
+  }, [connected]);
   if (!connected) return null;
   const address = connected.account.address;
   const active = pathname.startsWith("/wallet");
@@ -41,7 +48,7 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   if (variant === "tab") {
     return (
       <Link href="/wallet" className={`flex flex-col items-center gap-1 rounded-xl px-3 py-1 text-[11px] font-medium ${active ? "text-ink" : "text-muted"}`}>
-        <span className={`icon-badge h-8 w-8 ${active ? "bg-ink text-white border-ink" : ""}`}>
+        <span data-pill-target="/wallet" className={`icon-badge relative z-[1] h-8 w-8 ${active ? "border-transparent bg-transparent text-white" : ""}`}>
           <Wallet size={16} strokeWidth={1.75} />
         </span>
         Wallet
@@ -60,7 +67,9 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
       >
         <span className={`icon-badge relative h-10 w-10 shrink-0 ${active ? "bg-ink text-white border-ink" : ""}`}>
           <Wallet size={18} strokeWidth={1.75} />
-          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-blue" aria-hidden="true" />
+          <span className="t-badge absolute -top-0.5 -right-0.5" data-open={dotOpen ? "true" : "false"} aria-hidden="true">
+            <span className="t-badge-dot block h-2.5 w-2.5 rounded-full border-2 border-card bg-blue" />
+          </span>
         </span>
         {expanded && (
           <span className="flex flex-col leading-tight">

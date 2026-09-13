@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./motion.css";
 
 /* Brand: Outfit, blue #5B91FF, black #121214, white cards on a light grey
    ground, pill buttons, dark panels for charts. Green and red only for up
@@ -188,9 +189,11 @@ body {
   from {
     opacity: 0;
     transform: translateY(10px);
+    filter: blur(3px);
   }
   to {
     opacity: 1;
+    filter: blur(0);
     transform: none;
   }
 }
