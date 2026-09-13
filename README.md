@@ -50,6 +50,8 @@ Solscan link. Nothing is stored; disconnecting removes the entry.
 - Limit orders ("Set a price and sleep") on every stock page: a Jupiter
   Trigger V1 order owned by the user's wallet, non-custodial, fills if the
   onchain price reaches the target, cancel from the Wallet page. No API key.
+  The order form needs a connected wallet; on the sell side it reads the
+  holding from chain (`/api/holding`) and offers 10 / 25 / 50 % / All presets.
 - `/wallet/[address]` is a read-only view of any wallet; `/trade/[signature]`
   is a shareable page for one swap with its own Open Graph card.
 - The overview has a treemap of tradable stocks: area by liquidity, colour by

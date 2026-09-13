@@ -7,7 +7,7 @@
 // a modal, which owns the header.
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getBase58Decoder, getBase64Encoder, getTransactionDecoder } from "@solana/kit";
 import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import Link from "next/link";
@@ -40,7 +40,7 @@ type Props = {
 
 const AMOUNTS = [25, 50, 100, 500];
 const STEPS = [2, 3, 5, 10];
-const PARTS = [0.25, 0.5, 0.75, 1];
+const PARTS = [0.1, 0.25, 0.5, 1];
 type DayId = "1" | "3" | "7" | "30";
 const DAYS: { id: DayId; label: string }[] = [
   { id: "1", label: "1 day" },
@@ -52,11 +52,15 @@ const MIN_USD = 5;
 
 type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
 
-export function OrderPanel({ mint, symbol, side = "buy", held, reference, price, referencePhrase, disabled }: Props) {
+export function OrderPanel({ mint, symbol, side = "buy", held: heldProp, reference, price, referencePhrase, disabled }: Props) {
   const base = price ?? reference ?? null;
+  // Holding of this token: given by the wallet page, fetched on stock pages once a wallet is connected.
+  const [heldFetched, setHeldFetched] = useState<number | null>(null);
+  const [lookupFailed, setLookupFailed] = useState(false);
+  const held = heldProp ?? heldFetched ?? undefined;
   const [usd, setUsd] = useState(25);
   const [usdText, setUsdText] = useState("25");
-  const [sharesText, setSharesText] = useState(held ? String(Number(held.toFixed(6))) : "");
+  const [sharesText, setSharesText] = useState(heldProp ? String(Number(heldProp.toFixed(6))) : "1");
   const [pct, setPct] = useState(3);
   const [customText, setCustomText] = useState<string | null>(null);
   const [days, setDays] = useState<DayId>("7");
@@ -67,6 +71,30 @@ export function OrderPanel({ mint, symbol, side = "buy", held, reference, price,
   const [placed, setPlaced] = useState<{ signature: string; shares: number; target: number; usd: number }>();
 
   const sell = side === "sell";
+  const owner = connected?.account.address ?? null;
+
+  useEffect(() => {
+    if (!sell || heldProp != null || !owner) return;
+    let cancelled = false;
+    fetch(`/api/holding?owner=${owner}&mint=${mint}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { amount?: number } | null) => {
+        if (cancelled) return;
+        if (!body || typeof body.amount !== "number") {
+          setLookupFailed(true);
+          return;
+        }
+        setHeldFetched(body.amount);
+        setSharesText(body.amount > 0 ? String(Number(body.amount.toFixed(6))) : "0");
+      })
+      .catch(() => {
+        if (!cancelled) setLookupFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sell, heldProp, owner, mint]);
+
   const presetTarget = base ? Number((base * (1 + (sell ? pct : -pct) / 100)).toFixed(2)) : null;
   const custom = customText == null ? null : Number(customText.replace(",", "."));
   const target = customText == null ? presetTarget : custom != null && Number.isFinite(custom) && custom > 0 ? custom : null;
@@ -110,6 +138,20 @@ export function OrderPanel({ mint, symbol, side = "buy", held, reference, price,
   }
 
   if (disabled || !base) return <p className="text-muted mt-4 text-sm">No onchain market to place an order on.</p>;
+
+  if (ready && !connected) {
+    return (
+      <div className="mt-4 rounded-2xl bg-soft p-5 text-center">
+        <p className="font-medium">Connect your wallet first.</p>
+        <p className="text-muted mt-1 text-sm">{sell ? `We read how much ${symbol} you hold and set the order up from there.` : "The order is placed from your wallet, so we need to know which one."}</p>
+        <div className="mx-auto mt-4 max-w-xs">
+          <ConnectButton label="Connect wallet" />
+        </div>
+      </div>
+    );
+  }
+  if (!ready) return <div className="mt-4 h-40 animate-pulse rounded-2xl bg-soft" />;
+  if (sell && held != null && held <= 0) return <p className="text-muted mt-4 text-sm">No {symbol} in this wallet to sell.</p>;
 
   if (step === "done" && placed) {
     return (
@@ -161,7 +203,7 @@ export function OrderPanel({ mint, symbol, side = "buy", held, reference, price,
               />
               <span className="text-muted text-sm">{symbol}</span>
             </label>
-            {held != null && held > 0 && (
+            {held != null && held > 0 ? (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {PARTS.map((p) => (
                   <button key={p} type="button" onClick={() => setSharesText(String(Number((held * p).toFixed(6))))} className={`pill ${Math.abs(sharesIn - held * p) < 1e-6 ? "pill-dark" : "bg-soft text-ink hover:bg-line"}`}>
@@ -170,6 +212,10 @@ export function OrderPanel({ mint, symbol, side = "buy", held, reference, price,
                 ))}
                 <span className="text-muted num ml-auto self-center text-xs">you hold {held >= 1 ? held.toFixed(3) : held.toFixed(4)}</span>
               </div>
+            ) : lookupFailed ? (
+              <p className="text-muted mt-2 text-xs">Could not read your {symbol} balance; type the amount.</p>
+            ) : (
+              <p className="text-muted mt-2 text-xs">Reading your {symbol} balance…</p>
             )}
           </>
         ) : (
