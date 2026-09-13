@@ -2,7 +2,7 @@
 // than the reference". One-shot; fired alerts stay listed until deleted.
 
 import type { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, latestSnapshots } from "@/lib/db";
 import { createAlert, deleteAlert, listAlerts } from "@/lib/notify-db";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,13 @@ export async function GET(req: NextRequest) {
   const owner = req.nextUrl.searchParams.get("owner") ?? "";
   if (!BASE58.test(owner)) return Response.json({ error: "bad owner" }, { status: 400 });
   const tokens = new Map((getDb().prepare("SELECT mint, symbol, name, underlying FROM tokens").all() as { mint: string; symbol: string; name: string; underlying: string }[]).map((t) => [t.mint, t]));
-  const alerts = listAlerts(owner).map((a) => ({ ...a, symbol: tokens.get(a.mint)?.symbol ?? "?", name: tokens.get(a.mint)?.name ?? a.mint, underlying: tokens.get(a.mint)?.underlying ?? "" }));
+  // Current gap per alert, so the list shows how far each one is from firing.
+  const snaps = new Map(latestSnapshots().map((s) => [s.mint, s]));
+  const alerts = listAlerts(owner).map((a) => {
+    const s = snaps.get(a.mint);
+    const gapPct = s && s.usd_price != null && s.ref_price ? (s.usd_price / s.ref_price - 1) * 100 : null;
+    return { ...a, symbol: tokens.get(a.mint)?.symbol ?? "?", name: tokens.get(a.mint)?.name ?? a.mint, underlying: tokens.get(a.mint)?.underlying ?? "", gapPct };
+  });
   return Response.json({ alerts }, { headers: { "cache-control": "no-store" } });
 }
 

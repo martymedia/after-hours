@@ -10,7 +10,7 @@ import { formatPct } from "@/lib/format";
 import { currentState, disablePush, enablePush, needsInstall, sendTestPush, type PushState } from "@/lib/push-client";
 import { Seg } from "./motion";
 
-type Alert = { id: number; mint: string; kind: "cheaper" | "pricier"; threshold: number; fired_at: number | null; symbol: string; name: string; underlying: string };
+type Alert = { id: number; mint: string; kind: "cheaper" | "pricier"; threshold: number; fired_at: number | null; symbol: string; name: string; underlying: string; gapPct: number | null };
 type StockOption = { mint: string; symbol: string; name: string };
 
 const THRESHOLDS = [
@@ -72,6 +72,19 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
     }
   }
 
+  async function testPush() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const n = await sendTestPush(owner);
+      setNote(n > 0 ? "Sent. It should show up on this device within a few seconds." : "No device accepted it. Turn notifications off and on again.");
+    } catch (err) {
+      setNote((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function addAlert() {
     if (!mint) return;
     setBusy(true);
@@ -115,9 +128,16 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
           </p>
         </div>
         {(state === "on" || state === "off") && (
-          <button type="button" onClick={toggle} disabled={busy} className={`btn btn-sm shrink-0 ${on ? "border border-line bg-card text-ink hover:bg-soft" : ""}`}>
-            {busy ? "…" : on ? "Turn off" : "Turn on"}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            {on && (
+              <button type="button" onClick={testPush} disabled={busy} className="btn btn-sm">
+                Send a test
+              </button>
+            )}
+            <button type="button" onClick={toggle} disabled={busy} className={`btn btn-sm ${on ? "border border-line bg-card text-ink hover:bg-soft" : ""}`}>
+              {busy ? "…" : on ? "Turn off" : "Turn on"}
+            </button>
+          </div>
         )}
       </div>
       {note && <p className="text-muted mt-3 text-sm">{note}</p>}
@@ -163,6 +183,11 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
                   <span className={a.kind === "cheaper" ? "text-blue" : "text-down"}>{formatPct(a.threshold).replace("+", "")} {a.kind}</span>
                   <span className="text-muted"> than Wall Street</span>
                 </span>
+                {a.gapPct != null && !a.fired_at && (
+                  <span className="text-muted num hidden text-xs sm:inline" title="Where the onchain price is right now">
+                    now {Math.abs(a.gapPct).toFixed(1)}% {a.gapPct < 0 ? "cheaper" : "pricier"}
+                  </span>
+                )}
                 <span className={`pill ${a.fired_at ? "bg-soft text-muted" : "pill-blue"}`}>{a.fired_at ? "sent" : "waiting"}</span>
                 <button type="button" onClick={() => removeAlert(a.id)} className="icon-badge text-muted hover:text-ink h-8 w-8" aria-label="Remove alert">
                   <Trash2 size={14} strokeWidth={1.75} />

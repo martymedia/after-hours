@@ -10,14 +10,16 @@ import { useConnect, useIsWalletReady, useWallets } from "@solana/kit-plugin-wal
 import { solanaClient } from "@/lib/solana-client";
 
 type Props = {
-  label?: string;
+  label?: React.ReactNode;
+  /** Render nothing when no wallet is installed (instead of the Phantom link). */
+  hideWhenNoWallet?: boolean;
   /** Shown as a small link when no wallet is installed. */
   fallbackHref?: string;
   fallbackLabel?: string;
   className?: string;
 };
 
-export function ConnectButton({ label = "Connect wallet", fallbackHref, fallbackLabel, className = "btn w-full" }: Props) {
+export function ConnectButton({ label = "Connect wallet", hideWhenNoWallet, fallbackHref, fallbackLabel, className = "btn w-full" }: Props) {
   const ready = useIsWalletReady(solanaClient);
   const wallets = useWallets(solanaClient);
   const { dispatch: connect, isRunning: connecting } = useConnect(solanaClient);
@@ -28,6 +30,7 @@ export function ConnectButton({ label = "Connect wallet", fallbackHref, fallback
   }
 
   if (wallets.length === 0) {
+    if (hideWhenNoWallet) return null;
     const here = typeof window === "undefined" ? "" : window.location.href;
     return (
       <div className="flex flex-col gap-2">

@@ -1,29 +1,51 @@
 "use client";
 
-// Wallet entries for the shell. All render nothing until a wallet is
-// connected, so the menu stays the same for visitors.
+// Wallet entries for the shell. Tab and chip render nothing until a wallet
+// is connected; the rail offers a "Connect wallet" button instead.
 //   rail: its own group under a divider, with the short address as a tease
 //   tab:  one more tab on phones
 //   chip: small address pill in the top bar
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
-import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet, useIsWalletReady } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { shortAddress } from "./wallet-connect";
+
+const ConnectButton = dynamic(() => import("./wallet-connect").then((m) => m.ConnectButton), { ssr: false });
 
 type Props = { variant: "rail" | "tab" | "chip"; expanded?: boolean; pathname: string };
 
 export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   const connected = useConnectedWallet(solanaClient);
+  const ready = useIsWalletReady(solanaClient);
   const [dotOpen, setDotOpen] = useState(false);
   useEffect(() => {
     if (!connected) return;
     const id = setTimeout(() => setDotOpen(true), 20);
     return () => clearTimeout(id);
   }, [connected]);
-  if (!connected) return null;
+  if (!connected) {
+    if (variant !== "rail" || !ready) return null;
+    return (
+      <div className="rise mt-4 border-t border-line pt-4">
+        {expanded && <p className="text-muted-2 mb-2 pl-2 text-[11px] font-medium">Your wallet</p>}
+        {expanded ? (
+          <ConnectButton label="Connect wallet" className="btn btn-sm w-full" />
+        ) : (
+          <div className="pl-1">
+            <ConnectButton
+              hideWhenNoWallet
+              label={<Wallet size={18} strokeWidth={1.75} />}
+              className="icon-badge h-10 w-10 border-ink bg-ink text-white"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
   const address = connected.account.address;
   const active = pathname.startsWith("/wallet");
 
