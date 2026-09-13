@@ -25,13 +25,13 @@ type Props = {
   disabled?: boolean;
 };
 
-const PRESETS = [100, 500, 1000, 5000];
+const PRESETS = [5, 25, 100, 500];
 
 type Level = "good" | "ok" | "warn";
 type Check = { label: string; detail: string; level: Level };
 
 export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled }: Props) {
-  const [usd, setUsd] = useState(1000);
+  const [usd, setUsd] = useState(5);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
 
