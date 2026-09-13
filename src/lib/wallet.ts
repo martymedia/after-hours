@@ -4,7 +4,15 @@
 // talks to the RPC for reads, and cached per wallet for a short while
 // because one page load asks for a lot.
 
-import { candlesSince, listTokens, latestSnapshots, nextEarningsFor, snapshotAt, sparkSeries, type TokenRow } from "./db.ts";
+import {
+  candlesSince,
+  listTokens,
+  latestSnapshots,
+  nextEarningsFor,
+  snapshotAt,
+  sparkSeries,
+  type TokenRow,
+} from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { USDC_MINT } from "./jupiter.ts";
 import { nyYmd } from "./market-phase.ts";
@@ -16,10 +24,15 @@ import { getRadar } from "./radar.ts";
 // we send our own site origin. publicnode gates account scans, so the
 // Foundation endpoint (fine without a browser Origin) stays as the fallback.
 const RPC_URLS = [
-  process.env.SOLANA_RPC_SERVER_URL ?? process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "",
+  process.env.SOLANA_RPC_SERVER_URL ??
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ??
+    "",
   "https://api.mainnet-beta.solana.com",
 ].filter(Boolean);
-const TOKEN_PROGRAMS = ["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"];
+const TOKEN_PROGRAMS = [
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+];
 const CACHE_MS = 45_000;
 const SIGNATURE_LIMIT = 50;
 const CONCURRENCY = 5;
@@ -60,6 +73,8 @@ export type Activity = {
   /** Unix ms of the block. */
   ts: number;
   kind: ActivityKind;
+  /** Filled by a Jupiter Trigger limit order (the keeper signed, not the user). */
+  order?: boolean;
   mint: string;
   symbol: string;
   name: string;
@@ -108,12 +123,35 @@ export type WalletData = {
 
 const cache = new Map<string, { ts: number; data: WalletData }>();
 
-type RpcTokenAccount = { account: { data: { parsed: { info: { mint: string; tokenAmount: { uiAmount: number | null } } } } } };
-type RpcTokenBalance = { mint: string; owner?: string; uiTokenAmount: { uiAmount: number | null } };
+type RpcTokenAccount = {
+  account: {
+    data: {
+      parsed: {
+        info: { mint: string; tokenAmount: { uiAmount: number | null } };
+      };
+    };
+  };
+};
+type RpcTokenBalance = {
+  accountIndex: number;
+  mint: string;
+  owner?: string;
+  uiTokenAmount: { uiAmount: number | null };
+};
 export type RpcTransaction = {
   blockTime: number | null;
-  meta: { err: unknown; fee: number; preTokenBalances: RpcTokenBalance[]; postTokenBalances: RpcTokenBalance[] } | null;
+  meta: {
+    err: unknown;
+    fee: number;
+    preTokenBalances: RpcTokenBalance[];
+    postTokenBalances: RpcTokenBalance[];
+  } | null;
+  transaction?: { message: { instructions: { programId: string }[] } };
 };
+
+/** Jupiter Trigger (limit orders). Fills are signed by its keeper, and the
+ *  funds come from the order account, not from the wallet directly. */
+const TRIGGER_PROGRAM = "j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X";
 
 export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   let lastError: Error | null = null;
@@ -122,7 +160,10 @@ export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
       method: "POST",
       // Helius matches the Origin against its allowed domains; the Foundation
       // endpoint refuses requests that carry one, so only Helius gets it.
-      headers: { "content-type": "application/json", ...(url.includes("helius") ? { origin: SITE_URL } : {}) },
+      headers: {
+        "content-type": "application/json",
+        ...(url.includes("helius") ? { origin: SITE_URL } : {}),
+      },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       signal: AbortSignal.timeout(15_000),
     });
@@ -131,7 +172,10 @@ export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
       continue;
     }
     if (!res.ok) throw new Error(`RPC ${method} ${res.status}`);
-    const json = (await res.json()) as { result?: T; error?: { message: string } };
+    const json = (await res.json()) as {
+      result?: T;
+      error?: { message: string };
+    };
     if (json.error) {
       // Gated method on this provider: try the next one.
       if (/personal token|not allowed|forbidden/i.test(json.error.message)) {
@@ -145,7 +189,11 @@ export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   throw lastError ?? new Error(`RPC ${method}: no endpoint`);
 }
 
-async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
   await Promise.all(
@@ -173,32 +221,52 @@ function applyToBook(book: Book, a: Activity): void {
   if (book.units <= 0) return;
   const avg = book.cost / book.units;
   const taken = Math.min(a.amount, book.units);
-  if (a.kind === "sold" && a.usd != null) book.realized += a.usd * (taken / a.amount) - avg * taken;
+  if (a.kind === "sold" && a.usd != null)
+    book.realized += a.usd * (taken / a.amount) - avg * taken;
   book.units -= taken;
   book.cost -= avg * taken;
 }
 
-export async function getWallet(owner: string, fresh = false): Promise<WalletData> {
+export async function getWallet(
+  owner: string,
+  fresh = false,
+): Promise<WalletData> {
   // fresh: right after the user's own trade, or the refresh button.
   const hit = cache.get(owner);
   if (!fresh && hit && Date.now() - hit.ts < CACHE_MS) return hit.data;
 
   const now = Date.now();
-  const tokens = new Map<string, TokenRow>(listTokens().map((t) => [t.mint, t]));
+  const tokens = new Map<string, TokenRow>(
+    listTokens().map((t) => [t.mint, t]),
+  );
   const snaps = new Map(latestSnapshots().map((s) => [s.mint, s]));
 
   const [lamports, accountsA, accountsB, signatures] = await Promise.all([
     rpc<{ value: number }>("getBalance", [owner]),
-    rpc<{ value: RpcTokenAccount[] }>("getTokenAccountsByOwner", [owner, { programId: TOKEN_PROGRAMS[0] }, { encoding: "jsonParsed" }]),
-    rpc<{ value: RpcTokenAccount[] }>("getTokenAccountsByOwner", [owner, { programId: TOKEN_PROGRAMS[1] }, { encoding: "jsonParsed" }]),
-    rpc<{ signature: string; err: unknown }[]>("getSignaturesForAddress", [owner, { limit: SIGNATURE_LIMIT }]),
+    rpc<{ value: RpcTokenAccount[] }>("getTokenAccountsByOwner", [
+      owner,
+      { programId: TOKEN_PROGRAMS[0] },
+      { encoding: "jsonParsed" },
+    ]),
+    rpc<{ value: RpcTokenAccount[] }>("getTokenAccountsByOwner", [
+      owner,
+      { programId: TOKEN_PROGRAMS[1] },
+      { encoding: "jsonParsed" },
+    ]),
+    rpc<{ signature: string; err: unknown }[]>("getSignaturesForAddress", [
+      owner,
+      { limit: SIGNATURE_LIMIT },
+    ]),
   ]);
 
   // Balances per mint (a wallet can hold the same mint in two accounts).
   const amounts = new Map<string, number>();
   for (const acc of [...accountsA.value, ...accountsB.value]) {
     const info = acc.account.data.parsed.info;
-    amounts.set(info.mint, (amounts.get(info.mint) ?? 0) + (info.tokenAmount.uiAmount ?? 0));
+    amounts.set(
+      info.mint,
+      (amounts.get(info.mint) ?? 0) + (info.tokenAmount.uiAmount ?? 0),
+    );
   }
 
   // Activity: every recent transaction that moved a tracked token.
@@ -207,7 +275,10 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
     CONCURRENCY,
     async (s) => {
       try {
-        const tx = await rpc<RpcTransaction | null>("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+        const tx = await rpc<RpcTransaction | null>("getTransaction", [
+          s.signature,
+          { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 },
+        ]);
         return { signature: s.signature, tx };
       } catch {
         return { signature: s.signature, tx: null };
@@ -218,22 +289,67 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
   for (const { signature, tx } of txs) {
     if (!tx?.meta || tx.meta.err) continue;
     const deltas = new Map<string, number>();
-    for (const b of tx.meta.preTokenBalances) if (b.owner === owner) deltas.set(b.mint, (deltas.get(b.mint) ?? 0) - (b.uiTokenAmount.uiAmount ?? 0));
-    for (const b of tx.meta.postTokenBalances) if (b.owner === owner) deltas.set(b.mint, (deltas.get(b.mint) ?? 0) + (b.uiTokenAmount.uiAmount ?? 0));
+    for (const b of tx.meta.preTokenBalances)
+      if (b.owner === owner)
+        deltas.set(
+          b.mint,
+          (deltas.get(b.mint) ?? 0) - (b.uiTokenAmount.uiAmount ?? 0),
+        );
+    for (const b of tx.meta.postTokenBalances)
+      if (b.owner === owner)
+        deltas.set(
+          b.mint,
+          (deltas.get(b.mint) ?? 0) + (b.uiTokenAmount.uiAmount ?? 0),
+        );
     const usdcDelta = deltas.get(USDC_MINT) ?? 0;
     const ts = (tx.blockTime ?? 0) * 1000;
+    // Limit-order fill: what the order account paid out (USDC on a buy, shares
+    // on a sell) shows up as a decrease on accounts the wallet does not own.
+    const fill = Boolean(
+      tx.transaction?.message.instructions.some(
+        (i) => i.programId === TRIGGER_PROGRAM,
+      ),
+    );
+    const paidOut = new Map<string, number>();
+    if (fill) {
+      const post = new Map(
+        tx.meta.postTokenBalances.map((b) => [b.accountIndex, b]),
+      );
+      for (const b of tx.meta.preTokenBalances) {
+        if (b.owner === owner) continue;
+        const after = post.get(b.accountIndex)?.uiTokenAmount.uiAmount ?? 0;
+        const d = after - (b.uiTokenAmount.uiAmount ?? 0);
+        if (d < 0) paidOut.set(b.mint, (paidOut.get(b.mint) ?? 0) - d);
+      }
+    }
+    const usdOut = fill ? (paidOut.get(USDC_MINT) ?? 0) : 0;
+    let stockSeen = false;
     for (const [mint, delta] of deltas) {
       const t = tokens.get(mint);
       if (!t || Math.abs(delta) < 1e-9) continue;
-      const usd = Math.abs(usdcDelta) > 1e-6 ? Math.abs(usdcDelta) : null;
+      stockSeen = true;
+      const usd =
+        Math.abs(usdcDelta) > 1e-6
+          ? Math.abs(usdcDelta)
+          : fill && delta > 0 && usdOut > 1e-6
+            ? usdOut
+            : null;
       const amount = Math.abs(delta);
-      const kind: ActivityKind = delta > 0 ? (usdcDelta < 0 ? "bought" : "received") : usdcDelta > 0 ? "sold" : "sent";
+      const kind: ActivityKind =
+        delta > 0
+          ? usd != null
+            ? "bought"
+            : "received"
+          : usdcDelta > 0
+            ? "sold"
+            : "sent";
       const perShare = usd != null ? usd / amount : null;
       const refAtTime = ts ? (snapshotAt(mint, ts)?.ref_price ?? null) : null;
       activity.push({
         signature,
         ts,
         kind,
+        order: fill || undefined,
         mint,
         symbol: t.symbol,
         name: t.name,
@@ -243,9 +359,38 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
         usd,
         perShare,
         refAtTime,
-        vsRefPct: perShare != null && refAtTime ? (perShare / refAtTime - 1) * 100 : null,
-        feeSol: tx.meta.fee / 1e9,
+        vsRefPct:
+          perShare != null && refAtTime
+            ? (perShare / refAtTime - 1) * 100
+            : null,
+        feeSol: fill ? 0 : tx.meta.fee / 1e9,
       });
+    }
+    // Sell fill: the shares left the order account, only USDC reached the wallet.
+    if (fill && !stockSeen && usdcDelta > 1e-6) {
+      for (const [mint, amount] of paidOut) {
+        const t = tokens.get(mint);
+        if (!t || amount < 1e-9) continue;
+        const refAtTime = ts ? (snapshotAt(mint, ts)?.ref_price ?? null) : null;
+        const perShare = usdcDelta / amount;
+        activity.push({
+          signature,
+          ts,
+          kind: "sold",
+          order: true,
+          mint,
+          symbol: t.symbol,
+          name: t.name,
+          underlying: t.underlying,
+          logo: t.logo ?? null,
+          amount,
+          usd: usdcDelta,
+          perShare,
+          refAtTime,
+          vsRefPct: refAtTime ? (perShare / refAtTime - 1) * 100 : null,
+          feeSol: 0,
+        });
+      }
     }
   }
   activity.sort((a, b) => a.ts - b.ts);
@@ -288,22 +433,36 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
       share: 0,
       avgCost,
       basisUnits,
-      unrealized: price != null && avgCost != null && basisUnits > 0 ? (price - avgCost) * basisUnits : null,
-      unrealizedPct: price != null && avgCost ? (price / avgCost - 1) * 100 : null,
+      unrealized:
+        price != null && avgCost != null && basisUnits > 0
+          ? (price - avgCost) * basisUnits
+          : null,
+      unrealizedPct:
+        price != null && avgCost ? (price / avgCost - 1) * 100 : null,
       realized: book?.realized ?? 0,
-      change24hPct: price != null && price24h ? (price / price24h - 1) * 100 : null,
+      change24hPct:
+        price != null && price24h ? (price / price24h - 1) * 100 : null,
       spark: sparks.get(mint) ?? [],
       nextEarnings: nextEarningsFor(t.underlying, today)?.date ?? null,
     });
   }
   holdings.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
   const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
-  for (const h of holdings) h.share = totalValue > 0 && h.value != null ? h.value / totalValue : 0;
+  for (const h of holdings)
+    h.share = totalValue > 0 && h.value != null ? h.value / totalValue : 0;
 
   // Value history: today's holdings priced with each hour's close, last price carried forward.
   const HOUR = 3600_000;
   const from = Math.floor((now - 7 * DAY_MS) / HOUR) * HOUR;
-  const perMint = holdings.map((h) => ({ amount: h.amount, byHour: new Map(candlesSince(h.mint, from).map((c) => [Math.floor(c.ts / HOUR) * HOUR, c.close])) }));
+  const perMint = holdings.map((h) => ({
+    amount: h.amount,
+    byHour: new Map(
+      candlesSince(h.mint, from).map((c) => [
+        Math.floor(c.ts / HOUR) * HOUR,
+        c.close,
+      ]),
+    ),
+  }));
   const history: { ts: number; value: number }[] = [];
   const last = new Map<number, number>();
   for (let ts = from; ts <= now; ts += HOUR) {
@@ -320,14 +479,33 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
     if (known) history.push({ ts, value: Number(value.toFixed(2)) });
   }
 
-  const costBasis = holdings.reduce((sum, h) => sum + (h.avgCost ?? 0) * h.basisUnits, 0);
+  const costBasis = holdings.reduce(
+    (sum, h) => sum + (h.avgCost ?? 0) * h.basisUnits,
+    0,
+  );
   const traced = holdings.filter((h) => h.unrealized != null);
-  const unrealized = traced.length ? traced.reduce((sum, h) => sum + (h.unrealized ?? 0), 0) : null;
-  const with24h = holdings.filter((h) => h.change24hPct != null && h.value != null);
-  const value24h = with24h.reduce((sum, h) => sum + (h.value ?? 0) / (1 + (h.change24hPct ?? 0) / 100), 0);
-  const change24h = with24h.length ? with24h.reduce((sum, h) => sum + (h.value ?? 0), 0) - value24h : null;
-  const buysWithRef = activity.filter((a) => a.kind === "bought" && a.refAtTime != null && a.perShare != null);
-  const edgeUsd = buysWithRef.length ? buysWithRef.reduce((sum, a) => sum + ((a.refAtTime ?? 0) - (a.perShare ?? 0)) * a.amount, 0) : null;
+  const unrealized = traced.length
+    ? traced.reduce((sum, h) => sum + (h.unrealized ?? 0), 0)
+    : null;
+  const with24h = holdings.filter(
+    (h) => h.change24hPct != null && h.value != null,
+  );
+  const value24h = with24h.reduce(
+    (sum, h) => sum + (h.value ?? 0) / (1 + (h.change24hPct ?? 0) / 100),
+    0,
+  );
+  const change24h = with24h.length
+    ? with24h.reduce((sum, h) => sum + (h.value ?? 0), 0) - value24h
+    : null;
+  const buysWithRef = activity.filter(
+    (a) => a.kind === "bought" && a.refAtTime != null && a.perShare != null,
+  );
+  const edgeUsd = buysWithRef.length
+    ? buysWithRef.reduce(
+        (sum, a) => sum + ((a.refAtTime ?? 0) - (a.perShare ?? 0)) * a.amount,
+        0,
+      )
+    : null;
 
   const data: WalletData = {
     owner,
@@ -338,16 +516,22 @@ export async function getWallet(owner: string, fresh = false): Promise<WalletDat
     totalValue,
     costBasis,
     unrealized,
-    unrealizedPct: unrealized != null && costBasis > 0 ? (unrealized / costBasis) * 100 : null,
+    unrealizedPct:
+      unrealized != null && costBasis > 0
+        ? (unrealized / costBasis) * 100
+        : null,
     realized: [...books.values()].reduce((sum, b) => sum + b.realized, 0),
     partialBasis: holdings.some((h) => h.basisUnits < h.amount - 1e-9),
     change24h,
-    change24hPct: change24h != null && value24h > 0 ? (change24h / value24h) * 100 : null,
+    change24hPct:
+      change24h != null && value24h > 0 ? (change24h / value24h) * 100 : null,
     edgeUsd,
     edgeBuys: buysWithRef.length,
     feesSol: activity.reduce((sum, a) => sum + a.feeSol, 0),
     history,
-    stocks: getRadar().rows.filter((r) => r.tradability === "easy" || r.tradability === "ok").map((r) => ({ mint: r.mint, symbol: r.symbol, name: r.name })),
+    stocks: getRadar()
+      .rows.filter((r) => r.tradability === "easy" || r.tradability === "ok")
+      .map((r) => ({ mint: r.mint, symbol: r.symbol, name: r.name })),
     holdings,
     activity: [...activity].reverse(),
   };

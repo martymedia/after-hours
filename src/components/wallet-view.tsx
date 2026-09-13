@@ -7,11 +7,21 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowUpRight, CalendarDays, Coins, RefreshCw, Share2, Wallet } from "lucide-react";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Coins,
+  RefreshCw,
+  Share2,
+  Wallet,
+} from "lucide-react";
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
 import { NotificationsCard } from "./notifications-card";
-import { useConnectedWallet, useDisconnect } from "@solana/kit-plugin-wallet/react";
+import {
+  useConnectedWallet,
+  useDisconnect,
+} from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { useWalletReady } from "@/lib/wallet-ready";
 import { formatPct, formatUsd, gapTone, gapWords } from "@/lib/format";
@@ -23,22 +33,54 @@ import { TickerBadge } from "./ticker-badge";
 import { Tip } from "./tip";
 import { shortAddress } from "./wallet-connect";
 
-const ConnectButton = dynamic(() => import("./wallet-connect").then((m) => m.ConnectButton), {
-  ssr: false,
-  loading: () => <span className="btn w-full opacity-50">Checking wallets…</span>,
-});
+const ConnectButton = dynamic(
+  () => import("./wallet-connect").then((m) => m.ConnectButton),
+  {
+    ssr: false,
+    loading: () => (
+      <span className="btn w-full opacity-50">Checking wallets…</span>
+    ),
+  },
+);
 
-const KIND_LABEL: Record<Activity["kind"], string> = { bought: "Bought", sold: "Sold", received: "Received", sent: "Sent" };
-const when = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-const clock = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
-const dayLabel = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const SEGMENT_COLORS = ["#5b91ff", "#8fb3ff", "#3d6fd6", "#c7d6ff", "#2f3340", "#6f7480"];
+const KIND_LABEL: Record<Activity["kind"], string> = {
+  bought: "Bought",
+  sold: "Sold",
+  received: "Received",
+  sent: "Sent",
+};
+const when = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const clock = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+});
+const dayLabel = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+const SEGMENT_COLORS = [
+  "#5b91ff",
+  "#8fb3ff",
+  "#3d6fd6",
+  "#c7d6ff",
+  "#2f3340",
+  "#6f7480",
+];
 
 export function WalletView({ address }: { address?: string }) {
   const ready = useWalletReady();
   const connected = useConnectedWallet(solanaClient);
   const { dispatch: disconnect } = useDisconnect(solanaClient);
-  const [stored, setStored] = useState<{ owner: string; data: WalletData } | null>(null);
+  const [stored, setStored] = useState<{
+    owner: string;
+    data: WalletData;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // A public address makes the page read-only: no sell, no disconnect.
@@ -52,7 +94,10 @@ export function WalletView({ address }: { address?: string }) {
     const url = `${window.location.origin}/trade/${a.signature}?mint=${a.mint}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `${KIND_LABEL[a.kind]} ${a.symbol} on After Hours`, url });
+        await navigator.share({
+          title: `${KIND_LABEL[a.kind]} ${a.symbol} on After Hours`,
+          url,
+        });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -66,7 +111,10 @@ export function WalletView({ address }: { address?: string }) {
     const url = `${window.location.origin}/wallet/${owner}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "My tokenized stocks on After Hours", url });
+        await navigator.share({
+          title: "My tokenized stocks on After Hours",
+          url,
+        });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -78,21 +126,27 @@ export function WalletView({ address }: { address?: string }) {
   const data = stored && stored.owner === owner ? stored.data : null;
 
   // fresh skips the server's short cache: after a trade, or on the refresh button.
-  const load = useCallback(async (fresh = false) => {
-    if (!owner) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/wallet?owner=${owner}${fresh ? "&fresh=1" : ""}`, fresh ? { cache: "no-store" } : undefined);
-      const body = (await res.json()) as WalletData & { error?: string };
-      if (!res.ok) throw new Error(body.error ?? "could not read the wallet");
-      setStored({ owner, data: body });
-      setError(null);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [owner]);
+  const load = useCallback(
+    async (fresh = false) => {
+      if (!owner) return;
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `/api/wallet?owner=${owner}${fresh ? "&fresh=1" : ""}`,
+          fresh ? { cache: "no-store" } : undefined,
+        );
+        const body = (await res.json()) as WalletData & { error?: string };
+        if (!res.ok) throw new Error(body.error ?? "could not read the wallet");
+        setStored({ owner, data: body });
+        setError(null);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [owner],
+  );
 
   useEffect(() => {
     if (!owner) return;
@@ -126,15 +180,20 @@ export function WalletView({ address }: { address?: string }) {
         <span className="icon-badge relative mx-auto h-12 w-12 border-white/15 bg-white/10 text-white">
           <Wallet size={22} strokeWidth={1.75} />
         </span>
-        <h2 className="relative mt-5 text-2xl font-semibold tracking-tight">Your stocks, in your wallet.</h2>
+        <h2 className="relative mt-5 text-2xl font-semibold tracking-tight">
+          Your stocks, in your wallet.
+        </h2>
         <p className="text-on-dark-muted relative mx-auto mt-2 max-w-md">
-          Connect a wallet to see which tokenized stocks it holds, how each one has done since you bought it, and
-          whether you paid less than Wall Street&apos;s last print.
+          Connect a wallet to see which tokenized stocks it holds, how each one
+          has done since you bought it, and whether you paid less than Wall
+          Street&apos;s last print.
         </p>
         <div className="relative mx-auto mt-6 max-w-xs">
           <ConnectButton className="btn btn-white w-full" />
         </div>
-        <p className="text-on-dark-muted relative mt-4 text-xs">Read-only. Nothing is signed until you buy.</p>
+        <p className="text-on-dark-muted relative mt-4 text-xs">
+          Read-only. Nothing is signed until you buy.
+        </p>
       </div>
     );
   }
@@ -144,7 +203,11 @@ export function WalletView({ address }: { address?: string }) {
       <div className="card p-6">
         <p className="font-medium">Could not read this wallet.</p>
         <p className="text-muted mt-1 text-sm">{error}</p>
-        <button type="button" onClick={() => load(true)} className="btn btn-sm mt-4">
+        <button
+          type="button"
+          onClick={() => load(true)}
+          className="btn btn-sm mt-4"
+        >
           Try again
         </button>
       </div>
@@ -153,10 +216,14 @@ export function WalletView({ address }: { address?: string }) {
 
   const d = data!;
   const pnl = d.unrealized;
-  const best = [...d.holdings].filter((h) => h.unrealizedPct != null).sort((a, b) => (b.unrealizedPct ?? 0) - (a.unrealizedPct ?? 0))[0];
+  const best = [...d.holdings]
+    .filter((h) => h.unrealizedPct != null)
+    .sort((a, b) => (b.unrealizedPct ?? 0) - (a.unrealizedPct ?? 0))[0];
   const nextReport = d.holdings
     .filter((h) => h.nextEarnings)
-    .sort((a, b) => (a.nextEarnings ?? "").localeCompare(b.nextEarnings ?? ""))[0];
+    .sort((a, b) =>
+      (a.nextEarnings ?? "").localeCompare(b.nextEarnings ?? ""),
+    )[0];
 
   return (
     <div className="t-reveal flex flex-col gap-6">
@@ -169,7 +236,11 @@ export function WalletView({ address }: { address?: string }) {
           <div>
             <p className="num font-medium">
               {shortAddress(owner)}
-              {readOnly && <span className="text-muted ml-2 text-xs font-normal">read-only view</span>}
+              {readOnly && (
+                <span className="text-muted ml-2 text-xs font-normal">
+                  read-only view
+                </span>
+              )}
             </p>
             <p className="text-muted text-xs">
               Updated {clock.format(new Date(d.generatedAt))}
@@ -178,20 +249,44 @@ export function WalletView({ address }: { address?: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => load(true)} disabled={loading} className="icon-badge h-9 w-9 hover:bg-soft" aria-label="Refresh">
-            <RefreshCw size={15} strokeWidth={1.75} className={loading ? "animate-spin" : ""} />
+          <button
+            type="button"
+            onClick={() => load(true)}
+            disabled={loading}
+            className="icon-badge h-9 w-9 hover:bg-soft"
+            aria-label="Refresh"
+          >
+            <RefreshCw
+              size={15}
+              strokeWidth={1.75}
+              className={loading ? "animate-spin" : ""}
+            />
           </button>
-          <a href={`https://solscan.io/account/${owner}`} target="_blank" rel="noreferrer" className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
+          <a
+            href={`https://solscan.io/account/${owner}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
+          >
             Solscan
           </a>
           {!readOnly && (
-            <button type="button" onClick={share} className="btn btn-sm border border-line bg-card text-ink hover:bg-soft" aria-label="Share this wallet">
+            <button
+              type="button"
+              onClick={share}
+              className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
+              aria-label="Share this wallet"
+            >
               <Share2 size={14} strokeWidth={1.75} className="mr-1.5" />
               {copied ? "Link copied" : "Share"}
             </button>
           )}
           {!readOnly && (
-            <button type="button" onClick={() => disconnect()} className="btn btn-sm border border-line bg-card text-ink hover:bg-soft">
+            <button
+              type="button"
+              onClick={() => disconnect()}
+              className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
+            >
               Disconnect
             </button>
           )}
@@ -199,7 +294,10 @@ export function WalletView({ address }: { address?: string }) {
       </div>
 
       {/* Hero: value, P&L, allocation */}
-      <section className="card-dark rise relative overflow-hidden p-6 sm:p-8" style={{ "--i": 0 } as React.CSSProperties}>
+      <section
+        className="card-dark rise relative overflow-hidden p-6 sm:p-8"
+        style={{ "--i": 0 } as React.CSSProperties}
+      >
         <Glow className="-top-32 -left-24" />
         <Glow className="-right-24 -bottom-40 opacity-60" />
         <div className="relative grid gap-8 lg:grid-cols-12">
@@ -215,25 +313,56 @@ export function WalletView({ address }: { address?: string }) {
               <CountUp value={d.totalValue} kind="usd" />
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <HeroStat label="Since you bought" value={pnl} pct={d.unrealizedPct} />
-              <HeroStat label="Last 24 hours" value={d.change24h} pct={d.change24hPct} />
-              {d.realized !== 0 && <HeroStat label="Realized" value={d.realized} pct={null} />}
+              <HeroStat
+                label="Since you bought"
+                value={pnl}
+                pct={d.unrealizedPct}
+              />
+              <HeroStat
+                label="Last 24 hours"
+                value={d.change24h}
+                pct={d.change24hPct}
+              />
+              {d.realized !== 0 && (
+                <HeroStat label="Realized" value={d.realized} pct={null} />
+              )}
             </div>
             {d.history.length > 2 && (
               <div className="mt-5">
-                <p className="text-on-dark-muted mb-1 text-xs">Last 7 days, at today&apos;s holdings</p>
-                <Sparkline values={d.history.map((h) => h.value)} width={600} height={56} color={d.history[d.history.length - 1].value >= d.history[0].value ? "var(--blue)" : "var(--down)"} fill stretch />
+                <p className="text-on-dark-muted mb-1 text-xs">
+                  Last 7 days, at today&apos;s holdings
+                </p>
+                <Sparkline
+                  values={d.history.map((h) => h.value)}
+                  width={600}
+                  height={56}
+                  color={
+                    d.history[d.history.length - 1].value >= d.history[0].value
+                      ? "var(--blue)"
+                      : "var(--down)"
+                  }
+                  fill
+                  stretch
+                />
               </div>
             )}
             {d.edgeUsd != null && d.edgeBuys > 0 && (
               <p className="mt-5 text-sm leading-relaxed">
-                <span className={`font-medium ${d.edgeUsd >= 0 ? "text-blue-light" : "text-down"}`}>
+                <span
+                  className={`font-medium ${d.edgeUsd >= 0 ? "text-blue-light" : "text-down"}`}
+                >
                   {d.edgeUsd >= 0 ? "After Hours edge: " : "After Hours cost: "}
                   {formatUsd(Math.abs(d.edgeUsd))}
                 </span>{" "}
                 <span className="text-on-dark-muted">
-                  {d.edgeUsd >= 0 ? "less" : "more"} than Wall Street&apos;s last print across {d.edgeBuys} {d.edgeBuys === 1 ? "buy" : "buys"}.{" "}
-                  <Tip text="For every buy we compare what you paid per share with the reference price at that moment. Buying while the exchange is closed is where this adds up." tone="light" underline>
+                  {d.edgeUsd >= 0 ? "less" : "more"} than Wall Street&apos;s
+                  last print across {d.edgeBuys}{" "}
+                  {d.edgeBuys === 1 ? "buy" : "buys"}.{" "}
+                  <Tip
+                    text="For every buy we compare what you paid per share with the reference price at that moment. Buying while the exchange is closed is where this adds up."
+                    tone="light"
+                    underline
+                  >
                     How is that counted?
                   </Tip>
                 </span>
@@ -241,7 +370,8 @@ export function WalletView({ address }: { address?: string }) {
             )}
             {d.partialBasis && (
               <p className="text-on-dark-muted mt-2 text-xs">
-                Some units were bought before the last 50 transactions; their cost is unknown and left out of the gain.
+                Some units were bought before the last 50 transactions; their
+                cost is unknown and left out of the gain.
               </p>
             )}
           </div>
@@ -258,7 +388,12 @@ export function WalletView({ address }: { address?: string }) {
                     <span
                       key={h.mint}
                       className="h-full transition-[width] duration-700"
-                      style={{ width: `${Math.max(1.5, h.share * 100)}%`, background: SEGMENT_COLORS[i % SEGMENT_COLORS.length], boxShadow: i === 0 ? "0 0 16px rgba(91,145,255,0.7)" : undefined }}
+                      style={{
+                        width: `${Math.max(1.5, h.share * 100)}%`,
+                        background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                        boxShadow:
+                          i === 0 ? "0 0 16px rgba(91,145,255,0.7)" : undefined,
+                      }}
                       title={`${h.name} ${(h.share * 100).toFixed(0)}%`}
                     />
                   ))}
@@ -266,15 +401,24 @@ export function WalletView({ address }: { address?: string }) {
                 <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                   {d.holdings.slice(0, 6).map((h, i) => (
                     <li key={h.mint} className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} />
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                        }}
+                      />
                       <span className="truncate">{h.name}</span>
-                      <span className="num text-on-dark-muted ml-auto">{(h.share * 100).toFixed(0)}%</span>
+                      <span className="num text-on-dark-muted ml-auto">
+                        {(h.share * 100).toFixed(0)}%
+                      </span>
                     </li>
                   ))}
                 </ul>
                 {d.holdings.length > 1 && d.holdings[0].share > 0.6 && (
                   <p className="text-on-dark-muted mt-3 text-xs">
-                    {d.holdings[0].name} is {(d.holdings[0].share * 100).toFixed(0)}% of the book. One report can move the whole number.
+                    {d.holdings[0].name} is{" "}
+                    {(d.holdings[0].share * 100).toFixed(0)}% of the book. One
+                    report can move the whole number.
                   </p>
                 )}
               </>
@@ -298,8 +442,16 @@ export function WalletView({ address }: { address?: string }) {
           icon={Coins}
           label="SOL for fees"
           value={<span className="num">{d.sol.toFixed(4)}</span>}
-          detail={d.sol < 0.005 ? "Low. Add about 0.02 SOL." : `${formatSol(d.feesSol)} SOL spent on fees so far`}
-          badge={d.sol < 0.005 ? <span className="pill bg-soft-warn text-warn">low</span> : undefined}
+          detail={
+            d.sol < 0.005
+              ? "Low. Add about 0.02 SOL."
+              : `${formatSol(d.feesSol)} SOL spent on fees so far`
+          }
+          badge={
+            d.sol < 0.005 ? (
+              <span className="pill bg-soft-warn text-warn">low</span>
+            ) : undefined
+          }
           hint="Each transaction costs a fraction of a cent in SOL, and the first buy of a stock reserves about 0.002 SOL for its token account."
         />
         <StatCard
@@ -308,7 +460,19 @@ export function WalletView({ address }: { address?: string }) {
           label="Best position"
           href={best ? `/stock/${best.underlying}` : undefined}
           value={best ? best.name : "–"}
-          detail={best ? <span className={(best.unrealizedPct ?? 0) >= 0 ? "text-up" : "text-down"}>{formatPct(best.unrealizedPct)} since you bought</span> : "No traced buys yet"}
+          detail={
+            best ? (
+              <span
+                className={
+                  (best.unrealizedPct ?? 0) >= 0 ? "text-up" : "text-down"
+                }
+              >
+                {formatPct(best.unrealizedPct)} since you bought
+              </span>
+            ) : (
+              "No traced buys yet"
+            )
+          }
           hint="The position with the highest gain against its average buy price."
         />
         <StatCard
@@ -317,7 +481,11 @@ export function WalletView({ address }: { address?: string }) {
           label="Next report"
           href={nextReport ? `/stock/${nextReport.underlying}` : "/earnings"}
           value={nextReport ? nextReport.name : "–"}
-          detail={nextReport && nextReport.nextEarnings ? `Earnings ${dayLabel.format(new Date(`${nextReport.nextEarnings}T12:00:00Z`))}` : "No earnings ahead in your holdings"}
+          detail={
+            nextReport && nextReport.nextEarnings
+              ? `Earnings ${dayLabel.format(new Date(`${nextReport.nextEarnings}T12:00:00Z`))}`
+              : "No earnings ahead in your holdings"
+          }
           hint="Earnings land after the bell and the onchain price reacts first. This is your soonest one."
         />
       </div>
@@ -350,7 +518,10 @@ export function WalletView({ address }: { address?: string }) {
           {d.holdings.length === 0 ? (
             <div className="py-8 text-center">
               <p className="font-medium">No tokenized stocks yet.</p>
-              <p className="text-muted mt-1 text-sm">Pick one and buy from this wallet. It shows up here right after the transaction confirms.</p>
+              <p className="text-muted mt-1 text-sm">
+                Pick one and buy from this wallet. It shows up here right after
+                the transaction confirms.
+              </p>
               <Link href="/stocks" className="btn btn-sm mt-4">
                 See what is trading
               </Link>
@@ -358,7 +529,11 @@ export function WalletView({ address }: { address?: string }) {
           ) : (
             <ul className="divide-y divide-line">
               {d.holdings.map((h) => (
-                <HoldingRow key={h.mint} h={h} onSell={readOnly ? undefined : () => setSelling(h)} />
+                <HoldingRow
+                  key={h.mint}
+                  h={h}
+                  onSell={readOnly ? undefined : () => setSelling(h)}
+                />
               ))}
             </ul>
           )}
@@ -368,33 +543,66 @@ export function WalletView({ address }: { address?: string }) {
         <section className="card p-5 lg:col-span-5">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Recent activity</h2>
-            <span className="text-muted text-xs">last 50 transactions scanned</span>
+            <span className="text-muted text-xs">
+              last 50 transactions scanned
+            </span>
           </div>
           {d.activity.length === 0 ? (
-            <p className="text-muted py-8 text-center text-sm">No stock trades in the recent history of this wallet.</p>
+            <p className="text-muted py-8 text-center text-sm">
+              No stock trades in the recent history of this wallet.
+            </p>
           ) : (
             <ul className="divide-y divide-line">
               {d.activity.map((a) => (
-                <li key={`${a.signature}-${a.mint}`} className="flex items-center gap-1">
-                  <a href={`https://solscan.io/tx/${a.signature}`} target="_blank" rel="noreferrer" className="group flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80">
+                <li
+                  key={`${a.signature}-${a.mint}`}
+                  className="flex items-center gap-1"
+                >
+                  <a
+                    href={`https://solscan.io/tx/${a.signature}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80"
+                  >
                     <TickerBadge symbol={a.symbol} logo={a.logo} size={36} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
-                        <span className={a.kind === "bought" || a.kind === "received" ? "text-blue" : "text-ink"}>{KIND_LABEL[a.kind]}</span>{" "}
+                        <span
+                          className={
+                            a.kind === "bought" || a.kind === "received"
+                              ? "text-blue"
+                              : "text-ink"
+                          }
+                        >
+                          {KIND_LABEL[a.kind]}
+                        </span>
+                        {a.order && (
+                          <span className="text-muted"> by order</span>
+                        )}{" "}
                         {trimAmount(a.amount)} {a.symbol}
-                        {a.usd != null && <span className="text-muted font-normal"> for {formatUsd(a.usd)}</span>}
+                        {a.usd != null && (
+                          <span className="text-muted font-normal">
+                            {" "}
+                            for {formatUsd(a.usd)}
+                          </span>
+                        )}
                       </span>
                       <span className="text-muted num block text-xs">
                         {when.format(new Date(a.ts))}
                         {a.vsRefPct != null && a.kind === "bought" && (
                           <>
                             {" · "}
-                            <span className={gapTone(a.vsRefPct)}>{gapWords(a.vsRefPct)} than Wall Street</span>
+                            <span className={gapTone(a.vsRefPct)}>
+                              {gapWords(a.vsRefPct)} than Wall Street
+                            </span>
                           </>
                         )}
                       </span>
                     </span>
-                    <span className="text-muted-2 group-hover:text-ink transition" aria-hidden="true">
+                    <span
+                      className="text-muted-2 group-hover:text-ink transition"
+                      aria-hidden="true"
+                    >
                       <ArrowUpRight size={16} strokeWidth={1.75} />
                     </span>
                   </a>
@@ -404,7 +612,11 @@ export function WalletView({ address }: { address?: string }) {
                       onClick={() => shareTrade(a)}
                       className={`icon-badge h-8 w-8 shrink-0 hover:bg-soft ${sharedSig === a.signature ? "border-ink bg-ink text-white" : "text-muted"}`}
                       aria-label={`Share this ${a.kind === "bought" ? "buy" : "sale"}`}
-                      title={sharedSig === a.signature ? "Link copied" : "Share as a card"}
+                      title={
+                        sharedSig === a.signature
+                          ? "Link copied"
+                          : "Share as a card"
+                      }
                     >
                       <Share2 size={14} strokeWidth={1.75} />
                     </button>
@@ -413,7 +625,10 @@ export function WalletView({ address }: { address?: string }) {
               ))}
             </ul>
           )}
-          <p className="text-muted mt-3 text-xs">Every row opens the transaction on Solscan. This is your wallet read live; nothing is stored or custodied by us.</p>
+          <p className="text-muted mt-3 text-xs">
+            Every row opens the transaction on Solscan. This is your wallet read
+            live; nothing is stored or custodied by us.
+          </p>
         </section>
       </div>
     </div>
@@ -421,22 +636,51 @@ export function WalletView({ address }: { address?: string }) {
 }
 
 /** Money change with a coloured percent pill; the number itself stays white. */
-function HeroStat({ label, value, pct }: { label: string; value: number | null; pct: number | null }) {
-  const tone = value == null ? "" : value >= 0 ? "bg-up/20 text-up" : "bg-down/20 text-down";
+function HeroStat({
+  label,
+  value,
+  pct,
+}: {
+  label: string;
+  value: number | null;
+  pct: number | null;
+}) {
+  const tone =
+    value == null
+      ? ""
+      : value >= 0
+        ? "bg-up/20 text-up"
+        : "bg-down/20 text-down";
   return (
     <div className="rounded-2xl bg-white/10 p-3">
       <p className="text-on-dark-muted text-xs">{label}</p>
-      <p className="num mt-1 text-xl font-semibold">{value == null ? "–" : signed(value)}</p>
-      {pct != null && <span className={`num mt-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>{formatPct(pct)}</span>}
+      <p className="num mt-1 text-xl font-semibold">
+        {value == null ? "–" : signed(value)}
+      </p>
+      {pct != null && (
+        <span
+          className={`num mt-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}
+        >
+          {formatPct(pct)}
+        </span>
+      )}
     </div>
   );
 }
 
 function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
-  const tone = h.unrealized == null ? "text-muted" : h.unrealized >= 0 ? "text-up" : "text-down";
+  const tone =
+    h.unrealized == null
+      ? "text-muted"
+      : h.unrealized >= 0
+        ? "text-up"
+        : "text-down";
   return (
     <li className="flex items-center gap-2">
-      <Link href={`/stock/${h.underlying}`} className="flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80">
+      <Link
+        href={`/stock/${h.underlying}`}
+        className="flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80"
+      >
         <TickerBadge symbol={h.symbol} logo={h.logo} size={40} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{h.name}</span>
@@ -447,17 +691,31 @@ function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
           </span>
         </span>
         <span className="hidden sm:block">
-          <Sparkline values={h.spark} color={(h.change24hPct ?? 0) >= 0 ? "var(--blue)" : "var(--down)"} />
+          <Sparkline
+            values={h.spark}
+            color={(h.change24hPct ?? 0) >= 0 ? "var(--blue)" : "var(--down)"}
+          />
         </span>
         <span className="w-28 shrink-0 text-right">
-          <span className="num block font-semibold">{h.value == null ? "–" : formatUsd(h.value)}</span>
+          <span className="num block font-semibold">
+            {h.value == null ? "–" : formatUsd(h.value)}
+          </span>
           <span className={`num block text-xs ${tone}`}>
-            {h.unrealized == null ? <span className={gapTone(h.gapPct)}>{gapWords(h.gapPct)}</span> : `${signed(h.unrealized)} · ${formatPct(h.unrealizedPct)}`}
+            {h.unrealized == null ? (
+              <span className={gapTone(h.gapPct)}>{gapWords(h.gapPct)}</span>
+            ) : (
+              `${signed(h.unrealized)} · ${formatPct(h.unrealizedPct)}`
+            )}
           </span>
         </span>
       </Link>
       {onSell && (
-        <button type="button" onClick={onSell} className="pill shrink-0 border border-line bg-card text-ink hover:border-ink" aria-label={`Sell ${h.symbol}`}>
+        <button
+          type="button"
+          onClick={onSell}
+          className="pill shrink-0 border border-line bg-card text-ink hover:border-ink"
+          aria-label={`Sell ${h.symbol}`}
+        >
           Sell
         </button>
       )}
@@ -467,7 +725,12 @@ function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
 
 /** Soft blue light behind the dark hero. A blurred disc, not a gradient. */
 function Glow({ className = "" }: { className?: string }) {
-  return <span aria-hidden="true" className={`pointer-events-none absolute h-72 w-72 rounded-full bg-blue/30 blur-3xl ${className}`} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute h-72 w-72 rounded-full bg-blue/30 blur-3xl ${className}`}
+    />
+  );
 }
 
 function signed(n: number): string {
