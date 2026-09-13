@@ -216,6 +216,12 @@ export function WalletView({ address }: { address?: string }) {
               <HeroStat label="Last 24 hours" value={d.change24h} pct={d.change24hPct} />
               {d.realized !== 0 && <HeroStat label="Realized" value={d.realized} pct={null} />}
             </div>
+            {d.history.length > 2 && (
+              <div className="mt-5">
+                <p className="text-on-dark-muted mb-1 text-xs">Last 7 days, at today&apos;s holdings</p>
+                <Sparkline values={d.history.map((h) => h.value)} width={520} height={56} color={d.history[d.history.length - 1].value >= d.history[0].value ? "var(--blue)" : "var(--down)"} fill />
+              </div>
+            )}
             {d.edgeUsd != null && d.edgeBuys > 0 && (
               <p className="mt-5 text-sm leading-relaxed">
                 <span className={`font-medium ${d.edgeUsd >= 0 ? "text-blue-light" : "text-down"}`}>

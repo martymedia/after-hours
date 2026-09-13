@@ -131,6 +131,14 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
               </span>
               <span className="num">{formatPct(estimate.impactPct)}</span>
             </div>
+            {estimate.feeBps ? (
+              <div className="mt-1 flex items-baseline justify-between text-sm">
+                <span className="text-muted">
+                  <Tip text={`After Hours keeps ${(estimate.feeBps / 100).toFixed(2)}% of each swap. It is already inside the shares and price shown here; nothing comes on top.`}>Our fee</Tip>
+                </span>
+                <span className="num">{(estimate.feeBps / 100).toFixed(2)}% · included</span>
+              </div>
+            ) : null}
 
             <div className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}>
               {verdict.text}

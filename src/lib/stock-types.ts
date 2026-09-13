@@ -1,4 +1,5 @@
 import type { IssuerId } from "./issuers.ts";
+import type { GapStats } from "./gap-stats.ts";
 import type { PhaseInfo, ReferenceLabel } from "./market-phase.ts";
 import type { RadarRow, Tradability } from "./radar-types.ts";
 import type { Sector } from "./companies.ts";
@@ -36,6 +37,7 @@ export type StockData = {
   candles: { ts: number; close: number }[];
   /** Onchain vs reference over the last 48 hours, one point per 15 minutes. */
   gapSeries: GapPoint[];
+  gapStats: GapStats;
   /** Other tracked stocks in the same sector. */
   similar: RadarRow[];
   nextEarnings: { date: string; timing: string } | null;
@@ -43,6 +45,8 @@ export type StockData = {
 
 export type CostEstimate = {
   side?: "buy" | "sell";
+  /** Our platform fee in basis points, already inside the numbers. 0 when off. */
+  feeBps?: number;
   /** USDC paid (buy) or received (sell). */
   usd: number;
   shares: number;

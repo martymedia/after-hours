@@ -188,7 +188,22 @@ export function BuyButton({ mint, symbol, usd, side = "buy", shares: sharesToSel
             })}
           </ol>
         ) : (
-          <span className="text-muted num text-center text-xs">Wallet {shortAddress(connected.account.address)}</span>
+          <span className="text-muted num text-center text-xs">
+            Wallet {shortAddress(connected.account.address)}
+            {side === "buy" && (
+              <>
+                {" · "}
+                <a
+                  href={`https://buy.moonpay.com/?currencyCode=usdc_sol&walletAddress=${connected.account.address}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4 hover:text-ink"
+                >
+                  Need USDC? Buy with a card
+                </a>
+              </>
+            )}
+          </span>
         )}
       </div>
       {step === "error" && error && (

@@ -11,6 +11,7 @@ import { StatCard } from "@/components/stat-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { GapChart } from "@/components/gap-chart";
 import { Tip } from "@/components/tip";
+import { GapHistory } from "@/components/gap-history";
 
 export const dynamic = "force-dynamic";
 
@@ -148,6 +149,8 @@ export default async function StockPage({ params }: Props) {
             </p>
             <GapChart series={stock.gapSeries} referencePhrase={stock.reference.phrase} />
           </section>
+
+          <GapHistory stats={stock.gapStats} symbol={p.symbol} referencePhrase={stock.reference.phrase} />
 
           <section className="card p-5">
             <h2 className="font-semibold">What you are buying</h2>

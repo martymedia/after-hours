@@ -11,6 +11,13 @@ export const dynamic = "force-dynamic";
 
 const MIN_USD = 1;
 const MAX_USD = 250_000;
+const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+/** Our fee, only when a receiving account is configured (same rule as the swap route). */
+export function platformFee(): number {
+  const bps = Number(process.env.PLATFORM_FEE_BPS ?? 0) || 0;
+  return bps > 0 && BASE58.test(process.env.PLATFORM_FEE_ACCOUNT || "") ? bps : 0;
+}
 
 export async function GET(req: NextRequest) {
   const mint = req.nextUrl.searchParams.get("mint") ?? "";
@@ -32,10 +39,11 @@ export async function GET(req: NextRequest) {
   const prices = await getPrices([mint]);
   const price = prices[mint];
   const multiplier = price?.scaledUiConfig?.multiplier ?? 1;
+  const feeBps = platformFee();
   const quote =
     side === "buy"
-      ? await getQuote({ inputMint: USDC_MINT, outputMint: mint, amount: BigInt(Math.round(usd * 1_000_000)) })
-      : await getQuote({ inputMint: mint, outputMint: USDC_MINT, amount: BigInt(Math.round((sharesIn / multiplier) * 10 ** token.decimals)) });
+      ? await getQuote({ inputMint: USDC_MINT, outputMint: mint, amount: BigInt(Math.round(usd * 1_000_000)), platformFeeBps: feeBps || undefined })
+      : await getQuote({ inputMint: mint, outputMint: USDC_MINT, amount: BigInt(Math.round((sharesIn / multiplier) * 10 ** token.decimals)), platformFeeBps: feeBps || undefined });
   if (!quote) {
     return Response.json({ error: "no route" }, { status: 422 });
   }
@@ -45,6 +53,7 @@ export async function GET(req: NextRequest) {
   const reference = price?.stockData?.price ?? null;
   const estimate: CostEstimate = {
     side,
+    feeBps,
     usd: usdOut,
     shares,
     execPrice,

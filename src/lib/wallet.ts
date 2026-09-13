@@ -4,7 +4,7 @@
 // talks to the RPC for reads, and cached per wallet for a short while
 // because one page load asks for a lot.
 
-import { listTokens, latestSnapshots, nextEarningsFor, snapshotAt, sparkSeries, type TokenRow } from "./db.ts";
+import { candlesSince, listTokens, latestSnapshots, nextEarningsFor, snapshotAt, sparkSeries, type TokenRow } from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { USDC_MINT } from "./jupiter.ts";
 import { nyYmd } from "./market-phase.ts";
@@ -98,6 +98,8 @@ export type WalletData = {
   edgeUsd: number | null;
   edgeBuys: number;
   feesSol: number;
+  /** Stocks value over the last seven days at current holdings, hourly. */
+  history: { ts: number; value: number }[];
   holdings: Holding[];
   activity: Activity[];
 };
@@ -295,6 +297,26 @@ export async function getWallet(owner: string): Promise<WalletData> {
   const totalValue = holdings.reduce((sum, h) => sum + (h.value ?? 0), 0);
   for (const h of holdings) h.share = totalValue > 0 && h.value != null ? h.value / totalValue : 0;
 
+  // Value history: today's holdings priced with each hour's close, last price carried forward.
+  const HOUR = 3600_000;
+  const from = Math.floor((now - 7 * DAY_MS) / HOUR) * HOUR;
+  const perMint = holdings.map((h) => ({ amount: h.amount, byHour: new Map(candlesSince(h.mint, from).map((c) => [Math.floor(c.ts / HOUR) * HOUR, c.close])) }));
+  const history: { ts: number; value: number }[] = [];
+  const last = new Map<number, number>();
+  for (let ts = from; ts <= now; ts += HOUR) {
+    let value = 0;
+    let known = false;
+    perMint.forEach((m, i) => {
+      const px = m.byHour.get(ts) ?? last.get(i);
+      if (px != null) {
+        last.set(i, px);
+        value += m.amount * px;
+        known = true;
+      }
+    });
+    if (known) history.push({ ts, value: Number(value.toFixed(2)) });
+  }
+
   const costBasis = holdings.reduce((sum, h) => sum + (h.avgCost ?? 0) * h.basisUnits, 0);
   const traced = holdings.filter((h) => h.unrealized != null);
   const unrealized = traced.length ? traced.reduce((sum, h) => sum + (h.unrealized ?? 0), 0) : null;
@@ -321,6 +343,7 @@ export async function getWallet(owner: string): Promise<WalletData> {
     edgeUsd,
     edgeBuys: buysWithRef.length,
     feesSol: activity.reduce((sum, a) => sum + a.feeSol, 0),
+    history,
     holdings,
     activity: [...activity].reverse(),
   };

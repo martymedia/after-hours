@@ -7,6 +7,7 @@ import { ISSUERS, type IssuerId } from "./issuers.ts";
 import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
 import { ageOf, getRadar, tradabilityOf } from "./radar.ts";
 import { companyFor } from "./companies.ts";
+import { gapStats } from "./gap-stats.ts";
 import type { GapPoint, StockData, StockToken } from "./stock-types.ts";
 
 export function getStock(underlying: string): StockData | null {
@@ -81,6 +82,7 @@ export function getStock(underlying: string): StockData | null {
     tokens: list,
     candles,
     gapSeries,
+    gapStats: gapStats(primary.mint, now),
     similar,
     nextEarnings: nextEarningsFor(key, nyYmd(new Date(now))),
   };

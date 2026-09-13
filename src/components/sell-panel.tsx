@@ -133,6 +133,7 @@ export function SellPanel({ mint, symbol, name, logo, held, referencePhrase, onC
                 {vs != null && Math.abs(vs) >= 0.25 ? ` · ${Math.abs(vs).toFixed(2)}% ${vs > 0 ? "above" : "below"} ${referencePhrase}` : vs != null ? ` · in line with ${referencePhrase}` : ""}
               </p>
               {estimate.impactPct > 1 && <p className="text-warn mt-2 text-xs">This size moves the pool {formatPct(estimate.impactPct)}. Selling in parts would get more.</p>}
+              {estimate.feeBps ? <p className="text-on-dark-muted mt-2 text-xs">Includes our {(estimate.feeBps / 100).toFixed(2)}% fee.</p> : null}
             </div>
           ) : (
             <div className="h-24 animate-pulse rounded-2xl bg-soft" />

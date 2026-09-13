@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ISSUERS, ISSUER_ORDER } from "@/lib/issuers";
 import { getRadar } from "@/lib/radar";
+import { gapStatsAcross } from "@/lib/gap-stats";
 import { formatAgo, formatUsd, gapSentence, gapTone } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { SessionTimeline } from "@/components/session-timeline";
@@ -26,6 +27,7 @@ const PILL: Record<Tradability, string> = {
 
 export default function HowPage() {
   const data = getRadar();
+  const across = gapStatsAcross(data.rows.map((r) => r.mint));
   const sample = data.rows[0];
   const discount = [...data.rows].filter((r) => (r.gapPct ?? 0) < -0.25).sort((a, b) => (a.gapPct ?? 0) - (b.gapPct ?? 0))[0];
   const premium = [...data.rows].filter((r) => (r.gapPct ?? 0) > 0.25).sort((a, b) => (b.gapPct ?? 0) - (a.gapPct ?? 0))[0];
@@ -153,6 +155,43 @@ export default function HowPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Evidence: does the gap close? */}
+      <section className="card p-6 sm:p-8">
+        <p className="text-blue text-sm font-medium">Does the gap close?</p>
+        {across.samples === 0 ? (
+          <>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">We are measuring it, one open at a time.</h2>
+            <p className="text-muted mt-3 max-w-2xl leading-relaxed">
+              For every stock and every Wall Street open we record the gap one minute before the bell and thirty minutes
+              after. The first reads land after the next open; each stock page shows its own history as it grows. Until
+              then we make no claim about which way a gap goes.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+              <span className="num">{Math.round((across.closedShare ?? 0) * 100)}%</span> of gaps at least halved within thirty minutes of the open.
+            </h2>
+            <p className="text-muted mt-3 max-w-2xl leading-relaxed">
+              Across {across.samples} stock-opens over {across.opens} {across.opens === 1 ? "trading day" : "trading days"}: an average gap of {across.avgBefore?.toFixed(2)}% before the bell became{" "}
+              {across.avgAfter?.toFixed(2)}% thirty minutes after. Each stock page shows its own record. A pattern, not a promise.
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* Money */}
+      <section className="card p-6 sm:p-8">
+        <p className="text-blue text-sm font-medium">How we make money</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">A quarter of a percent, and nothing else.</h2>
+        <p className="text-muted mt-3 max-w-2xl leading-relaxed">
+          Every buy and sell routed through After Hours carries a 0.25% fee that Jupiter pays out to us from the swap.
+          It is inside every number you see before you sign, so the price on the button is the price you get. No
+          subscription, no spread of our own, no data sales. Limit orders carry only Jupiter&apos;s 0.1% on fills. A 25 USD
+          buy costs about six cents.
+        </p>
       </section>
 
       {/* The rules, as a manifesto */}
