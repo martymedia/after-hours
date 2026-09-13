@@ -5,14 +5,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  BellOff,
-  BellRing,
-  Share,
-  SquarePlus,
-  Trash2,
-} from "lucide-react";
+import { Bell, BellOff, Trash2 } from "lucide-react";
 import { formatPct } from "@/lib/format";
 import {
   currentState,
@@ -159,6 +152,8 @@ export function NotificationsCard({
   }
 
   const on = state === "on";
+  // Desktop browsers only. Phones (iOS, wallet in-app browsers) get no card.
+  if (state === "unsupported" || state === "needs-install") return null;
   return (
     <section className="card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -174,15 +169,11 @@ export function NotificationsCard({
           <p className="text-muted mt-1 text-sm">
             {state === "loading"
               ? "Checking this device…"
-              : state === "unsupported"
-                ? "This browser cannot receive push messages."
-                : state === "needs-install"
-                  ? "On iPhone, add After Hours to your Home Screen first (Share, then Add to Home Screen). Notifications work from the installed icon."
-                  : state === "denied"
-                    ? "Blocked in your browser settings for this site."
-                    : on
-                      ? "Order fills, expiries and cancellations, plus your price alerts, arrive on this device."
-                      : "Get a message when a limit order fills or expires, and when a stock hits your price."}
+              : state === "denied"
+                ? "Blocked in your browser settings for this site."
+                : on
+                  ? "Order fills, expiries and cancellations, plus your price alerts, arrive on this device."
+                  : "Get a message when a limit order fills or expires, and when a stock hits your price."}
           </p>
         </div>
         {(state === "on" || state === "off") && (
@@ -209,7 +200,6 @@ export function NotificationsCard({
         )}
       </div>
       {note && <p className="text-muted mt-3 text-sm">{note}</p>}
-      {state === "needs-install" && <InstallSteps />}
 
       {/* Price alerts: only once messages can actually arrive. */}
       {(on || (alerts && alerts.length > 0)) && (
@@ -326,46 +316,5 @@ export function NotificationsCard({
         </div>
       )}
     </section>
-  );
-}
-
-/** iPhone: three steps to the installed icon, where push works. */
-function InstallSteps() {
-  const steps = [
-    { icon: Share, label: "Tap Share", hint: "in Safari's toolbar" },
-    {
-      icon: SquarePlus,
-      label: "Add to Home Screen",
-      hint: "a bit down the list",
-    },
-    {
-      icon: BellRing,
-      label: "Open from the icon",
-      hint: "then turn notifications on here",
-    },
-  ];
-  return (
-    <ol className="mt-4 grid grid-cols-3 gap-2">
-      {steps.map((s, i) => (
-        <li
-          key={s.label}
-          className="rise flex flex-col items-center rounded-2xl bg-soft px-2 py-4 text-center"
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
-          <span className="icon-badge relative h-11 w-11 border-ink bg-ink text-white">
-            <s.icon size={20} strokeWidth={1.75} />
-            <span className="num absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-blue text-[10px] font-semibold text-white">
-              {i + 1}
-            </span>
-          </span>
-          <span className="mt-2 text-xs font-medium leading-tight">
-            {s.label}
-          </span>
-          <span className="text-muted mt-0.5 text-[11px] leading-tight">
-            {s.hint}
-          </span>
-        </li>
-      ))}
-    </ol>
   );
 }
