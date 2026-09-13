@@ -16,12 +16,11 @@ ARG NEXT_PUBLIC_SOLANA_RPC_URL=https://solana-rpc.publicnode.com
 ENV NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL
 RUN npm run build
 
-# Production dependencies for the collector, which runs from src/ and is not
-# covered by the standalone trace of the web app.
-FROM node:24-alpine AS prod-deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts
+# The one dependency the collector needs that the web app's standalone trace
+# does not carry (the collector runs from src/). Installed alone to stay small.
+FROM node:24-alpine AS collector-deps
+WORKDIR /deps
+RUN npm init -y >/dev/null && npm install web-push@3 --no-audit --no-fund --ignore-scripts
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -31,9 +30,9 @@ ENV AFTER_HOURS_DB=/data/after-hours.db
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Full production node_modules first, then the standalone output overlays its
-# traced subset on top (same files, so nothing is lost).
-COPY --from=prod-deps /app/node_modules ./node_modules
+# Collector-only packages first; the standalone output overlays its traced
+# node_modules on top.
+COPY --from=collector-deps /deps/node_modules ./node_modules
 # Web app (standalone output) plus the source the collector needs.
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
