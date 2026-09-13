@@ -84,6 +84,10 @@ export async function POST(req: NextRequest) {
   if (!swapRes.ok || !swap.swapTransaction) {
     return Response.json({ error: swap.error ?? "swap build failed" }, { status: 502 });
   }
+  if (swap.simulationError) {
+    const detail = (swap.simulationError as { error?: string }).error ?? "";
+    return Response.json({ error: `simulation: ${detail || "the swap would fail onchain"}` }, { status: 502 });
+  }
   return Response.json(
     {
       swapTransaction: swap.swapTransaction,

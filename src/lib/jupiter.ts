@@ -84,6 +84,9 @@ export async function getQuote(params: {
     amount: params.amount.toString(),
     slippageBps: String(params.slippageBps ?? 50),
     maxAccounts: "33",
+    // V2 route instructions: needed to take the platform fee on Token-2022
+    // mints (every xStock); V1 fails onchain with 6014 IncorrectTokenProgramID.
+    instructionVersion: "V2",
   });
   if (params.platformFeeBps) search.set("platformFeeBps", String(params.platformFeeBps));
   const res = await fetch(`${LITE}/swap/v1/quote?${search}`, {

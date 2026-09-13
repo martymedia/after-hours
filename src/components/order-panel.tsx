@@ -214,7 +214,8 @@ export function OrderPanel({
       const [raw] = await signer.signAndSendTransactions([tx]);
       const sig = getBase58Decoder().decode(raw);
       setStep("confirming");
-      await waitForConfirmation(sig);
+      const confirmed = await waitForConfirmation(sig, 120_000);
+      if (!confirmed) throw new Error("unconfirmed: the network has not confirmed this yet. Check the Wallet page in a minute before placing it again.");
       setPlaced({
         signature: sig,
         shares: body.shares ?? shares,
