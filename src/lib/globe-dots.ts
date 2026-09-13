@@ -48,7 +48,18 @@ function isLand(lon: number, lat: number): boolean {
  * -1..1 (y up), depth is 0 at the rim and 1 at the centre. Dots west of the
  * terminator (a fixed line for the still image) are marked night.
  */
+const dotCache = new Map<string, GlobeDot[]>();
+
 export function globeDots(count: number, lon0: number, lat0: number, terminatorLon: number): GlobeDot[] {
+  const key = `${count}|${lon0}|${lat0}|${terminatorLon}`;
+  const hit = dotCache.get(key);
+  if (hit) return hit;
+  const out = computeDots(count, lon0, lat0, terminatorLon);
+  dotCache.set(key, out);
+  return out;
+}
+
+function computeDots(count: number, lon0: number, lat0: number, terminatorLon: number): GlobeDot[] {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const out: GlobeDot[] = [];
   const sinLat0 = Math.sin(lat0 * DEG);
