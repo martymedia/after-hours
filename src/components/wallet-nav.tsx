@@ -10,10 +10,11 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
-import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
+import { useConnectedWallet, useWallets } from "@solana/kit-plugin-wallet/react";
 import { solanaClient } from "@/lib/solana-client";
 import { useWalletReady } from "@/lib/wallet-ready";
 import { shortAddress } from "./wallet-connect";
+import { followedWallet } from "@/lib/followed";
 
 const ConnectButton = dynamic(() => import("./wallet-connect").then((m) => m.ConnectButton), { ssr: false });
 
@@ -22,6 +23,9 @@ type Props = { variant: "rail" | "tab" | "chip"; expanded?: boolean; pathname: s
 export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   const connected = useConnectedWallet(solanaClient);
   const ready = useWalletReady();
+  const wallets = useWallets(solanaClient);
+  // Client-only component, so the stored address can seed the state.
+  const [followed] = useState<string | null>(() => followedWallet());
   const [dotOpen, setDotOpen] = useState(false);
   useEffect(() => {
     if (!connected) return;
@@ -31,8 +35,20 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
   if (!connected) {
     if (!ready || variant === "chip") return null;
     if (variant === "tab") {
-      // No wallet in this browser (Safari on iPhone): the same tab opens the
-      // page inside Phantom's in-app browser, where the wallet is present.
+      // No wallet in this browser (Safari, the Home Screen icon): the tab
+      // leads to the wallet page, which offers Phantom or following by address.
+      if (wallets.length === 0) {
+        const href = followed ? `/wallet/${followed}` : "/wallet";
+        const activeHere = pathname.startsWith("/wallet");
+        return (
+          <Link href={href} className={`flex flex-col items-center gap-1 rounded-xl px-3 py-1 text-[11px] font-medium ${activeHere ? "text-ink" : "text-muted"}`}>
+            <span data-pill-target="/wallet" className={`icon-badge relative z-[1] h-8 w-8 ${activeHere ? "border-transparent bg-transparent text-white" : ""}`}>
+              <Wallet size={16} strokeWidth={1.75} />
+            </span>
+            Wallet
+          </Link>
+        );
+      }
       const tabLabel = (
         <>
           <span className="icon-badge h-8 w-8 border-ink bg-ink text-white">
