@@ -4,9 +4,17 @@
 // see docs/MOTION.md). Each one owns its DOM hooks; the CSS lives in
 // globals.css under "Motion". All of them respect prefers-reduced-motion.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
-const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reduceMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------------------------------------------------------------- */
 /* Tabs sliding: a segmented control whose pill follows the active option. */
@@ -30,23 +38,22 @@ export function Seg<T extends string>({
   const pill = useRef<HTMLSpanElement>(null);
   const first = useRef(true);
 
-  const move = useCallback(
-    (animate: boolean) => {
-      const b = bar.current;
-      const p = pill.current;
-      if (!b || !p) return;
-      const active = b.querySelector<HTMLButtonElement>('button[aria-selected="true"]');
-      if (!active) return;
-      if (!animate) p.style.transition = "none";
-      p.style.transform = `translateX(${active.offsetLeft}px)`;
-      p.style.width = `${active.offsetWidth}px`;
-      if (!animate) {
-        void p.offsetWidth;
-        p.style.transition = "";
-      }
-    },
-    [],
-  );
+  const move = useCallback((animate: boolean) => {
+    const b = bar.current;
+    const p = pill.current;
+    if (!b || !p) return;
+    const active = b.querySelector<HTMLButtonElement>(
+      'button[aria-selected="true"]',
+    );
+    if (!active) return;
+    if (!animate) p.style.transition = "none";
+    p.style.transform = `translateX(${active.offsetLeft}px)`;
+    p.style.width = `${active.offsetWidth}px`;
+    if (!animate) {
+      void p.offsetWidth;
+      p.style.transition = "";
+    }
+  }, []);
 
   useLayoutEffect(() => {
     move(!first.current);
@@ -62,10 +69,22 @@ export function Seg<T extends string>({
   }, [move]);
 
   return (
-    <div ref={bar} className={`t-tabs seg ${className}`} role="tablist" aria-label={ariaLabel}>
+    <div
+      ref={bar}
+      className={`t-tabs seg ${className}`}
+      role="tablist"
+      aria-label={ariaLabel}
+    >
       <span ref={pill} className="t-tabs-pill" aria-hidden="true" />
       {options.map((o) => (
-        <button key={o.id} type="button" role="tab" aria-selected={value === o.id} className="t-tab" onClick={() => onChange(o.id)}>
+        <button
+          key={o.id}
+          type="button"
+          role="tab"
+          aria-selected={value === o.id}
+          className="t-tab"
+          onClick={() => onChange(o.id)}
+        >
           {o.label}
         </button>
       ))}
@@ -76,7 +95,13 @@ export function Seg<T extends string>({
 /* ---------------------------------------------------------------------- */
 /* Text states swap: old text exits up with blur, new text enters from below. */
 
-export function SwapText({ text, className = "" }: { text: string; className?: string }) {
+export function SwapText({
+  text,
+  className = "",
+}: {
+  text: string;
+  className?: string;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [display, setDisplay] = useState(text);
   const mounted = useRef(false);
@@ -118,7 +143,15 @@ export function SwapText({ text, className = "" }: { text: string; className?: s
 /* ---------------------------------------------------------------------- */
 /* Number pop-in: digits re-enter with blur when the value changes.        */
 
-export function PopNumber({ value, format, className = "" }: { value: number | null; format: (n: number) => string; className?: string }) {
+export function PopNumber({
+  value,
+  format,
+  className = "",
+}: {
+  value: number | null;
+  format: (n: number) => string;
+  className?: string;
+}) {
   const text = value == null ? "–" : format(value);
   // Derived state: bump the key whenever the formatted text changes, so
   // the first render never animates and every later change replays.
@@ -128,9 +161,22 @@ export function PopNumber({ value, format, className = "" }: { value: number | n
 
   const chars = text.split("");
   return (
-    <span key={animKey} className={`t-digit-group ${animKey > 0 ? "is-animating" : ""} ${className}`}>
+    <span
+      key={animKey}
+      className={`t-digit-group ${animKey > 0 ? "is-animating" : ""} ${className}`}
+    >
       {chars.map((ch, i) => (
-        <span key={i} className="t-digit" data-stagger={i === chars.length - 2 ? "1" : i === chars.length - 1 ? "2" : undefined}>
+        <span
+          key={i}
+          className="t-digit"
+          data-stagger={
+            i === chars.length - 2
+              ? "1"
+              : i === chars.length - 1
+                ? "2"
+                : undefined
+          }
+        >
           {ch}
         </span>
       ))}
@@ -141,15 +187,34 @@ export function PopNumber({ value, format, className = "" }: { value: number | n
 /* ---------------------------------------------------------------------- */
 /* Success check: fade, rotate upright, bob, blur off, and draw the stroke. */
 
-export function SuccessCheck({ size = 22, className = "" }: { size?: number; className?: string }) {
+export function SuccessCheck({
+  size = 22,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
   const [state, setState] = useState<"out" | "in">("out");
   useEffect(() => {
     const id = setTimeout(() => setState("in"), 20);
     return () => clearTimeout(id);
   }, []);
   return (
-    <span className={`t-success-check ${className}`} data-state={state} aria-hidden="true">
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <span
+      className={`t-success-check ${className}`}
+      data-state={state}
+      aria-hidden="true"
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M5 12.5 L10 17.5 L19 7.5" pathLength="1" />
       </svg>
     </span>
@@ -159,7 +224,13 @@ export function SuccessCheck({ size = 22, className = "" }: { size?: number; cla
 /* ---------------------------------------------------------------------- */
 /* Texts reveal: children lines rise with a stagger once mounted.          */
 
-export function StaggerReveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function StaggerReveal({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -180,7 +251,15 @@ export function StaggerReveal({ children, className = "" }: { children: React.Re
 
 const TILT_MAX = 7;
 
-export function Tilt({ children, className = "", cardClassName = "" }: { children: React.ReactNode; className?: string; cardClassName?: string }) {
+export function Tilt({
+  children,
+  className = "",
+  cardClassName = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  cardClassName?: string;
+}) {
   const wrap = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
 
@@ -203,14 +282,26 @@ export function Tilt({ children, className = "", cardClassName = "" }: { childre
     const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
     w.classList.add("is-hover");
     c.classList.add("is-tilting");
-    c.style.setProperty("--tilt-ry", `${((px - 0.5) * TILT_MAX).toFixed(2)}deg`);
-    c.style.setProperty("--tilt-rx", `${((0.5 - py) * TILT_MAX).toFixed(2)}deg`);
+    c.style.setProperty(
+      "--tilt-ry",
+      `${((px - 0.5) * TILT_MAX).toFixed(2)}deg`,
+    );
+    c.style.setProperty(
+      "--tilt-rx",
+      `${((0.5 - py) * TILT_MAX).toFixed(2)}deg`,
+    );
     c.style.setProperty("--tilt-gx", `${(px * 100).toFixed(1)}%`);
     c.style.setProperty("--tilt-gy", `${(py * 100).toFixed(1)}%`);
   }, []);
 
   return (
-    <div ref={wrap} className={`t-tilt ${className}`} onPointerMove={track} onPointerLeave={reset} onPointerCancel={reset}>
+    <div
+      ref={wrap}
+      className={`t-tilt ${className}`}
+      onPointerMove={track}
+      onPointerLeave={reset}
+      onPointerCancel={reset}
+    >
       <div ref={card} className={`t-tilt-card ${cardClassName}`}>
         {children}
         <span className="t-tilt-glare" aria-hidden="true" />
@@ -230,24 +321,38 @@ export function useSlidingPill(active: string | null, deps: unknown[] = []) {
     const b = bar.current;
     const p = pill.current;
     if (!b || !p) return;
-    const target = active ? b.querySelector<HTMLElement>(`[data-pill-target="${active}"]`) : null;
-    if (!target) {
-      p.style.opacity = "0";
-      return;
-    }
-    const br = b.getBoundingClientRect();
-    const tr = target.getBoundingClientRect();
-    const animate = !first.current && !reduceMotion();
-    if (!animate) p.style.transition = "none";
-    p.style.opacity = "1";
-    p.style.transform = `translate(${tr.left - br.left}px, ${tr.top - br.top}px)`;
-    p.style.width = `${tr.width}px`;
-    p.style.height = `${tr.height}px`;
-    if (!animate) {
-      void p.offsetWidth;
-      p.style.transition = "";
-    }
+    const place = (animate: boolean) => {
+      const target = active
+        ? b.querySelector<HTMLElement>(`[data-pill-target="${active}"]`)
+        : null;
+      if (!target) {
+        p.style.opacity = "0";
+        return;
+      }
+      const br = b.getBoundingClientRect();
+      const tr = target.getBoundingClientRect();
+      if (!animate) p.style.transition = "none";
+      p.style.opacity = "1";
+      p.style.transform = `translate(${tr.left - br.left}px, ${tr.top - br.top}px)`;
+      p.style.width = `${tr.width}px`;
+      p.style.height = `${tr.height}px`;
+      if (!animate) {
+        void p.offsetWidth;
+        p.style.transition = "";
+      }
+    };
+    place(!first.current && !reduceMotion());
     first.current = false;
+    // Items that mount later (the wallet tab) or a rotated phone shift the
+    // targets without changing `active`: follow them without animating.
+    const mo = new MutationObserver(() => place(false));
+    mo.observe(b, { childList: true, subtree: true });
+    const ro = new ResizeObserver(() => place(false));
+    ro.observe(b);
+    return () => {
+      mo.disconnect();
+      ro.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, ...deps]);
   return { bar, pill };
