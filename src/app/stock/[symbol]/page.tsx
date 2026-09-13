@@ -170,24 +170,24 @@ export default async function StockPage({ params }: Props) {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-end justify-between">
-                    {t.tradability === "none" ? (
+                  {t.tradability === "none" ? (
+                    <div className="mt-4 flex items-center justify-between gap-3">
                       <span className="text-muted text-sm">No onchain price worth showing.</span>
-                    ) : (
-                      <span>
-                        <span className="num block text-lg font-semibold">{formatUsd(t.price)}</span>
-                        <span className={`num text-xs ${gapTone(t.gapPct)}`}>{gapWords(t.gapPct)}</span>
-                      </span>
-                    )}
-                    <span className="text-right">
                       <Tip text={TRADABILITY_TIP[t.tradability]} underline={false}>
                         <span className={`pill ${PILL[t.tradability]}`}>{TRADABILITY_LABEL[t.tradability]}</span>
                       </Tip>
-                      {t.tradability !== "none" && (
-                        <span className="text-muted mt-1 block text-xs">{formatCompactUsd(t.liquidity)} in pools</span>
-                      )}
-                    </span>
-                  </div>
+                    </div>
+                  ) : (
+                    // Two rows, two columns: price beside the pill, gap beside the pool size.
+                    <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1">
+                      <span className="num text-lg leading-tight font-semibold">{formatUsd(t.price)}</span>
+                      <Tip text={TRADABILITY_TIP[t.tradability]} underline={false} className="justify-self-end">
+                        <span className={`pill ${PILL[t.tradability]}`}>{TRADABILITY_LABEL[t.tradability]}</span>
+                      </Tip>
+                      <span className={`num text-xs ${gapTone(t.gapPct)}`}>{gapWords(t.gapPct)}</span>
+                      <span className="text-muted justify-self-end text-xs">{formatCompactUsd(t.liquidity)} in pools</span>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
