@@ -52,6 +52,16 @@ const MIN_USD = 5;
 
 type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
 
+function Notice({ title, hint, children }: { title: string; hint: string; children?: React.ReactNode }) {
+  return (
+    <div className="rise mt-4 flex min-h-[32rem] flex-col items-center justify-center rounded-2xl bg-soft p-6 text-center">
+      <p className="font-medium">{title}</p>
+      <p className="text-muted mt-1 max-w-xs text-sm">{hint}</p>
+      {children}
+    </div>
+  );
+}
+
 export function OrderPanel({ mint, symbol, side = "buy", held: heldProp, reference, price, referencePhrase, disabled }: Props) {
   const base = price ?? reference ?? null;
   // Holding of this token: given by the wallet page, fetched on stock pages once a wallet is connected.
@@ -137,21 +147,22 @@ export function OrderPanel({ mint, symbol, side = "buy", held: heldProp, referen
     }
   }
 
-  if (disabled || !base) return <p className="text-muted mt-4 text-sm">No onchain market to place an order on.</p>;
-
-  if (ready && !connected) {
+  // The states before the form share one box of the form's rough height, so
+  // the modal does not jump when the side changes.
+  if (disabled || !base) return <Notice title="No onchain market yet." hint={`${symbol} has no pool deep enough for a limit order.`} />;
+  if (!ready) return <Notice title="Checking wallets…" hint="One moment." />;
+  if (!connected) {
     return (
-      <div className="mt-4 rounded-2xl bg-soft p-5 text-center">
-        <p className="font-medium">Connect your wallet first.</p>
-        <p className="text-muted mt-1 text-sm">{sell ? `We read how much ${symbol} you hold and set the order up from there.` : "The order is placed from your wallet, so we need to know which one."}</p>
-        <div className="mx-auto mt-4 max-w-xs">
+      <Notice title="Connect your wallet first." hint={sell ? `We read how much ${symbol} you hold and set the order up from there.` : "The order is placed from your wallet, so we need to know which one."}>
+        <div className="mx-auto mt-4 w-full max-w-xs">
           <ConnectButton label="Connect wallet" />
         </div>
-      </div>
+      </Notice>
     );
   }
-  if (!ready) return <div className="mt-4 h-40 animate-pulse rounded-2xl bg-soft" />;
-  if (sell && held != null && held <= 0) return <p className="text-muted mt-4 text-sm">No {symbol} in this wallet to sell.</p>;
+  if (sell && held != null && held <= 0) {
+    return <Notice title={`Nothing to sell yet.`} hint={`This wallet holds no ${symbol}. Buy some first, or set a buy order that waits for a lower price.`} />;
+  }
 
   if (step === "done" && placed) {
     return (

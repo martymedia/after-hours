@@ -128,7 +128,10 @@ export function BuyButton({ mint, symbol, usd, side = "buy", shares: sharesToSel
         <dl className="num mt-4 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl bg-white/10 p-3">
             <dt className="text-on-dark-muted text-xs">{side === "buy" ? "Shares" : "Sold"}</dt>
-            <dd className="mt-0.5 font-semibold">{result.shares == null ? "–" : result.shares.toFixed(4)}</dd>
+            <dd className="mt-0.5 font-semibold">
+              {result.shares == null ? "–" : result.shares.toFixed(4)}
+              {result.shares != null && <span className="text-on-dark-muted font-normal"> {symbol}</span>}
+            </dd>
           </div>
           <div className="rounded-2xl bg-white/10 p-3">
             <dt className="text-on-dark-muted text-xs">{side === "buy" ? "Paid" : "Received"}</dt>
