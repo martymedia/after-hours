@@ -4,6 +4,7 @@
 // Order fills, expiries and cancellations need no setup beyond the switch.
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Bell, BellOff, Trash2 } from "lucide-react";
 import { formatPct } from "@/lib/format";
 import { currentState, disablePush, enablePush, needsInstall, sendTestPush, type PushState } from "@/lib/push-client";
@@ -156,7 +157,9 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
               <li key={a.id} className="flex items-center gap-3 py-2.5 text-sm">
                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${a.kind === "cheaper" ? "bg-blue" : "bg-down"}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className="font-medium">{a.name}</span>{" "}
+                  <Link href={`/stock/${a.underlying || a.symbol}`} className="font-medium underline-offset-4 hover:underline">
+                    {a.name}
+                  </Link>{" "}
                   <span className={a.kind === "cheaper" ? "text-blue" : "text-down"}>{formatPct(a.threshold).replace("+", "")} {a.kind}</span>
                   <span className="text-muted"> than Wall Street</span>
                 </span>
