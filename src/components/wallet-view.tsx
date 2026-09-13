@@ -219,7 +219,7 @@ export function WalletView({ address }: { address?: string }) {
             {d.history.length > 2 && (
               <div className="mt-5">
                 <p className="text-on-dark-muted mb-1 text-xs">Last 7 days, at today&apos;s holdings</p>
-                <Sparkline values={d.history.map((h) => h.value)} width={520} height={56} color={d.history[d.history.length - 1].value >= d.history[0].value ? "var(--blue)" : "var(--down)"} fill />
+                <Sparkline values={d.history.map((h) => h.value)} width={600} height={56} color={d.history[d.history.length - 1].value >= d.history[0].value ? "var(--blue)" : "var(--down)"} fill stretch />
               </div>
             )}
             {d.edgeUsd != null && d.edgeBuys > 0 && (

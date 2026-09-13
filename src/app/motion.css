@@ -378,7 +378,7 @@
   to { opacity: 1; filter: blur(0); }
 }
 .t-reveal {
-  animation: t-reveal-in var(--reveal-dur) ease-in-out both;
+  animation: t-reveal-in var(--reveal-dur) ease-in-out backwards;
 }
 
 /* Phone tab bar: pill that slides behind the active icon */
