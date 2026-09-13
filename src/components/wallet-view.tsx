@@ -331,6 +331,8 @@ export function WalletView({ address }: { address?: string }) {
           logo={selling.logo}
           held={selling.amount}
           referencePhrase={d.referencePhrase}
+          price={selling.price}
+          reference={selling.reference}
           onClose={() => setSelling(null)}
           onSold={() => setTimeout(load, 1500)}
         />

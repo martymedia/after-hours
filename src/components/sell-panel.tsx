@@ -10,6 +10,12 @@ import { createPortal } from "react-dom";
 import type { CostEstimate } from "@/lib/stock-types";
 import { formatPct, formatUsd } from "@/lib/format";
 import { TickerBadge } from "./ticker-badge";
+import { Seg } from "./motion";
+
+const OrderPanel = dynamic(() => import("./order-panel").then((m) => m.OrderPanel), {
+  ssr: false,
+  loading: () => <div className="mt-4 h-64 animate-pulse rounded-2xl bg-soft" />,
+});
 
 const BuyButton = dynamic(() => import("./buy-button").then((m) => m.BuyButton), {
   ssr: false,
@@ -23,6 +29,8 @@ type Props = {
   logo: string | null;
   held: number;
   referencePhrase: string;
+  price: number | null;
+  reference: number | null;
   onClose: () => void;
   /** Called after a confirmed sale so the page can refresh. */
   onSold: () => void;
@@ -30,7 +38,8 @@ type Props = {
 
 const PARTS = [0.25, 0.5, 0.75, 1];
 
-export function SellPanel({ mint, symbol, name, logo, held, referencePhrase, onClose, onSold }: Props) {
+export function SellPanel({ mint, symbol, name, logo, held, referencePhrase, price, reference, onClose, onSold }: Props) {
+  const [mode, setMode] = useState<"now" | "later">("now");
   const [fraction, setFraction] = useState(1);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
@@ -97,6 +106,20 @@ export function SellPanel({ mint, symbol, name, logo, held, referencePhrase, onC
           </button>
         </div>
 
+        <Seg
+          ariaLabel="Sell now or at a price"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { id: "now", label: "Sell now" },
+            { id: "later", label: "Sell at a price" },
+          ]}
+          className="mt-4 w-full justify-between"
+        />
+        {mode === "later" ? (
+          <OrderPanel mint={mint} symbol={symbol} side="sell" held={held} reference={reference} price={price} referencePhrase={referencePhrase} embedded />
+        ) : (
+        <>
         <div className="mt-4 flex items-center gap-2 rounded-2xl bg-soft px-4 py-3">
           <input
             type="number"
@@ -147,6 +170,8 @@ export function SellPanel({ mint, symbol, name, logo, held, referencePhrase, onC
           }} />
         </div>
         <p className="text-muted mt-3 text-xs">Swapped to USDC on Jupiter, signed in your wallet. We never hold your tokens.</p>
+        </>
+        )}
       </div>
     </div>,
     document.body,

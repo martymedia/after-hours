@@ -128,23 +128,22 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
       <div className="mt-5 border-t border-line pt-4">
         <p className="text-sm font-medium">Price alerts</p>
         <p className="text-muted mt-0.5 text-xs">One message when the onchain price crosses your line against the last Wall Street print. Fires once, then stays listed until you remove it.</p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <select value={mint} onChange={(e) => setMint(e.target.value)} className="h-9 min-w-0 flex-1 rounded-full bg-soft px-3 text-sm font-medium outline-none" aria-label="Stock">
+        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
+          <select value={mint} onChange={(e) => setMint(e.target.value)} className="h-9 min-w-0 rounded-full bg-soft px-3 text-sm font-medium outline-none" aria-label="Stock">
             {stocks.map((s) => (
               <option key={s.mint} value={s.mint}>
                 {s.name} ({s.symbol})
               </option>
             ))}
           </select>
-          <Seg
-            ariaLabel="Direction"
-            value={kind}
-            onChange={setKind}
-            options={[
-              { id: "cheaper", label: "cheaper" },
-              { id: "pricier", label: "pricier" },
-            ]}
-          />
+          <div className="seg" role="group" aria-label="Direction">
+            <button type="button" onClick={() => setKind("cheaper")} className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${kind === "cheaper" ? "bg-blue text-white" : "text-muted hover:text-ink"}`}>
+              cheaper
+            </button>
+            <button type="button" onClick={() => setKind("pricier")} className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${kind === "pricier" ? "bg-down text-white" : "text-muted hover:text-ink"}`}>
+              pricier
+            </button>
+          </div>
           <Seg ariaLabel="Threshold" value={threshold} onChange={setThreshold} options={THRESHOLDS} />
           <button type="button" onClick={addAlert} disabled={busy || !mint || !on} className="btn btn-sm" title={on ? undefined : "Turn notifications on first"}>
             Add alert
@@ -154,14 +153,14 @@ export function NotificationsCard({ owner, stocks }: { owner: string; stocks: St
         {alerts && alerts.length > 0 && (
           <ul className="mt-3 divide-y divide-line">
             {alerts.map((a) => (
-              <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
+              <li key={a.id} className="flex items-center gap-3 py-2.5 text-sm">
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${a.kind === "cheaper" ? "bg-blue" : "bg-down"}`} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
                   <span className="font-medium">{a.name}</span>{" "}
-                  <span className="text-muted">
-                    {a.kind} than Wall Street by {formatPct(a.threshold).replace("+", "")}
-                    {a.fired_at ? " · sent" : " · waiting"}
-                  </span>
+                  <span className={a.kind === "cheaper" ? "text-blue" : "text-down"}>{formatPct(a.threshold).replace("+", "")} {a.kind}</span>
+                  <span className="text-muted"> than Wall Street</span>
                 </span>
+                <span className={`pill ${a.fired_at ? "bg-soft text-muted" : "pill-blue"}`}>{a.fired_at ? "sent" : "waiting"}</span>
                 <button type="button" onClick={() => removeAlert(a.id)} className="icon-badge text-muted hover:text-ink h-8 w-8" aria-label="Remove alert">
                   <Trash2 size={14} strokeWidth={1.75} />
                 </button>

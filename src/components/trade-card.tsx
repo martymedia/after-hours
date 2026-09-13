@@ -12,6 +12,7 @@ import type { Phase } from "@/lib/market-phase";
 import { formatUsd, gapTone, gapWords } from "@/lib/format";
 import { BuyPanel, DOT, VERDICT_STYLE, buildChecks, summarize } from "./buy-panel";
 import { Modal, ModalClose } from "./modal";
+import { Seg } from "./motion";
 import { TickerBadge } from "./ticker-badge";
 
 const OrderPanel = dynamic(() => import("./order-panel").then((m) => m.OrderPanel), {
@@ -38,6 +39,7 @@ const PREVIEW_USD = 25;
 export function TradeCard(props: Props) {
   const { mint, symbol, name, logo, referencePhrase, disabled, reference, price } = props;
   const [open, setOpen] = useState<"buy" | "order" | null>(null);
+  const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
 
   useEffect(() => {
@@ -143,11 +145,21 @@ export function TradeCard(props: Props) {
             <TickerBadge symbol={symbol} logo={logo} size={40} />
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-lg font-semibold tracking-tight">Set a price and sleep</h3>
-              <p className="text-muted text-xs">A limit buy for {name} that waits onchain</p>
+              <p className="text-muted text-xs">A limit order for {name} that waits onchain</p>
             </div>
             <ModalClose />
           </div>
-          <OrderPanel mint={mint} symbol={symbol} reference={reference} price={price} referencePhrase={referencePhrase} disabled={disabled} embedded />
+          <Seg
+            ariaLabel="Order side"
+            value={orderSide}
+            onChange={setOrderSide}
+            options={[
+              { id: "buy", label: "Buy below a price" },
+              { id: "sell", label: "Sell above a price" },
+            ]}
+            className="mt-2 w-full justify-between"
+          />
+          <OrderPanel key={orderSide} mint={mint} symbol={symbol} side={orderSide} reference={reference} price={price} referencePhrase={referencePhrase} disabled={disabled} embedded />
         </Modal>
       )}
     </section>
