@@ -14,6 +14,8 @@ import {
   RefreshCw,
   Share2,
   Wallet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
@@ -90,7 +92,7 @@ export function WalletView({ address }: { address?: string }) {
   const [copied, setCopied] = useState(false);
   // Activity is paged ten at a time; the API returns up to 50.
   const PAGE = 10;
-  const [shown, setShown] = useState(PAGE);
+  const [page, setPage] = useState(0);
 
   const [sharedSig, setSharedSig] = useState<string | null>(null);
   const shareTrade = async (a: Activity) => {
@@ -547,8 +549,7 @@ export function WalletView({ address }: { address?: string }) {
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Recent activity</h2>
             <span className="text-muted num text-xs">
-              {Math.min(shown, d.activity.length)} of {d.activity.length} · last
-              50 transactions scanned
+              {d.activity.length} in the last 50 transactions
             </span>
           </div>
           {d.activity.length === 0 ? (
@@ -557,7 +558,7 @@ export function WalletView({ address }: { address?: string }) {
             </p>
           ) : (
             <ul className="divide-y divide-line">
-              {d.activity.slice(0, shown).map((a) => (
+              {d.activity.slice(page * PAGE, page * PAGE + PAGE).map((a) => (
                 <li
                   key={`${a.signature}-${a.mint}`}
                   className="flex items-center gap-1"
@@ -603,7 +604,9 @@ export function WalletView({ address }: { address?: string }) {
                           <>
                             {" · "}
                             <span className={gapTone(a.vsRefPct)}>
-                              {gapWords(a.vsRefPct)} than Wall Street
+                              {gapWords(a.vsRefPct) === "in line"
+                                ? "in line with Wall Street"
+                                : `${gapWords(a.vsRefPct)} than Wall Street`}
                             </span>
                           </>
                         )}
@@ -636,25 +639,32 @@ export function WalletView({ address }: { address?: string }) {
             </ul>
           )}
           {d.activity.length > PAGE && (
-            <div className="mt-3 flex gap-2">
-              {shown < d.activity.length && (
-                <button
-                  type="button"
-                  onClick={() => setShown((n) => n + PAGE)}
-                  className="btn btn-sm flex-1 border border-line bg-card text-ink hover:bg-soft"
-                >
-                  Show {Math.min(PAGE, d.activity.length - shown)} more
-                </button>
-              )}
-              {shown > PAGE && (
-                <button
-                  type="button"
-                  onClick={() => setShown(PAGE)}
-                  className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
-                >
-                  Show fewer
-                </button>
-              )}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((n) => Math.max(0, n - 1))}
+                disabled={page === 0}
+                className="btn btn-sm border border-line bg-card text-ink hover:bg-soft disabled:opacity-40"
+              >
+                <ChevronLeft size={14} strokeWidth={2} />
+                Previous
+              </button>
+              <span className="text-muted num text-xs">
+                Page {page + 1} of {Math.ceil(d.activity.length / PAGE)}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((n) =>
+                    Math.min(Math.ceil(d.activity.length / PAGE) - 1, n + 1),
+                  )
+                }
+                disabled={(page + 1) * PAGE >= d.activity.length}
+                className="btn btn-sm border border-line bg-card text-ink hover:bg-soft disabled:opacity-40"
+              >
+                Next
+                <ChevronRight size={14} strokeWidth={2} />
+              </button>
             </div>
           )}
           <p className="text-muted mt-3 text-xs">
