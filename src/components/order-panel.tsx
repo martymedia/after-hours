@@ -256,7 +256,9 @@ export function OrderPanel({
         <ConnectButton label="Connect wallet" />
       </div>
     </Notice>
-  ) : sell && held != null && held <= 0 ? (
+  ) : sell &&
+    held != null &&
+    (held <= 0 || (price != null && held * price < 0.05)) ? (
     <Notice
       title="Nothing to sell yet."
       hint={`This wallet holds no ${symbol}. Buy some first, or set a buy order that waits for a lower price.`}

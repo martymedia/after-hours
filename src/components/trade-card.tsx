@@ -83,6 +83,9 @@ export function TradeCard(props: Props) {
     };
   }, [owner, mint, heldTick]);
   const heldAmount = held && held.owner === owner ? held.amount : 0;
+  // Dust (under 5 cents) cannot be sold; no Sell door for it.
+  const canSell =
+    heldAmount > 0 && (price == null || heldAmount * price >= 0.05);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
 
   useEffect(() => {
@@ -174,7 +177,7 @@ export function TradeCard(props: Props) {
           >
             Buy {symbol}
           </button>
-          {heldAmount > 0 && (
+          {canSell && (
             <button
               type="button"
               className="btn btn-sm mt-2 w-full border border-line bg-card text-ink hover:bg-soft"
@@ -233,7 +236,7 @@ export function TradeCard(props: Props) {
         </>
       )}
 
-      {open === "sell" && heldAmount > 0 && (
+      {open === "sell" && canSell && (
         <SellPanel
           mint={mint}
           symbol={symbol}

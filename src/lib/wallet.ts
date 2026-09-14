@@ -34,6 +34,8 @@ const TOKEN_PROGRAMS = [
   "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
 ];
 const CACHE_MS = 45_000;
+/** Positions worth less than this are hidden: no market takes them. */
+const DUST_USD = 0.01;
 const SIGNATURE_LIMIT = 50;
 const CONCURRENCY = 5;
 const DAY_MS = 24 * 3600_000;
@@ -510,6 +512,8 @@ export async function getWallet(
     if (!t || amount <= 0) continue;
     const s = snaps.get(mint);
     const price = s?.usd_price ?? null;
+    // Dust left behind by rounding (fractions of a cent) is not a position.
+    if (price != null && amount * price < DUST_USD) continue;
     const reference = s?.ref_price ?? null;
     const book = books.get(mint);
     const basisUnits = Math.min(amount, book?.units ?? 0);
