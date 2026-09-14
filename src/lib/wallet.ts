@@ -154,6 +154,32 @@ export type RpcTransaction = {
  *  funds come from the order account, not from the wallet directly. */
 export const TRIGGER_PROGRAM = "j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X";
 
+/** Raw units of one mint across the owner's token accounts, or null if the RPC failed. */
+export async function rawBalance(
+  owner: string,
+  mint: string,
+): Promise<bigint | null> {
+  try {
+    const res = await rpc<{
+      value: {
+        account: {
+          data: { parsed: { info: { tokenAmount: { amount: string } } } };
+        };
+      }[];
+    }>("getTokenAccountsByOwner", [
+      owner,
+      { mint },
+      { encoding: "jsonParsed" },
+    ]);
+    return res.value.reduce(
+      (sum, a) => sum + BigInt(a.account.data.parsed.info.tokenAmount.amount),
+      0n,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   let lastError: Error | null = null;
   for (const url of RPC_URLS) {

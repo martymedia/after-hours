@@ -3,7 +3,12 @@
 // includes price impact for that size.
 
 import type { NextRequest } from "next/server";
-import { getPrices, getQuote, USDC_MINT } from "@/lib/jupiter";
+import {
+  effectiveMultiplier,
+  getPrices,
+  getQuote,
+  USDC_MINT,
+} from "@/lib/jupiter";
 import { getDb } from "@/lib/db";
 import type { CostEstimate } from "@/lib/stock-types";
 
@@ -16,7 +21,9 @@ const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 /** Our fee, only when a receiving account is configured (same rule as the swap route). */
 export function platformFee(): number {
   const bps = Number(process.env.PLATFORM_FEE_BPS ?? 0) || 0;
-  return bps > 0 && BASE58.test(process.env.PLATFORM_FEE_ACCOUNT || "") ? bps : 0;
+  return bps > 0 && BASE58.test(process.env.PLATFORM_FEE_ACCOUNT || "")
+    ? bps
+    : 0;
 }
 
 export async function GET(req: NextRequest) {
@@ -24,30 +31,49 @@ export async function GET(req: NextRequest) {
   const side = req.nextUrl.searchParams.get("side") === "sell" ? "sell" : "buy";
   const usd = Number(req.nextUrl.searchParams.get("usd") ?? "0");
   const sharesIn = Number(req.nextUrl.searchParams.get("shares") ?? "0");
-  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint)) return Response.json({ error: "bad request" }, { status: 400 });
-  if (side === "buy" && (!Number.isFinite(usd) || usd < MIN_USD || usd > MAX_USD)) {
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mint))
+    return Response.json({ error: "bad request" }, { status: 400 });
+  if (
+    side === "buy" &&
+    (!Number.isFinite(usd) || usd < MIN_USD || usd > MAX_USD)
+  ) {
     return Response.json({ error: "bad request" }, { status: 400 });
   }
   if (side === "sell" && (!Number.isFinite(sharesIn) || sharesIn <= 0)) {
     return Response.json({ error: "bad request" }, { status: 400 });
   }
-  const token = getDb().prepare("SELECT decimals FROM tokens WHERE mint = ? AND active = 1").get(mint) as
-    | { decimals: number }
-    | undefined;
+  const token = getDb()
+    .prepare("SELECT decimals FROM tokens WHERE mint = ? AND active = 1")
+    .get(mint) as { decimals: number } | undefined;
   if (!token) return Response.json({ error: "unknown token" }, { status: 404 });
 
   const prices = await getPrices([mint]);
   const price = prices[mint];
-  const multiplier = price?.scaledUiConfig?.multiplier ?? 1;
+  const multiplier = effectiveMultiplier(price);
   const feeBps = platformFee();
   const quote =
     side === "buy"
-      ? await getQuote({ inputMint: USDC_MINT, outputMint: mint, amount: BigInt(Math.round(usd * 1_000_000)), platformFeeBps: feeBps || undefined })
-      : await getQuote({ inputMint: mint, outputMint: USDC_MINT, amount: BigInt(Math.round((sharesIn / multiplier) * 10 ** token.decimals)), platformFeeBps: feeBps || undefined });
+      ? await getQuote({
+          inputMint: USDC_MINT,
+          outputMint: mint,
+          amount: BigInt(Math.round(usd * 1_000_000)),
+          platformFeeBps: feeBps || undefined,
+        })
+      : await getQuote({
+          inputMint: mint,
+          outputMint: USDC_MINT,
+          amount: BigInt(
+            Math.round((sharesIn / multiplier) * 10 ** token.decimals),
+          ),
+          platformFeeBps: feeBps || undefined,
+        });
   if (!quote) {
     return Response.json({ error: "no route" }, { status: 422 });
   }
-  const shares = side === "buy" ? (Number(quote.outAmount) / 10 ** token.decimals) * multiplier : sharesIn;
+  const shares =
+    side === "buy"
+      ? (Number(quote.outAmount) / 10 ** token.decimals) * multiplier
+      : sharesIn;
   const usdOut = side === "buy" ? usd : Number(quote.outAmount) / 1_000_000;
   const execPrice = usdOut / shares;
   const reference = price?.stockData?.price ?? null;

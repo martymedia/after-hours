@@ -25,8 +25,39 @@ export type JupiterPrice = {
   decimals?: number;
   priceChange24h?: number;
   stockData?: { id: string; price: number; mcap?: number; updatedAt: string };
-  scaledUiConfig?: { multiplier: number };
+  scaledUiConfig?: {
+    multiplier: number;
+    newMultiplier?: number;
+    newMultiplierEffectiveAt?: string;
+  };
 };
+
+/**
+ * UI amount per raw unit for scaled-UI mints (every xStock). Jupiter keeps
+ * reporting the old `multiplier` after a scheduled change; the chain uses
+ * `newMultiplier` once its effective time has passed. Using the stale one
+ * makes "sell all" ask for more raw units than the wallet holds (error 0x1788).
+ */
+export function effectiveMultiplier(
+  price:
+    | {
+        scaledUiConfig?: {
+          multiplier: number;
+          newMultiplier?: number;
+          newMultiplierEffectiveAt?: string;
+        };
+      }
+    | undefined,
+): number {
+  const c = price?.scaledUiConfig;
+  if (!c) return 1;
+  const at = c.newMultiplierEffectiveAt
+    ? Date.parse(c.newMultiplierEffectiveAt)
+    : NaN;
+  if (c.newMultiplier && Number.isFinite(at) && at <= Date.now())
+    return c.newMultiplier;
+  return c.multiplier ?? 1;
+}
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
@@ -36,13 +67,17 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function searchTokens(query: string): Promise<JupiterSearchToken[]> {
+export async function searchTokens(
+  query: string,
+): Promise<JupiterSearchToken[]> {
   return getJson<JupiterSearchToken[]>(
     `${LITE}/tokens/v2/search?query=${encodeURIComponent(query)}`,
   );
 }
 
-export async function getPrices(mints: string[]): Promise<Record<string, JupiterPrice>> {
+export async function getPrices(
+  mints: string[],
+): Promise<Record<string, JupiterPrice>> {
   const out: Record<string, JupiterPrice> = {};
   for (let i = 0; i < mints.length; i += PRICE_BATCH) {
     const chunk = mints.slice(i, i + PRICE_BATCH);
@@ -88,7 +123,8 @@ export async function getQuote(params: {
     // mints (every xStock); V1 fails onchain with 6014 IncorrectTokenProgramID.
     instructionVersion: "V2",
   });
-  if (params.platformFeeBps) search.set("platformFeeBps", String(params.platformFeeBps));
+  if (params.platformFeeBps)
+    search.set("platformFeeBps", String(params.platformFeeBps));
   const res = await fetch(`${LITE}/swap/v1/quote?${search}`, {
     signal: AbortSignal.timeout(15000),
   });

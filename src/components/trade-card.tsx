@@ -18,6 +18,9 @@ import {
   summarize,
 } from "./buy-panel";
 import { Modal, ModalClose } from "./modal";
+import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
+import { solanaClient } from "@/lib/solana-client";
+import { SellPanel } from "./sell-panel";
 import { Seg } from "./motion";
 import { TickerBadge } from "./ticker-badge";
 
@@ -56,8 +59,30 @@ export function TradeCard(props: Props) {
     reference,
     price,
   } = props;
-  const [open, setOpen] = useState<"buy" | "order" | null>(null);
+  const [open, setOpen] = useState<"buy" | "order" | "sell" | null>(null);
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
+  // Shares of this stock in the connected wallet, for the Sell door.
+  const connected = useConnectedWallet(solanaClient);
+  const owner = connected?.account.address ?? null;
+  const [held, setHeld] = useState<{ owner: string; amount: number } | null>(
+    null,
+  );
+  const [heldTick, setHeldTick] = useState(0);
+  useEffect(() => {
+    if (!owner) return;
+    let cancelled = false;
+    fetch(`/api/holding?owner=${owner}&mint=${mint}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { amount?: number } | null) => {
+        if (!cancelled && body && typeof body.amount === "number")
+          setHeld({ owner, amount: body.amount });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, mint, heldTick]);
+  const heldAmount = held && held.owner === owner ? held.amount : 0;
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
 
   useEffect(() => {
@@ -149,6 +174,21 @@ export function TradeCard(props: Props) {
           >
             Buy {symbol}
           </button>
+          {heldAmount > 0 && (
+            <button
+              type="button"
+              className="btn btn-sm mt-2 w-full border border-line bg-card text-ink hover:bg-soft"
+              onClick={() => setOpen("sell")}
+            >
+              Sell {symbol}
+              <span className="num text-muted ml-1.5 font-normal">
+                you hold{" "}
+                {heldAmount >= 1
+                  ? heldAmount.toFixed(3)
+                  : heldAmount.toFixed(4)}
+              </span>
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-sm mt-2 w-full border border-line bg-card text-ink hover:bg-soft"
@@ -191,6 +231,21 @@ export function TradeCard(props: Props) {
               : "Signed in your own wallet. After Hours never holds your funds."}
           </p>
         </>
+      )}
+
+      {open === "sell" && heldAmount > 0 && (
+        <SellPanel
+          mint={mint}
+          symbol={symbol}
+          name={name}
+          logo={logo}
+          held={heldAmount}
+          referencePhrase={referencePhrase}
+          price={price}
+          reference={reference}
+          onClose={() => setOpen(null)}
+          onSold={() => setTimeout(() => setHeldTick((n) => n + 1), 1500)}
+        />
       )}
 
       {open === "buy" && (

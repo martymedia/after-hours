@@ -3,7 +3,13 @@
 // sends it; this server never holds keys.
 
 import type { NextRequest } from "next/server";
-import { getPrices, getQuote, USDC_MINT } from "@/lib/jupiter";
+import {
+  effectiveMultiplier,
+  getPrices,
+  getQuote,
+  USDC_MINT,
+} from "@/lib/jupiter";
+import { rawBalance } from "@/lib/wallet";
 import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +19,13 @@ const MIN_USD = 1;
 const MAX_USD = 250_000;
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-type Body = { mint?: string; usd?: number; side?: "buy" | "sell"; shares?: number; userPublicKey?: string };
+type Body = {
+  mint?: string;
+  usd?: number;
+  side?: "buy" | "sell";
+  shares?: number;
+  userPublicKey?: string;
+};
 
 export async function POST(req: NextRequest) {
   let body: Body;
@@ -27,16 +39,20 @@ export async function POST(req: NextRequest) {
   const usd = Number(body.usd ?? 0);
   const shares = Number(body.shares ?? 0);
   const userPublicKey = body.userPublicKey ?? "";
-  if (!BASE58.test(mint) || !BASE58.test(userPublicKey)) return Response.json({ error: "bad request" }, { status: 400 });
-  if (side === "buy" && (!Number.isFinite(usd) || usd < MIN_USD || usd > MAX_USD)) {
+  if (!BASE58.test(mint) || !BASE58.test(userPublicKey))
+    return Response.json({ error: "bad request" }, { status: 400 });
+  if (
+    side === "buy" &&
+    (!Number.isFinite(usd) || usd < MIN_USD || usd > MAX_USD)
+  ) {
     return Response.json({ error: "bad request" }, { status: 400 });
   }
   if (side === "sell" && (!Number.isFinite(shares) || shares <= 0)) {
     return Response.json({ error: "bad request" }, { status: 400 });
   }
-  const token = getDb().prepare("SELECT decimals FROM tokens WHERE mint = ? AND active = 1").get(mint) as
-    | { decimals: number }
-    | undefined;
+  const token = getDb()
+    .prepare("SELECT decimals FROM tokens WHERE mint = ? AND active = 1")
+    .get(mint) as { decimals: number } | undefined;
   if (!token) return Response.json({ error: "unknown token" }, { status: 404 });
 
   const feeBps = Number(process.env.PLATFORM_FEE_BPS ?? 0) || 0;
@@ -47,8 +63,18 @@ export async function POST(req: NextRequest) {
   if (side === "buy") {
     amount = BigInt(Math.round(usd * 1_000_000));
   } else {
-    const multiplier = (await getPrices([mint]))[mint]?.scaledUiConfig?.multiplier ?? 1;
+    const multiplier = effectiveMultiplier((await getPrices([mint]))[mint]);
     amount = BigInt(Math.round((shares / multiplier) * 10 ** token.decimals));
+    // Never ask for more raw units than the wallet holds; "all" must mean all.
+    const balance = await rawBalance(userPublicKey, mint);
+    if (balance != null && amount > balance) {
+      if (amount > (balance * 102n) / 100n)
+        return Response.json(
+          { error: "not enough shares in the wallet" },
+          { status: 400 },
+        );
+      amount = balance;
+    }
   }
   const quote = await getQuote({
     inputMint: side === "buy" ? USDC_MINT : mint,
@@ -70,7 +96,10 @@ export async function POST(req: NextRequest) {
       dynamicComputeUnitLimit: true,
       dynamicSlippage: true,
       prioritizationFeeLamports: {
-        priorityLevelWithMaxLamports: { maxLamports: 2_000_000, priorityLevel: "high" },
+        priorityLevelWithMaxLamports: {
+          maxLamports: 2_000_000,
+          priorityLevel: "high",
+        },
       },
       ...(chargeFee ? { feeAccount } : {}),
     }),
@@ -82,11 +111,17 @@ export async function POST(req: NextRequest) {
     error?: string;
   };
   if (!swapRes.ok || !swap.swapTransaction) {
-    return Response.json({ error: swap.error ?? "swap build failed" }, { status: 502 });
+    return Response.json(
+      { error: swap.error ?? "swap build failed" },
+      { status: 502 },
+    );
   }
   if (swap.simulationError) {
     const detail = (swap.simulationError as { error?: string }).error ?? "";
-    return Response.json({ error: `simulation: ${detail || "the swap would fail onchain"}` }, { status: 502 });
+    return Response.json(
+      { error: `simulation: ${detail || "the swap would fail onchain"}` },
+      { status: 502 },
+    );
   }
   return Response.json(
     {
