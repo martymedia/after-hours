@@ -64,7 +64,7 @@ Solscan link. Nothing is stored; disconnecting removes the entry.
 - A price older than one hour is marked stale and never gets a green button.
 - While Wall Street is closed the reference is the last close, shown as
   drift, never as an opportunity.
-- Tokens from different issuers are labeled by legal structure. They are not
+- Tokens from different issuers are labelled by legal structure. They are not
   interchangeable.
 - Pre-IPO tokens are not listed in v1: there is no real market price to
   compare against.

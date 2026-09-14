@@ -159,8 +159,8 @@ export default function HowPage() {
 
         <Step
           n="02"
-          title="Check the price is real"
-          text="Every price carries the time of its last trade and its distance from the last Wall Street print. A stale price is labeled stale, a thin market thin. Blue means cheaper than Wall Street, red means pricier. The gap radar on each stock page shows how that distance moved over the last two days."
+          title="Check that the price is real"
+          text="Every price carries the time of its last trade and its distance from the last Wall Street print. A stale price is labelled stale and a thin market is labelled thin. Blue means cheaper than Wall Street, red means pricier. The gap radar on each stock page shows how that distance moved over the last two days."
         >
           {sample && (
             <div className="rounded-2xl bg-soft p-4">
