@@ -48,21 +48,31 @@ type FeeId = "gentle" | "standard" | "antisnipe";
 const FEE_PRESETS: {
   id: FeeId;
   label: string;
+  hint: string;
   start: number;
   end: number;
   minutes: number;
 }[] = [
-  { id: "gentle", label: "1% flat", start: 100, end: 100, minutes: 1 },
+  {
+    id: "gentle",
+    label: "1% flat",
+    hint: "1% on every trade, from the first to the last",
+    start: 100,
+    end: 100,
+    minutes: 1,
+  },
   {
     id: "standard",
-    label: "5% → 1% in an hour",
+    label: "5% → 1%",
+    hint: "falls from 5% to 1% over the first hour",
     start: 500,
     end: 100,
     minutes: 60,
   },
   {
     id: "antisnipe",
-    label: "30% → 1% anti-snipe",
+    label: "30% → 1%",
+    hint: "starts at 30% against snipers, 1% after thirty minutes",
     start: 3000,
     end: 100,
     minutes: 30,
@@ -283,9 +293,9 @@ export function CurveBuilder({
     : form.migrationMcapUsd / Math.max(1, form.initialMcapUsd);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-12">
+    <div className="grid min-w-0 gap-5 lg:grid-cols-12">
       {/* The three decisions */}
-      <section className="card p-5 lg:col-span-6">
+      <section className="card min-w-0 p-5 lg:col-span-6">
         <label className="block">
           <span className="text-muted text-xs font-medium">Priced in</span>
           <div className="mt-1.5 flex items-center gap-3">
@@ -390,6 +400,9 @@ export function CurveBuilder({
               className="w-full justify-between"
             />
           </div>
+          <p className="text-muted mt-1.5 text-xs">
+            {FEE_PRESETS.find((f) => f.id === feeId)?.hint}
+          </p>
         </div>
 
         <details className="mt-5">
@@ -425,7 +438,7 @@ export function CurveBuilder({
       </section>
 
       {/* One picture, one button */}
-      <section className="card p-5 lg:col-span-6">
+      <section className="card min-w-0 p-5 lg:col-span-6">
         {previewError ? (
           <p className="text-warn text-sm">{previewError}</p>
         ) : !preview ? (
