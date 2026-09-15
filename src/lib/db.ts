@@ -67,8 +67,11 @@ export function getDb(): DatabaseSync {
     );
   `);
   // Additive migration: logo URL per token (added 2026-09-12).
-  const cols = db.prepare("PRAGMA table_info(tokens)").all() as { name: string }[];
-  if (!cols.some((c) => c.name === "logo")) db.exec("ALTER TABLE tokens ADD COLUMN logo TEXT");
+  const cols = db.prepare("PRAGMA table_info(tokens)").all() as {
+    name: string;
+  }[];
+  if (!cols.some((c) => c.name === "logo"))
+    db.exec("ALTER TABLE tokens ADD COLUMN logo TEXT");
   return db;
 }
 
@@ -105,7 +108,9 @@ export type CandleRow = {
   volume: number;
 };
 
-export function upsertTokens(rows: Omit<TokenRow, "updated_at" | "active">[]): void {
+export function upsertTokens(
+  rows: Omit<TokenRow, "updated_at" | "active">[],
+): void {
   const d = getDb();
   const now = Date.now();
   const stmt = d.prepare(`
@@ -119,7 +124,16 @@ export function upsertTokens(rows: Omit<TokenRow, "updated_at" | "active">[]): v
   d.exec("BEGIN");
   try {
     for (const r of rows) {
-      stmt.run(r.mint, r.symbol, r.name, r.underlying, r.issuer, r.decimals, r.logo, now);
+      stmt.run(
+        r.mint,
+        r.symbol,
+        r.name,
+        r.underlying,
+        r.issuer,
+        r.decimals,
+        r.logo,
+        now,
+      );
     }
     d.exec("COMMIT");
   } catch (err) {
@@ -132,12 +146,16 @@ export function upsertTokens(rows: Omit<TokenRow, "updated_at" | "active">[]): v
 export function deactivateTokensExcept(mints: string[]): void {
   const d = getDb();
   const placeholders = mints.map(() => "?").join(",");
-  d.prepare(`UPDATE tokens SET active = 0 WHERE mint NOT IN (${placeholders})`).run(...mints);
+  d.prepare(
+    `UPDATE tokens SET active = 0 WHERE mint NOT IN (${placeholders})`,
+  ).run(...mints);
 }
 
 export function listTokens(): TokenRow[] {
   return getDb()
-    .prepare("SELECT * FROM tokens WHERE active = 1 ORDER BY underlying, issuer")
+    .prepare(
+      "SELECT * FROM tokens WHERE active = 1 ORDER BY underlying, issuer",
+    )
     .all() as TokenRow[];
 }
 
@@ -170,14 +188,46 @@ export function insertSnapshots(rows: SnapshotRow[]): void {
 }
 
 /** Latest snapshot per active token. */
+// A thin pool can print one bad trade and be back a minute later; a single
+// reading would then show a 5% discount on the overview that is gone by the
+// time the stock page loads. The price every page works with is therefore
+// the median of the last three readings, at most ten minutes old. Liquidity,
+// reference and age stay those of the newest row.
+const SMOOTH_WINDOW_MS = 10 * 60_000;
+const SMOOTH_READINGS = 3;
+
 export function latestSnapshots(): SnapshotRow[] {
-  return getDb()
+  const latest = getDb()
     .prepare(
       `SELECT s.* FROM snapshots s
        JOIN (SELECT mint, MAX(ts) AS ts FROM snapshots GROUP BY mint) m
          ON m.mint = s.mint AND m.ts = s.ts`,
     )
     .all() as SnapshotRow[];
+  const recent = getDb()
+    .prepare(
+      "SELECT mint, usd_price FROM snapshots WHERE ts >= ? AND usd_price IS NOT NULL ORDER BY ts DESC",
+    )
+    .all(Date.now() - SMOOTH_WINDOW_MS) as {
+    mint: string;
+    usd_price: number;
+  }[];
+  const readings = new Map<string, number[]>();
+  for (const r of recent) {
+    const list = readings.get(r.mint) ?? [];
+    if (list.length < SMOOTH_READINGS) {
+      list.push(r.usd_price);
+      readings.set(r.mint, list);
+    }
+  }
+  for (const row of latest) {
+    const list = readings.get(row.mint);
+    if (row.usd_price == null || !list || list.length < SMOOTH_READINGS)
+      continue;
+    const sorted = [...list].sort((a, b) => a - b);
+    row.usd_price = sorted[Math.floor(sorted.length / 2)];
+  }
+  return latest;
 }
 
 export function snapshotsSince(mint: string, sinceTs: number): SnapshotRow[] {
@@ -187,7 +237,10 @@ export function snapshotsSince(mint: string, sinceTs: number): SnapshotRow[] {
 }
 
 /** Sparkline input: one price per bucket for every token since sinceTs. */
-export function sparkSeries(sinceTs: number, bucketMs: number): Map<string, number[]> {
+export function sparkSeries(
+  sinceTs: number,
+  bucketMs: number,
+): Map<string, number[]> {
   const rows = getDb()
     .prepare(
       // CAST: the bound number arrives as REAL, and REAL division would
@@ -196,7 +249,11 @@ export function sparkSeries(sinceTs: number, bucketMs: number): Map<string, numb
        FROM snapshots WHERE ts >= ? AND usd_price IS NOT NULL
        GROUP BY mint, bucket ORDER BY mint, bucket`,
     )
-    .all(bucketMs, bucketMs, sinceTs) as { mint: string; bucket: number; price: number }[];
+    .all(bucketMs, bucketMs, sinceTs) as {
+    mint: string;
+    bucket: number;
+    price: number;
+  }[];
   const out = new Map<string, number[]>();
   for (const r of rows) {
     const arr = out.get(r.mint) ?? [];
@@ -215,7 +272,8 @@ export function upsertCandles(rows: CandleRow[]): void {
   `);
   d.exec("BEGIN");
   try {
-    for (const r of rows) stmt.run(r.mint, r.ts, r.open, r.high, r.low, r.close, r.volume);
+    for (const r of rows)
+      stmt.run(r.mint, r.ts, r.open, r.high, r.low, r.close, r.volume);
     d.exec("COMMIT");
   } catch (err) {
     d.exec("ROLLBACK");
@@ -230,9 +288,9 @@ export function candlesSince(mint: string, sinceTs: number): CandleRow[] {
 }
 
 export function latestCandleTs(mint: string): number | null {
-  const row = getDb().prepare("SELECT MAX(ts) AS ts FROM candles WHERE mint = ?").get(mint) as
-    | { ts: number | null }
-    | undefined;
+  const row = getDb()
+    .prepare("SELECT MAX(ts) AS ts FROM candles WHERE mint = ?")
+    .get(mint) as { ts: number | null } | undefined;
   return row?.ts ?? null;
 }
 
@@ -243,7 +301,9 @@ export function replaceEarnings(rows: EarningsRow[]): void {
   d.exec("BEGIN");
   try {
     d.exec("DELETE FROM earnings");
-    const stmt = d.prepare("INSERT OR REPLACE INTO earnings (symbol, date, timing) VALUES (?, ?, ?)");
+    const stmt = d.prepare(
+      "INSERT OR REPLACE INTO earnings (symbol, date, timing) VALUES (?, ?, ?)",
+    );
     for (const r of rows) stmt.run(r.symbol, r.date, r.timing);
     d.exec("COMMIT");
   } catch (err) {
@@ -258,23 +318,30 @@ export function upcomingEarnings(fromYmd: string, limit = 8): EarningsRow[] {
     .all(fromYmd, limit) as EarningsRow[];
 }
 
-export function nextEarningsFor(symbol: string, fromYmd: string): EarningsRow | null {
+export function nextEarningsFor(
+  symbol: string,
+  fromYmd: string,
+): EarningsRow | null {
   const row = getDb()
-    .prepare("SELECT * FROM earnings WHERE symbol = ? AND date >= ? ORDER BY date LIMIT 1")
+    .prepare(
+      "SELECT * FROM earnings WHERE symbol = ? AND date >= ? ORDER BY date LIMIT 1",
+    )
     .get(symbol, fromYmd) as EarningsRow | undefined;
   return row ?? null;
 }
 
 export function getMeta(key: string): string | null {
-  const row = getDb().prepare("SELECT value FROM meta WHERE key = ?").get(key) as
-    | { value: string }
-    | undefined;
+  const row = getDb()
+    .prepare("SELECT value FROM meta WHERE key = ?")
+    .get(key) as { value: string } | undefined;
   return row?.value ?? null;
 }
 
 export function setMeta(key: string, value: string): void {
   getDb()
-    .prepare("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .prepare(
+      "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    )
     .run(key, value);
 }
 
@@ -285,7 +352,9 @@ export function pruneSnapshots(olderThanTs: number): void {
 /** Latest snapshot at or before ts, if one exists within the last three hours before it. */
 export function snapshotAt(mint: string, ts: number): SnapshotRow | null {
   const row = getDb()
-    .prepare("SELECT * FROM snapshots WHERE mint = ? AND ts <= ? AND ts >= ? ORDER BY ts DESC LIMIT 1")
+    .prepare(
+      "SELECT * FROM snapshots WHERE mint = ? AND ts <= ? AND ts >= ? ORDER BY ts DESC LIMIT 1",
+    )
     .get(mint, ts, ts - 3 * 3600_000) as SnapshotRow | undefined;
   return row ?? null;
 }

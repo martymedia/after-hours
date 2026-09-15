@@ -137,26 +137,45 @@
     t-check-bob var(--check-dur) var(--check-ease-bob) forwards;
 }
 .t-success-check[data-state="in"] svg path {
-  animation: t-check-draw var(--check-dur) var(--ease-smooth-out) var(--check-path-delay) forwards;
+  animation: t-check-draw var(--check-dur) var(--ease-smooth-out)
+    var(--check-path-delay) forwards;
 }
 @keyframes t-check-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes t-check-rotate {
-  from { transform: rotate(var(--check-rotate-from)); }
-  to { transform: rotate(0deg); }
+  from {
+    transform: rotate(var(--check-rotate-from));
+  }
+  to {
+    transform: rotate(0deg);
+  }
 }
 @keyframes t-check-blur {
-  from { filter: blur(var(--check-blur-from)); }
-  to { filter: blur(0); }
+  from {
+    filter: blur(var(--check-blur-from));
+  }
+  to {
+    filter: blur(0);
+  }
 }
 @keyframes t-check-bob {
-  from { translate: 0 var(--check-y-amount); }
-  to { translate: 0 0; }
+  from {
+    translate: 0 var(--check-y-amount);
+  }
+  to {
+    translate: 0 0;
+  }
 }
 @keyframes t-check-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* Error state shake (percent stops = 80, 60, 80, 60 ms legs) */
@@ -164,11 +183,25 @@
   animation: t-shake 280ms linear;
 }
 @keyframes t-shake {
-  0% { transform: translateX(0); animation-timing-function: var(--ease-smooth-out); }
-  28.57% { transform: translateX(var(--shake-distance)); animation-timing-function: var(--ease-smooth-out); }
-  57.14% { transform: translateX(calc(var(--shake-distance) * -1)); animation-timing-function: var(--ease-smooth-out); }
-  78.57% { transform: translateX(var(--shake-overshoot)); animation-timing-function: var(--ease-smooth-out); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+    animation-timing-function: var(--ease-smooth-out);
+  }
+  28.57% {
+    transform: translateX(var(--shake-distance));
+    animation-timing-function: var(--ease-smooth-out);
+  }
+  57.14% {
+    transform: translateX(calc(var(--shake-distance) * -1));
+    animation-timing-function: var(--ease-smooth-out);
+  }
+  78.57% {
+    transform: translateX(var(--shake-overshoot));
+    animation-timing-function: var(--ease-smooth-out);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 /* Tabs sliding, on top of the existing .seg look */
@@ -234,10 +267,18 @@
     filter var(--stagger-dur) var(--ease-smooth-out);
   will-change: transform, opacity, filter;
 }
-.t-stagger-line--2 { transition-delay: var(--stagger-stagger); }
-.t-stagger-line--3 { transition-delay: calc(var(--stagger-stagger) * 2); }
-.t-stagger-line--4 { transition-delay: calc(var(--stagger-stagger) * 3); }
-.t-stagger-line--5 { transition-delay: calc(var(--stagger-stagger) * 4); }
+.t-stagger-line--2 {
+  transition-delay: var(--stagger-stagger);
+}
+.t-stagger-line--3 {
+  transition-delay: calc(var(--stagger-stagger) * 2);
+}
+.t-stagger-line--4 {
+  transition-delay: calc(var(--stagger-stagger) * 3);
+}
+.t-stagger-line--5 {
+  transition-delay: calc(var(--stagger-stagger) * 4);
+}
 .t-stagger.is-shown .t-stagger-line {
   opacity: 1;
   transform: translateY(0);
@@ -324,7 +365,8 @@
 /* Card hover tilt */
 .t-tilt-card {
   position: relative;
-  transform: perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
+  transform: perspective(var(--tilt-perspective)) rotateX(var(--tilt-rx, 0deg))
+    rotateY(var(--tilt-ry, 0deg));
   transform-style: preserve-3d;
   transition: transform var(--tilt-return) var(--ease-smooth-out);
 }
@@ -339,8 +381,18 @@
   opacity: 0;
   mix-blend-mode: screen;
   background:
-    radial-gradient(circle 95px at var(--tilt-gx, 50%) var(--tilt-gy, 50%), rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.06) 52%, rgba(255, 255, 255, 0) 84%),
-    radial-gradient(circle 200px at var(--tilt-gx, 50%) var(--tilt-gy, 50%), rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 58%, rgba(255, 255, 255, 0) 78%);
+    radial-gradient(
+      circle 95px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255, 255, 255, 0.48),
+      rgba(255, 255, 255, 0.06) 52%,
+      rgba(255, 255, 255, 0) 84%
+    ),
+    radial-gradient(
+      circle 200px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255, 255, 255, 0.22),
+      rgba(255, 255, 255, 0.04) 58%,
+      rgba(255, 255, 255, 0) 78%
+    );
   transition: opacity var(--tilt-glare-fade) var(--ease-smooth-out);
 }
 .t-tilt.is-hover .t-tilt-glare {
@@ -358,7 +410,14 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(90deg, transparent 0%, transparent 40%, var(--shimmer-highlight, #fff) 50%, transparent 60%, transparent 100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    var(--shimmer-highlight, #fff) 50%,
+    transparent 60%,
+    transparent 100%
+  );
   background-size: 400% 100%;
   background-repeat: no-repeat;
   -webkit-background-clip: text;
@@ -368,14 +427,24 @@
   animation: t-shimmer var(--shimmer-dur) linear infinite;
 }
 @keyframes t-shimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: 0% 0; }
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
 }
 
 /* Content reveal after a skeleton */
 @keyframes t-reveal-in {
-  from { opacity: 0; filter: blur(var(--reveal-blur)); }
-  to { opacity: 1; filter: blur(0); }
+  from {
+    opacity: 0;
+    filter: blur(var(--reveal-blur));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
 }
 .t-reveal {
   animation: t-reveal-in var(--reveal-dur) ease-in-out backwards;
@@ -482,5 +551,25 @@
   .t-draw .t-label {
     opacity: 1;
     animation: none !important;
+  }
+}
+
+/* Curves hero: curves draw themselves in, buyers' dots ride up them. */
+.curve-field {
+  opacity: 0.55;
+}
+.curve-field .cf-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: t-draw-line 2.4s var(--ease-smooth-out, ease-out) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .curve-field .cf-line {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .curve-field .cf-dot {
+    display: none;
   }
 }

@@ -6,6 +6,7 @@ import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { formatAgo } from "@/lib/format";
 import { PoolMini, compactUsd } from "@/components/curve-pool-row";
 import { TickerBadge } from "@/components/ticker-badge";
+import { CurveField } from "@/components/curve-field";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,9 @@ export default async function CurvesPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="card-dark overflow-hidden p-6 sm:p-8">
-        <div className="grid items-center gap-8 lg:grid-cols-12">
+      <section className="card-dark relative overflow-hidden p-6 sm:p-8">
+        <CurveField />
+        <div className="relative grid items-center gap-8 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <p className="text-blue-light text-sm font-medium">Curves</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">

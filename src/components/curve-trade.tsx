@@ -102,7 +102,7 @@ export function CurvePoolActions(props: PoolActionProps) {
         onClick={() => setOpen(true)}
         className="btn btn-sm"
       >
-        Buy · Sell
+        Trade
       </button>
       {open && <TradeModal {...props} onClose={() => setOpen(false)} />}
     </span>
