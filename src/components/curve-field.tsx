@@ -55,7 +55,7 @@ export function CurveField({ className = "" }: { className?: string }) {
         </linearGradient>
         <radialGradient id="cf-dot">
           <stop offset="0" stopColor="#ffffff" stopOpacity="1" />
-          <stop offset="0.5" stopColor="#8fb3ff" stopOpacity="0.9" />
+          <stop offset="0.5" stopColor="#8fb3ff" stopOpacity="0.6" />
           <stop offset="1" stopColor="#8fb3ff" stopOpacity="0" />
         </radialGradient>
       </defs>
@@ -68,13 +68,13 @@ export function CurveField({ className = "" }: { className?: string }) {
               d={d}
               fill="none"
               stroke="url(#cf-fade)"
-              strokeWidth={1.5}
+              strokeWidth={1.1}
               strokeLinecap="round"
               className="cf-line"
               style={{ animationDelay: `${c.delay * 0.15}s` }}
               pathLength={1}
             />
-            <circle r={9} fill="url(#cf-dot)" className="cf-dot">
+            <circle r={6} fill="url(#cf-dot)" className="cf-dot">
               <animateMotion
                 dur={`${c.dur}s`}
                 begin={`${c.delay}s`}
@@ -86,7 +86,7 @@ export function CurveField({ className = "" }: { className?: string }) {
                 <mpath href={`#cf-c${i}`} />
               </animateMotion>
             </circle>
-            <circle r={2.2} fill="#fff" className="cf-dot">
+            <circle r={1.6} fill="#fff" fillOpacity={0.8} className="cf-dot">
               <animateMotion
                 dur={`${c.dur}s`}
                 begin={`${c.delay}s`}
