@@ -22,11 +22,21 @@ export function SiteFooter() {
           <Link href="/how" className="hover:text-ink">
             How it works
           </Link>
+          <a
+            href="https://github.com/martymedia/after-hours"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-ink"
+          >
+            Source
+          </a>
         </nav>
       </div>
       <p className="mt-3 leading-relaxed">
         A screener with a buy button. We never hold your funds. Nothing here is
-        investment advice. Not available to US persons.
+        investment advice. Not available to US persons. Open source under the
+        MIT licence: every quote, fee and transaction in this app can be read in
+        the repository.
       </p>
     </footer>
   );
