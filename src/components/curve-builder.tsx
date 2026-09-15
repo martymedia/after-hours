@@ -1,9 +1,8 @@
 "use client";
 
-// Curve builder: pick a stock, say where the launch should start and
-// graduate in dollars, and get a Meteora DBC configuration anchored to the
-// stock's real price. Preview runs the SDK's validation on the server; the
-// optional "Create on mainnet" signs one transaction in the user's wallet.
+// Curve builder: three inputs that matter (stock, start cap, graduation
+// cap), one picture of what the curve does, and one button. Everything
+// else folds away. The preview runs the SDK's validation on the server.
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -21,6 +20,7 @@ import { solanaClient } from "@/lib/solana-client";
 import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
+import { CurveShape } from "./curve-shape";
 import { Seg, SuccessCheck, SwapText } from "./motion";
 import { TickerBadge } from "./ticker-badge";
 
@@ -53,17 +53,17 @@ const FEE_PRESETS: {
   end: number;
   minutes: number;
 }[] = [
-  { id: "gentle", label: "Gentle 1% flat", start: 100, end: 100, minutes: 1 },
+  { id: "gentle", label: "1% flat", start: 100, end: 100, minutes: 1 },
   {
     id: "standard",
-    label: "5% to 1% over an hour",
+    label: "5% → 1% in an hour",
     start: 500,
     end: 100,
     minutes: 60,
   },
   {
     id: "antisnipe",
-    label: "Anti-snipe 30% to 1%",
+    label: "30% → 1% anti-snipe",
     start: 3000,
     end: 100,
     minutes: 30,
@@ -73,8 +73,12 @@ const FEE_PRESETS: {
 type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
 
 function tiny(v: number): string {
-  if (v >= 1) return formatUsd(v);
-  return `$${v.toPrecision(3)}`;
+  return v >= 1 ? formatUsd(v) : `$${v.toPrecision(3)}`;
+}
+function compact(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
+  return formatUsd(n, 0);
 }
 
 export function CurveBuilder() {
@@ -119,7 +123,6 @@ export function CurveBuilder() {
       .catch(() => {});
   }, []);
 
-  // Preview follows the form with a short debounce; the server runs the SDK validation.
   useEffect(() => {
     if (!stockMint) return;
     const id = setTimeout(() => {
@@ -149,12 +152,11 @@ export function CurveBuilder() {
   };
   const busy =
     step === "building" || step === "signing" || step === "confirming";
+  const badgeProblem =
+    preview?.warnings.find((w) => w.includes("badge")) ?? null;
+  const named = name.trim().length >= 2 && symbol.trim().length >= 2;
   const canCreate = Boolean(
-    preview &&
-    preview.warnings.every((w) => !w.includes("badge")) &&
-    name.trim().length >= 2 &&
-    symbol.trim().length >= 2 &&
-    connected?.signer,
+    preview && !badgeProblem && named && connected?.signer,
   );
 
   async function create() {
@@ -232,11 +234,11 @@ export function CurveBuilder() {
           </span>
           <div>
             <p className="text-lg leading-tight font-semibold">
-              Curve is live on mainnet.
+              {created.symbol} is live on its curve.
             </p>
             <p className="text-on-dark-muted text-sm">
-              {created.symbol} now trades on a bonding curve priced in{" "}
-              {stock?.symbol}. It shows up under Curves after the next refresh.
+              Priced in {stock?.symbol}. It shows up under Curves within two
+              minutes.
             </p>
           </div>
         </div>
@@ -270,17 +272,16 @@ export function CurveBuilder() {
     );
   }
 
+  const ratio = preview
+    ? preview.migrationPriceUsd / Math.max(1e-12, preview.startPriceUsd)
+    : form.migrationMcapUsd / Math.max(1, form.initialMcapUsd);
+
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      {/* Inputs */}
+      {/* The three decisions */}
       <section className="card p-5 lg:col-span-6">
-        <h3 className="font-semibold">Anchor</h3>
-        <p className="text-muted mt-1 text-sm">
-          The curve is priced in this stock. Every dollar figure below is
-          converted through its onchain price right now.
-        </p>
-        <label className="mt-4 block">
-          <span className="text-muted text-xs font-medium">Quote stock</span>
+        <label className="block">
+          <span className="text-muted text-xs font-medium">Priced in</span>
           <div className="mt-1.5 flex items-center gap-3">
             {stock && (
               <TickerBadge symbol={stock.symbol} logo={stock.logo} size={36} />
@@ -304,7 +305,7 @@ export function CurveBuilder() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="text-muted text-xs font-medium">
-              Starting market cap
+              Starts at a market cap of
             </span>
             <div className="mt-1.5 flex items-center gap-2 rounded-2xl bg-soft px-4 py-2.5">
               <span className="text-muted">$</span>
@@ -330,14 +331,14 @@ export function CurveBuilder() {
                   onClick={() => set({ initialMcapUsd: v })}
                   className={`pill ${form.initialMcapUsd === v ? "pill-dark" : "bg-soft text-ink hover:bg-line"}`}
                 >
-                  {formatUsd(v, 0)}
+                  {compact(v)}
                 </button>
               ))}
             </div>
           </label>
           <label className="block">
             <span className="text-muted text-xs font-medium">
-              Graduates to a DAMM v2 pool at
+              Graduates to an open pool at
             </span>
             <div className="mt-1.5 flex items-center gap-2 rounded-2xl bg-soft px-4 py-2.5">
               <span className="text-muted">$</span>
@@ -363,7 +364,7 @@ export function CurveBuilder() {
                   onClick={() => set({ migrationMcapUsd: v })}
                   className={`pill ${form.migrationMcapUsd === v ? "pill-dark" : "bg-soft text-ink hover:bg-line"}`}
                 >
-                  {formatUsd(v, 0)}
+                  {compact(v)}
                 </button>
               ))}
             </div>
@@ -372,7 +373,7 @@ export function CurveBuilder() {
 
         <div className="mt-5">
           <span className="text-muted text-xs font-medium">
-            Trading fee on the curve
+            Fee while on the curve
           </span>
           <div className="mt-1.5">
             <Seg
@@ -383,119 +384,92 @@ export function CurveBuilder() {
               className="w-full justify-between"
             />
           </div>
-          <p className="text-muted mt-1.5 text-xs">
-            Starts at {form.startFeeBps / 100}%, decays to{" "}
-            {form.endFeeBps / 100}% over {form.feeMinutes} min, then the DAMM
-            pool charges 1%. Half of the trading fee goes to the creator, half
-            to the fee claimer.
-          </p>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <label className="block sm:col-span-1">
-            <span className="text-muted text-xs font-medium">Total supply</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={form.supply}
-              onChange={(e) =>
-                set({
-                  supply: Number(e.target.value.replace(/[^0-9]/g, "")) || 0,
-                })
-              }
-              className="num mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
-              aria-label="Total supply"
-            />
-          </label>
-          <label className="block">
-            <span className="text-muted text-xs font-medium">Token name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Night Owl"
-              maxLength={32}
-              className="mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
-              aria-label="Token name"
-            />
-          </label>
-          <label className="block">
-            <span className="text-muted text-xs font-medium">Symbol</span>
-            <input
-              type="text"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="OWL"
-              maxLength={10}
-              className="mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium uppercase outline-none"
-              aria-label="Token symbol"
-            />
-          </label>
-        </div>
+        <details className="mt-5">
+          <summary className="text-muted cursor-pointer text-xs hover:text-ink">
+            Advanced: supply, creator share
+          </summary>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-muted text-xs font-medium">
+                Total supply
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={form.supply}
+                onChange={(e) =>
+                  set({
+                    supply: Number(e.target.value.replace(/[^0-9]/g, "")) || 0,
+                  })
+                }
+                className="num mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
+                aria-label="Total supply"
+              />
+            </label>
+            <label className="block">
+              <span className="text-muted text-xs font-medium">
+                Creator share of trading fees
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={form.creatorFeePct}
+                onChange={(e) =>
+                  set({
+                    creatorFeePct:
+                      Number(e.target.value.replace(/[^0-9]/g, "")) || 0,
+                  })
+                }
+                className="num mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
+                aria-label="Creator fee share in percent"
+              />
+            </label>
+          </div>
+          <p className="text-muted mt-2 text-xs">
+            Liquidity on graduation is locked forever. The DAMM pool charges 1%
+            after graduation; dynamic fee on.
+          </p>
+        </details>
       </section>
 
-      {/* Preview and create */}
+      {/* One picture, one button */}
       <section className="card p-5 lg:col-span-6">
-        <h3 className="font-semibold">What the curve does</h3>
         {previewError ? (
-          <p className="text-warn mt-3 text-sm">{previewError}</p>
+          <p className="text-warn text-sm">{previewError}</p>
         ) : !preview ? (
-          <div className="mt-3 h-40 animate-pulse rounded-2xl bg-soft" />
+          <div className="h-44 animate-pulse rounded-2xl bg-soft" />
         ) : (
           <>
-            <dl className="num mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl bg-soft p-3">
-                <dt className="text-muted text-xs">Starts at</dt>
-                <dd className="mt-0.5 font-semibold">
-                  {tiny(preview.startPriceUsd)}
-                </dd>
-                <dd className="text-muted text-xs">per token</dd>
-              </div>
-              <div className="rounded-2xl bg-soft p-3">
-                <dt className="text-muted text-xs">Graduates at</dt>
-                <dd className="mt-0.5 font-semibold">
-                  {tiny(preview.migrationPriceUsd)}
-                </dd>
-                <dd className="text-muted text-xs">per token</dd>
-              </div>
-              <div className="rounded-2xl bg-ink p-3 text-white">
-                <dt className="text-on-dark-muted text-xs">Needs to raise</dt>
-                <dd className="mt-0.5 font-semibold">
-                  {preview.thresholdQuote.toFixed(
-                    preview.thresholdQuote >= 100 ? 1 : 3,
-                  )}{" "}
-                  {preview.stock.symbol}
-                </dd>
-                <dd className="text-on-dark-muted text-xs">
-                  ≈ {formatUsd(preview.thresholdUsd, 0)} at{" "}
-                  {formatUsd(preview.stock.price)} per {preview.stock.symbol}
-                </dd>
-              </div>
-              <div className="rounded-2xl bg-soft p-3">
-                <dt className="text-muted text-xs">Fee path</dt>
-                <dd className="mt-0.5 font-semibold">
-                  {preview.fee.startBps / 100}% → {preview.fee.endBps / 100}%
-                </dd>
-                <dd className="text-muted text-xs">
-                  over {preview.fee.minutes} min, dynamic fee on
-                </dd>
-              </div>
-            </dl>
+            <div className="text-muted">
+              <CurveShape
+                startLabel={`${tiny(preview.startPriceUsd)} per token`}
+                endLabel={`${tiny(preview.migrationPriceUsd)} per token`}
+                raiseLabel={`raises ${preview.thresholdQuote.toFixed(preview.thresholdQuote >= 100 ? 0 : 2)} ${preview.stock.symbol} ≈ ${compact(preview.thresholdUsd)}`}
+                ratio={ratio}
+              />
+            </div>
+            <p className="num mt-2 text-sm">
+              Buyers pay in {preview.stock.symbol} at{" "}
+              {formatUsd(preview.stock.price)}. The price climbs{" "}
+              {ratio >= 10 ? `${Math.round(ratio)}x` : `${ratio.toFixed(1)}x`}{" "}
+              until{" "}
+              {preview.thresholdQuote.toFixed(
+                preview.thresholdQuote >= 100 ? 0 : 2,
+              )}{" "}
+              {preview.stock.symbol} sit in the curve, then it graduates. Fee{" "}
+              {preview.fee.startBps / 100}% falling to{" "}
+              {preview.fee.endBps / 100}% over {preview.fee.minutes} min.
+            </p>
             {preview.warnings.map((w) => (
-              <p key={w} className="text-warn mt-3 text-xs">
+              <p key={w} className="text-warn mt-2 text-xs">
                 {w}
               </p>
             ))}
-            <p className="text-muted mt-3 text-xs">
-              Anchored to {preview.stock.symbol} at{" "}
-              {formatUsd(preview.stock.price)} onchain. If the stock moves, the
-              dollar values move with it; the curve itself is fixed in{" "}
-              {preview.stock.symbol}. Liquidity on graduation is locked forever,
-              half to the creator, half to the fee claimer (both your wallet).
-            </p>
             <details className="mt-3">
               <summary className="text-muted cursor-pointer text-xs hover:text-ink">
-                SDK config parameters (validated)
+                The validated SDK parameters
               </summary>
               <div className="relative mt-2">
                 <button
@@ -511,7 +485,7 @@ export function CurveBuilder() {
                   )}
                   <span className="ml-1">{copied ? "Copied" : "Copy"}</span>
                 </button>
-                <pre className="num max-h-64 overflow-auto rounded-2xl bg-soft p-3 text-[11px] leading-relaxed">
+                <pre className="num max-h-56 overflow-auto rounded-2xl bg-soft p-3 text-[11px] leading-relaxed">
                   {JSON.stringify(preview.params, null, 2)}
                 </pre>
               </div>
@@ -520,12 +494,32 @@ export function CurveBuilder() {
         )}
 
         <div className="mt-5 border-t border-line pt-4">
-          <h4 className="text-sm font-semibold">Create it on mainnet</h4>
-          <p className="text-muted mt-1 text-xs">
-            One transaction creates the config and the pool. It costs about 0.05
-            SOL in account rent, no pool creation fee. This launches a real
-            token: name it accordingly.
-          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-muted text-xs font-medium">Token name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Night Owl"
+                maxLength={32}
+                className="mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
+                aria-label="Token name"
+              />
+            </label>
+            <label className="block">
+              <span className="text-muted text-xs font-medium">Symbol</span>
+              <input
+                type="text"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                placeholder="OWL"
+                maxLength={10}
+                className="mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium uppercase outline-none"
+                aria-label="Token symbol"
+              />
+            </label>
+          </div>
           <div className="mt-3">
             {!ready ? (
               <span className="btn w-full opacity-50">Checking wallets…</span>
@@ -547,17 +541,17 @@ export function CurveBuilder() {
                         ? "Confirm in your wallet…"
                         : step === "confirming"
                           ? "Creating onchain…"
-                          : `Create ${symbol || "the curve"} priced in ${stock?.symbol ?? "the stock"}`
+                          : `Create ${symbol || "it"} on mainnet`
                   }
                 />
               </button>
             )}
           </div>
-          {connected && !canCreate && step === "idle" && (
-            <p className="text-muted mt-2 text-xs">
-              Give the token a name and a symbol, and pick a badged stock.
-            </p>
-          )}
+          <p className="text-muted mt-2 text-xs">
+            {connected && !named ? "Name it first. " : ""}
+            One transaction, about 0.05 SOL in rent, no creation fee. This
+            launches a real token in your name.
+          </p>
           {step === "error" && error && (
             <div
               key={error.title}
