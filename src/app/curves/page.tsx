@@ -163,9 +163,19 @@ export default async function CurvesPage() {
         </section>
       ) : (
         <section className="card p-2 sm:p-3">
-          {active.map((s, i) => (
+          {active.slice(0, 10).map((s, i) => (
             <StockFold key={s.mint} s={s} open={i === 0} />
           ))}
+          {active.length > 10 && (
+            <details className="border-t border-line">
+              <summary className="text-muted cursor-pointer list-none px-3 py-3 text-sm hover:text-ink [&::-webkit-details-marker]:hidden">
+                Show {active.length - 10} more stocks
+              </summary>
+              {active.slice(10).map((s) => (
+                <StockFold key={s.mint} s={s} open={false} />
+              ))}
+            </details>
+          )}
           {idleStocks > 0 && (
             <p className="text-muted px-3 py-3 text-xs">
               {idleStocks} more stocks have pools where nothing has been bought
