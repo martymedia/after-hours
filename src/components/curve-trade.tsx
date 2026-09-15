@@ -21,6 +21,7 @@ import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
 import { Modal, ModalClose } from "./modal";
 import { Seg, SuccessCheck, SwapText } from "./motion";
+import { PoolAvatar } from "./pool-avatar";
 
 const ConnectButton = dynamic(
   () => import("./wallet-connect").then((m) => m.ConnectButton),
@@ -38,6 +39,9 @@ export type PoolActionProps = {
   baseMint: string;
   baseName: string;
   baseSymbol: string | null;
+  image: string | null;
+  progress: number;
+  raisedQuote: number;
   quoteMint: string;
   quoteSymbol: string;
   underlying: string;
@@ -49,16 +53,38 @@ const USD_PRESETS = [5, 25, 100];
 const PARTS = [0.25, 0.5, 1];
 type Side = "buy" | "sell";
 type Step = "idle" | "building" | "signing" | "confirming" | "done" | "error";
+type Signer = NonNullable<
+  NonNullable<ReturnType<typeof useConnectedWallet>>["signer"]
+>;
 
 function fmtQuote(n: number): string {
   if (n === 0) return "0";
   return n >= 1 ? n.toFixed(4) : Number(n.toPrecision(4)).toString();
 }
-
 function fmtTok(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return n >= 1 ? n.toFixed(2) : n.toPrecision(3);
+}
+function spendFor(usd: number, stockPrice: number | null): string {
+  return stockPrice ? String(Number((usd / stockPrice).toFixed(4))) : "0.01";
+}
+
+/** Signs and sends a server-built transaction, resolving to its signature. */
+async function signTx(signer: Signer, base64: string): Promise<string> {
+  const tx = getTransactionDecoder().decode(getBase64Encoder().encode(base64));
+  if (!("signAndSendTransactions" in signer))
+    throw new Error("Wallet has no signing feature");
+  const [raw] = await signer.signAndSendTransactions([tx]);
+  return getBase58Decoder().decode(raw);
+}
+
+async function confirmOrThrow(sig: string): Promise<void> {
+  const ok = await waitForConfirmation(sig, 120_000);
+  if (!ok)
+    throw new Error(
+      "unconfirmed: the network has not confirmed this yet. Check Solscan before trying again.",
+    );
 }
 
 export function CurvePoolActions(props: PoolActionProps) {
@@ -74,9 +100,9 @@ export function CurvePoolActions(props: PoolActionProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="pill pill-dark"
+        className="btn btn-sm"
       >
-        Trade
+        Buy · Sell
       </button>
       {open && <TradeModal {...props} onClose={() => setOpen(false)} />}
     </span>
@@ -89,15 +115,16 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     baseMint,
     baseName,
     baseSymbol,
+    image,
+    progress,
+    raisedQuote,
     quoteSymbol,
     underlying,
     stockPrice,
     onClose,
   } = props;
   const [side, setSide] = useState<Side>("buy");
-  const [text, setText] = useState(
-    stockPrice ? String(Number((25 / stockPrice).toFixed(4))) : "0.01",
-  );
+  const [text, setText] = useState(spendFor(25, stockPrice));
   const [held, setHeld] = useState<number | null>(null);
   const [fetched, setFetched] = useState<CurveQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -115,12 +142,15 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   const valid = Number.isFinite(amount) && amount > 0;
   const tokenLabel =
     baseSymbol ?? (baseName === "(name pending)" ? "tokens" : baseName);
+  const pct = Math.round(progress * 100);
 
   // The launch token held by the wallet, for the sell side.
   useEffect(() => {
     if (!owner) return;
     let cancelled = false;
-    fetch(`/api/holding?owner=${owner}&mint=${baseMint}`, { cache: "no-store" })
+    fetch(`/api/holding?owner=${owner}&mint=${baseMint}`, {
+      cache: "no-store",
+    })
       .then((r) => (r.ok ? r.json() : null))
       .then((b: { amount?: number } | null) => {
         if (!cancelled && b && typeof b.amount === "number") setHeld(b.amount);
@@ -165,9 +195,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     setText(
       s === "sell" && held
         ? String(Number(held.toFixed(4)))
-        : stockPrice
-          ? String(Number((25 / stockPrice).toFixed(4)))
-          : "0.01",
+        : spendFor(25, stockPrice),
     );
   };
   const busy =
@@ -197,20 +225,9 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
       if (!res.ok || !b.transaction)
         throw new Error(b.error ?? "could not build the swap");
       setStep("signing");
-      const tx = getTransactionDecoder().decode(
-        getBase64Encoder().encode(b.transaction),
-      );
-      const signer = connected.signer;
-      if (!("signAndSendTransactions" in signer))
-        throw new Error("Wallet has no signing feature");
-      const [raw] = await signer.signAndSendTransactions([tx]);
-      const sig = getBase58Decoder().decode(raw);
+      const sig = await signTx(connected.signer, b.transaction);
       setStep("confirming");
-      const ok = await waitForConfirmation(sig, 120_000);
-      if (!ok)
-        throw new Error(
-          "unconfirmed: the network has not confirmed this yet. Check Solscan before trying again.",
-        );
+      await confirmOrThrow(sig);
       setDone({
         signature: sig,
         out: b.quote?.amountOut ?? quote?.amountOut ?? 0,
@@ -225,18 +242,47 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
 
   return (
     <Modal ariaLabel={`Trade ${tokenLabel} on its curve`} onClose={onClose}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-lg font-semibold">{baseName}</p>
-          <p className="text-muted text-sm">
-            On its bonding curve, priced in {quoteSymbol}
-          </p>
+      {/* Who and where: the token, its curve and how far along it is */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <PoolAvatar
+            image={image}
+            symbol={baseSymbol}
+            name={baseName}
+            size={44}
+          />
+          <div className="min-w-0">
+            <p className="truncate text-lg leading-tight font-semibold">
+              {baseName}
+            </p>
+            <p className="text-muted text-sm">
+              {baseSymbol ? `${baseSymbol} · ` : ""}on a curve priced in{" "}
+              {quoteSymbol}
+            </p>
+          </div>
         </div>
         <ModalClose />
       </div>
+      <div className="mt-4 rounded-2xl bg-soft p-3">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="font-medium">
+            {pct < 1 ? "<1" : pct}% to graduation
+          </span>
+          <span className="text-muted num">
+            {fmtQuote(raisedQuote)} {quoteSymbol} raised
+            {stockPrice ? ` ≈ ${formatUsd(raisedQuote * stockPrice, 0)}` : ""}
+          </span>
+        </div>
+        <span className="mt-2 block h-1.5 w-full overflow-hidden rounded-full bg-white">
+          <span
+            className="block h-full rounded-full bg-blue"
+            style={{ width: `${Math.max(2, pct)}%` }}
+          />
+        </span>
+      </div>
 
       {step === "done" && done ? (
-        <div className="rise rounded-2xl bg-ink p-5 text-white">
+        <div className="rise mt-4 rounded-2xl bg-ink p-5 text-white">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue">
               <SuccessCheck size={22} />
@@ -245,7 +291,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               <p className="text-lg leading-tight font-semibold">
                 {side === "buy"
                   ? `You hold ${tokenLabel} now.`
-                  : `Sold back to the curve.`}
+                  : "Sold back to the curve."}
               </p>
               <p className="text-on-dark-muted text-sm">
                 {side === "buy"
@@ -274,16 +320,18 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
         </div>
       ) : (
         <>
-          <Seg
-            ariaLabel="Buy or sell"
-            value={side}
-            onChange={switchSide}
-            options={[
-              { id: "buy", label: `Buy with ${quoteSymbol}` },
-              { id: "sell", label: `Sell ${tokenLabel}` },
-            ]}
-            className="w-full justify-between"
-          />
+          <div className="mt-4">
+            <Seg
+              ariaLabel="Buy or sell"
+              value={side}
+              onChange={switchSide}
+              options={[
+                { id: "buy", label: `Buy with ${quoteSymbol}` },
+                { id: "sell", label: `Sell ${tokenLabel}` },
+              ]}
+              className="w-full justify-between"
+            />
+          </div>
           <label className="mt-4 flex items-center gap-2 rounded-2xl bg-soft px-4 py-3">
             <input
               type="text"
@@ -308,9 +356,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
                   <button
                     key={u}
                     type="button"
-                    onClick={() =>
-                      setText(String(Number((u / stockPrice).toFixed(4))))
-                    }
+                    onClick={() => setText(spendFor(u, stockPrice))}
                     className="pill bg-soft text-ink hover:bg-line"
                   >
                     {formatUsd(u, 0)}
@@ -341,6 +387,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
             </span>
           </div>
 
+          {/* The quote: what comes out, at worst, and what the curve keeps */}
           <div className="mt-4 rounded-2xl bg-ink p-4 text-white">
             {quoteError ? (
               <p className="text-sm text-white/80">{quoteError}</p>
@@ -352,9 +399,13 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               <>
                 <p className="text-on-dark-muted text-xs">You get</p>
                 <p className="num text-2xl font-semibold">
-                  {side === "buy"
-                    ? `${fmtTok(quote.amountOut)} ${tokenLabel}`
-                    : `${fmtQuote(quote.amountOut)} ${quoteSymbol}`}
+                  <SwapText
+                    text={
+                      side === "buy"
+                        ? `${fmtTok(quote.amountOut)} ${tokenLabel}`
+                        : `${fmtQuote(quote.amountOut)} ${quoteSymbol}`
+                    }
+                  />
                   {side === "sell" && stockPrice ? (
                     <span className="text-on-dark-muted text-base font-normal">
                       {" "}
@@ -362,17 +413,24 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
                     </span>
                   ) : null}
                 </p>
-                <p className="text-on-dark-muted num mt-1 text-xs">
-                  at least{" "}
-                  {side === "buy"
-                    ? fmtTok(quote.minimumOut)
-                    : fmtQuote(quote.minimumOut)}{" "}
-                  after 1% slippage · curve fee {fmtQuote(quote.feeQuote)}{" "}
-                  {quoteSymbol}
-                  {quote.progressAfter != null
-                    ? ` · curve at ${Math.round(quote.progressAfter * 100)}% after this`
-                    : ""}
-                </p>
+                <div className="text-on-dark-muted num mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <span>
+                    <span className="block text-white/50">At worst</span>
+                    {side === "buy"
+                      ? fmtTok(quote.minimumOut)
+                      : fmtQuote(quote.minimumOut)}
+                  </span>
+                  <span>
+                    <span className="block text-white/50">Curve fee</span>
+                    {fmtQuote(quote.feeQuote)} {quoteSymbol}
+                  </span>
+                  <span>
+                    <span className="block text-white/50">Curve after</span>
+                    {quote.progressAfter != null
+                      ? `${Math.round(quote.progressAfter * 100)}%`
+                      : `${pct}%`}
+                  </span>
+                </div>
               </>
             )}
           </div>
@@ -406,19 +464,21 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               </button>
             )}
           </div>
-          {side === "buy" && (
-            <p className="text-muted mt-2 text-xs">
-              Paid in {quoteSymbol} from your wallet. None yet?{" "}
-              <Link
-                href={`/stock/${underlying}`}
-                className="underline underline-offset-4 hover:text-ink"
-              >
-                Buy {quoteSymbol} first
-              </Link>
-              . This is a launch token on a curve, not a stock; it can go to
-              zero.
-            </p>
-          )}
+          <p className="text-muted mt-2 text-xs">
+            {side === "buy" ? (
+              <>
+                Paid in {quoteSymbol} from your wallet. None yet?{" "}
+                <Link
+                  href={`/stock/${underlying}`}
+                  className="underline underline-offset-4 hover:text-ink"
+                >
+                  Buy {quoteSymbol} first
+                </Link>
+                .{" "}
+              </>
+            ) : null}
+            A launch token on a curve is not a stock; it can go to zero.
+          </p>
           {step === "error" && error && (
             <div
               key={error.title}
@@ -436,40 +496,23 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   );
 }
 
-function CreatorFees({
+/** Claims the creator fees of one pool; the connected wallet must be its creator. */
+export function ClaimFeesButton({
   pool,
-  quoteSymbol,
+  label,
+  className = "pill bg-soft-up text-up hover:bg-line",
+  onDone,
 }: {
   pool: string;
-  quoteSymbol: string;
+  label: string;
+  className?: string;
+  onDone?: (signature: string) => void;
 }) {
-  const [fees, setFees] = useState<{
-    quoteFee: number;
-    baseFee: number;
-  } | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const connected = useConnectedWallet(solanaClient);
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/curves/swap", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ pool, action: "fees" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b: { quoteFee?: number; baseFee?: number } | null) => {
-        if (!cancelled && b && typeof b.quoteFee === "number")
-          setFees({ quoteFee: b.quoteFee, baseFee: b.baseFee ?? 0 });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [pool, step]);
-  if (!fees || (fees.quoteFee <= 0 && fees.baseFee <= 0) || !connected?.signer)
-    return null;
   const busy =
     step === "building" || step === "signing" || step === "confirming";
+  if (!connected?.signer) return null;
   async function claim() {
     if (!connected?.signer) return;
     try {
@@ -487,16 +530,11 @@ function CreatorFees({
       if (!res.ok || !b.transaction)
         throw new Error(b.error ?? "could not build the claim");
       setStep("signing");
-      const tx = getTransactionDecoder().decode(
-        getBase64Encoder().encode(b.transaction),
-      );
-      const signer = connected.signer;
-      if (!("signAndSendTransactions" in signer))
-        throw new Error("Wallet has no signing feature");
-      const [raw] = await signer.signAndSendTransactions([tx]);
+      const sig = await signTx(connected.signer, b.transaction);
       setStep("confirming");
-      await waitForConfirmation(getBase58Decoder().decode(raw), 120_000);
+      await confirmOrThrow(sig);
       setStep("done");
+      onDone?.(sig);
     } catch {
       setStep("error");
     }
@@ -505,15 +543,56 @@ function CreatorFees({
     <button
       type="button"
       onClick={claim}
-      disabled={busy}
-      className="pill bg-soft-up text-up hover:bg-line"
+      disabled={busy || step === "done"}
+      className={className}
       title="Trading fees this curve earned for you, its creator"
     >
       {busy
         ? "Claiming…"
         : step === "done"
           ? "Claimed"
-          : `Claim ${fees.quoteFee.toFixed(4)} ${quoteSymbol}`}
+          : step === "error"
+            ? "Try again"
+            : label}
     </button>
+  );
+}
+
+function CreatorFees({
+  pool,
+  quoteSymbol,
+}: {
+  pool: string;
+  quoteSymbol: string;
+}) {
+  const [fees, setFees] = useState<{
+    quoteFee: number;
+    baseFee: number;
+  } | null>(null);
+  const [claimed, setClaimed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/curves/swap", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pool, action: "fees" }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { quoteFee?: number; baseFee?: number } | null) => {
+        if (!cancelled && b && typeof b.quoteFee === "number")
+          setFees({ quoteFee: b.quoteFee, baseFee: b.baseFee ?? 0 });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pool, claimed]);
+  if (!fees || (fees.quoteFee <= 0 && fees.baseFee <= 0)) return null;
+  return (
+    <ClaimFeesButton
+      pool={pool}
+      label={`Claim ${fmtQuote(fees.quoteFee)} ${quoteSymbol}`}
+      onDone={() => setClaimed(true)}
+    />
   );
 }

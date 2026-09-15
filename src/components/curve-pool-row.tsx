@@ -5,6 +5,7 @@
 import type { CurvePool } from "@/lib/curves";
 import { formatUsd } from "@/lib/format";
 import { CurvePoolActions } from "./curve-trade";
+import { PoolAvatar } from "./pool-avatar";
 
 export type PoolStockInfo = {
   mint: string;
@@ -33,28 +34,30 @@ export function compactUsd(n: number): string {
   return formatUsd(n, 0);
 }
 
-export function PoolAvatar({ p, size = 32 }: { p: CurvePool; size?: number }) {
-  const initials = (p.symbol ?? (p.name.startsWith("(") ? "?" : p.name))
-    .slice(0, 2)
-    .toUpperCase();
-  return p.image ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={p.image}
-      alt=""
-      width={size}
-      height={size}
-      className="shrink-0 rounded-full bg-soft object-cover"
-      style={{ width: size, height: size }}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-    />
-  ) : (
+/** "2% to graduation", "graduated Sep 12", or "nothing bought yet". */
+export function progressWords(p: CurvePool): string {
+  if (p.migrated)
+    return `graduated${p.finishedAt ? ` ${when.format(new Date(p.finishedAt))}` : ""}`;
+  const pct = Math.round(p.progress * 100);
+  if (p.progress <= 0) return "nothing bought yet";
+  return `${pct < 1 ? "<1" : pct}% of the way to graduation`;
+}
+
+function Bar({ p }: { p: CurvePool }) {
+  const pct = Math.round(p.progress * 100);
+  return (
     <span
-      className="icon-badge shrink-0 text-[10px] font-semibold"
-      style={{ width: size, height: size }}
+      className="block h-1.5 w-full overflow-hidden rounded-full bg-soft"
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Progress to graduation"
     >
-      {initials}
+      <span
+        className={`block h-full rounded-full ${p.migrated ? "bg-ink" : "bg-blue"}`}
+        style={{ width: `${Math.max(2, pct)}%` }}
+      />
     </span>
   );
 }
@@ -69,10 +72,9 @@ export function PoolRow({
   symbol: string;
   stock?: PoolStockInfo;
 }) {
-  const pct = Math.round(p.progress * 100);
   return (
-    <li className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3 text-sm sm:grid-cols-[2.25rem_minmax(0,1.3fr)_minmax(0,1fr)_auto]">
-      <PoolAvatar p={p} size={36} />
+    <li className="grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 py-3.5 text-sm sm:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(0,1fr)_auto]">
+      <PoolAvatar image={p.image} symbol={p.symbol} name={p.name} size={40} />
       <span className="min-w-0">
         <span className="block truncate font-medium">
           {p.name}
@@ -84,42 +86,21 @@ export function PoolRow({
         </span>
         <span className="text-muted num block text-xs">
           {p.migrated
-            ? `graduated${p.finishedAt ? ` ${when.format(new Date(p.finishedAt))}` : ""}`
+            ? progressWords(p)
             : `${units(p.raisedQuote, symbol)}${p.raisedUsd != null ? ` ≈ ${formatUsd(p.raisedUsd, 0)}` : ""} raised`}
           {p.feesQuote > 0 ? ` · ${units(p.feesQuote, symbol)} in fees` : ""}
         </span>
       </span>
-      <span className="col-span-3 sm:col-span-1">
-        <span className="flex items-center gap-2">
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-soft">
-            <span
-              className={`block h-full rounded-full ${p.migrated ? "bg-ink" : "bg-blue"}`}
-              style={{ width: `${Math.max(1, pct)}%` }}
-            />
-          </span>
-          <span className="num w-9 text-right text-xs">{pct}%</span>
+      <span className="col-span-2 sm:col-span-1">
+        <Bar p={p} />
+        <span className="text-muted num mt-1 block text-xs">
+          {p.migrated ? "on an open pool now" : progressWords(p)}
+          {!p.migrated && p.priceUsd != null
+            ? ` · token at ${tinyUsd(p.priceUsd)}`
+            : ""}
         </span>
-        {!p.migrated && (
-          <span className="text-muted num block text-xs">
-            token at {tinyUsd(p.priceUsd)}
-          </span>
-        )}
       </span>
-      <span className="flex items-center gap-2">
-        {stock && (
-          <CurvePoolActions
-            pool={p.pool}
-            creator={p.creator}
-            baseMint={p.baseMint}
-            baseName={p.name}
-            baseSymbol={p.symbol}
-            quoteMint={stock.mint}
-            quoteSymbol={stock.symbol}
-            underlying={stock.underlying}
-            stockPrice={stock.price}
-            migrated={p.migrated}
-          />
-        )}
+      <span className="col-span-2 flex items-center justify-end gap-3 sm:col-span-1">
         <a
           href={`https://solscan.io/account/${p.pool}`}
           target="_blank"
@@ -128,6 +109,23 @@ export function PoolRow({
         >
           Solscan
         </a>
+        {stock && (
+          <CurvePoolActions
+            pool={p.pool}
+            creator={p.creator}
+            baseMint={p.baseMint}
+            baseName={p.name}
+            baseSymbol={p.symbol}
+            image={p.image}
+            progress={p.progress}
+            raisedQuote={p.raisedQuote}
+            quoteMint={stock.mint}
+            quoteSymbol={stock.symbol}
+            underlying={stock.underlying}
+            stockPrice={stock.price}
+            migrated={p.migrated}
+          />
+        )}
       </span>
     </li>
   );
@@ -135,24 +133,19 @@ export function PoolRow({
 
 /** Compact row for the stock card: avatar, name, bar. */
 export function PoolMini({ p, symbol }: { p: CurvePool; symbol: string }) {
-  const pct = Math.round(p.progress * 100);
   return (
     <li className="flex items-center gap-2.5 text-sm">
-      <PoolAvatar p={p} size={26} />
+      <PoolAvatar image={p.image} symbol={p.symbol} name={p.name} size={28} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium">{p.name}</span>
         <span className="text-muted num block text-[11px]">
-          {p.migrated ? "graduated" : `${units(p.raisedQuote, symbol)} raised`}
+          {p.migrated
+            ? "graduated"
+            : `${units(p.raisedQuote, symbol)} raised · ${progressWords(p)}`}
         </span>
       </span>
-      <span className="flex w-24 items-center gap-1.5">
-        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-soft">
-          <span
-            className={`block h-full rounded-full ${p.migrated ? "bg-ink" : "bg-blue"}`}
-            style={{ width: `${Math.max(2, pct)}%` }}
-          />
-        </span>
-        <span className="num w-8 text-right text-[11px]">{pct}%</span>
+      <span className="w-16 shrink-0">
+        <Bar p={p} />
       </span>
     </li>
   );

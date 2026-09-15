@@ -6,7 +6,7 @@
 
 const W = 320;
 const H = 150;
-const PAD = { top: 14, right: 12, bottom: 26, left: 12 };
+const PAD = { top: 14, right: 12, bottom: 40, left: 12 };
 
 export function CurveShape({
   startLabel,
@@ -53,7 +53,7 @@ export function CurveShape({
       viewBox={`0 0 ${W} ${H}`}
       className={`h-auto w-full ${className}`}
       role="img"
-      aria-label={`Price rises from ${startLabel} to ${endLabel} while ${raiseLabel} is raised`}
+      aria-label={`Price rises from ${startLabel} to ${endLabel}; ${raiseLabel}`}
     >
       <path d={area} fill={fill} fillOpacity={0.14} />
       <path
@@ -98,7 +98,7 @@ export function CurveShape({
       </text>
       <text
         x={W / 2}
-        y={base + 16}
+        y={base + 31}
         fontSize={10}
         fill="currentColor"
         opacity={0.5}

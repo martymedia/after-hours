@@ -217,6 +217,15 @@ export function listPools(): DbcPoolRow[] {
     .all() as DbcPoolRow[];
 }
 
+/** Every pool a wallet created, newest first. */
+export function poolsByCreator(creator: string): DbcPoolRow[] {
+  return db()
+    .prepare(
+      "SELECT * FROM dbc_pools WHERE creator = ? ORDER BY first_seen DESC LIMIT 50",
+    )
+    .all(creator) as DbcPoolRow[];
+}
+
 export function configsByAddress(): Map<string, DbcConfigRow> {
   return new Map(listConfigs().map((c) => [c.config, c]));
 }

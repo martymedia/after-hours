@@ -11,6 +11,8 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { SITE_URL } from "./brand.ts";
 import { latestSnapshots, listTokens } from "./db.ts";
+import { poolsByCreator } from "./dbc-db.ts";
+import { isOffensive } from "./profanity.ts";
 import { rawBalance } from "./wallet.ts";
 
 const RPC_URL =
@@ -209,6 +211,47 @@ export async function creatorFees(pool: string): Promise<CreatorFees> {
       Number(m.current.creatorBaseFee.toString()) / 10 ** config.tokenDecimal,
     quoteSymbol: stock.symbol,
   };
+}
+
+export type CreatorClaimable = CreatorFees & {
+  name: string;
+  symbol: string | null;
+  underlying: string;
+  usd: number | null;
+};
+
+/** Every curve this wallet created that has creator fees waiting. */
+export async function creatorClaimables(
+  owner: string,
+): Promise<CreatorClaimable[]> {
+  const rows = poolsByCreator(owner).filter(
+    (p) => !isOffensive(p.name, p.symbol),
+  );
+  const tokens = new Map(listTokens().map((t) => [t.mint, t]));
+  const prices = new Map(
+    latestSnapshots().map((s) => [s.mint, s.usd_price ?? null]),
+  );
+  const out: CreatorClaimable[] = [];
+  for (const [i, p] of rows.slice(0, 20).entries()) {
+    const t = tokens.get(p.quote_mint);
+    if (!t) continue;
+    if (i > 0) await new Promise((r) => setTimeout(r, 250));
+    try {
+      const f = await creatorFees(p.pool);
+      if (f.quoteFee <= 0 && f.baseFee <= 0) continue;
+      const price = prices.get(p.quote_mint) ?? null;
+      out.push({
+        ...f,
+        name: p.name ?? "(name pending)",
+        symbol: p.symbol,
+        underlying: t.underlying,
+        usd: price != null ? f.quoteFee * price : null,
+      });
+    } catch {
+      // A pool the RPC could not read right now is simply left out.
+    }
+  }
+  return out;
 }
 
 /** Claim every unclaimed creator fee of a pool; only the pool's creator can sign it. */

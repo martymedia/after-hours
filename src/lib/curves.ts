@@ -63,6 +63,13 @@ export type CurvesOverview = {
   scannedAgoMs: number | null;
 };
 
+/** Metadata images often use the ipfs scheme, which browsers cannot fetch. */
+export function imageUrl(raw: string | null): string | null {
+  if (!raw) return null;
+  const m = raw.match(/^ipfs:\/\/(?:ipfs\/)?(.+)$/i);
+  return m ? `https://ipfs.io/ipfs/${m[1]}` : raw;
+}
+
 function toPool(
   p: DbcPoolRow,
   decimals: number,
@@ -75,7 +82,7 @@ function toPool(
     baseMint: p.base_mint,
     name: p.name ?? "(name pending)",
     symbol: p.symbol,
-    image: p.image,
+    image: imageUrl(p.image),
     creator: p.creator,
     progress: p.is_migrated ? 1 : p.progress,
     migrated: p.is_migrated === 1,

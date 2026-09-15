@@ -25,13 +25,13 @@ The collector fills `data/after-hours.db`. The web app only reads it.
 
 ## Data sources
 
-| What | Source |
-|---|---|
-| Stock tokens and issuers | Jupiter token search (tags) and the xStocks public asset list |
-| Onchain price, liquidity, reference price | Jupiter Price API v3 |
-| Executable price and swap transaction | Jupiter Quote and Swap API |
-| Hourly price history | GeckoTerminal public API |
-| Earnings dates | Nasdaq public calendar |
+| What                                      | Source                                                        |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| Stock tokens and issuers                  | Jupiter token search (tags) and the xStocks public asset list |
+| Onchain price, liquidity, reference price | Jupiter Price API v3                                          |
+| Executable price and swap transaction     | Jupiter Quote and Swap API                                    |
+| Hourly price history                      | GeckoTerminal public API                                      |
+| Earnings dates                            | Nasdaq public calendar                                        |
 
 ## Wallet
 
@@ -79,7 +79,10 @@ shows what the curve does (start price, graduation price, quote to raise,
 fee schedule) plus the raw parameters. "Create on mainnet" builds one
 `createConfigAndPool` transaction with the stock's token badge; the config and
 launch-mint keypairs are generated server-side and co-sign, the user's wallet
-pays and signs. Liquidity on graduation is permanently locked.
+pays and signs. Liquidity on graduation is permanently locked. Every curve
+built here names our revenue wallet as the partner fee claimer with a fixed
+90/10 split of trading fees (creator/After Hours), mirrored in the locked
+liquidity after graduation.
 
 Every live curve on a stock page has a Trade button: buy the launch token
 with the stock token or sell it back to the curve, quoted with the SDK's

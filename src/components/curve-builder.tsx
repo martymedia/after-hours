@@ -41,7 +41,6 @@ const DEFAULTS: Omit<CurveInput, "stockMint"> = {
   startFeeBps: 500,
   endFeeBps: 100,
   feeMinutes: 60,
-  creatorFeePct: 50,
 };
 const START_CAPS = [1_000, 5_000, 25_000, 100_000];
 const GRAD_CAPS = [25_000, 50_000, 250_000, 1_000_000];
@@ -395,7 +394,7 @@ export function CurveBuilder({
 
         <details className="mt-5">
           <summary className="text-muted cursor-pointer text-xs hover:text-ink">
-            Advanced: supply, creator share
+            Advanced: supply
           </summary>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <label className="block">
@@ -415,28 +414,12 @@ export function CurveBuilder({
                 aria-label="Total supply"
               />
             </label>
-            <label className="block">
-              <span className="text-muted text-xs font-medium">
-                Creator share of trading fees
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={form.creatorFeePct}
-                onChange={(e) =>
-                  set({
-                    creatorFeePct:
-                      Number(e.target.value.replace(/[^0-9]/g, "")) || 0,
-                  })
-                }
-                className="num mt-1.5 h-10 w-full rounded-full bg-soft px-4 text-sm font-medium outline-none"
-                aria-label="Creator fee share in percent"
-              />
-            </label>
           </div>
           <p className="text-muted mt-2 text-xs">
-            Liquidity on graduation is locked forever. The DAMM pool charges 1%
-            after graduation; dynamic fee on.
+            You keep 90% of the trading fees your curve earns, After Hours takes
+            10%. Claim yours any time from the curve or your wallet page.
+            Liquidity on graduation is locked forever; the open pool charges 1%
+            after that, split the same way.
           </p>
         </details>
       </section>

@@ -40,7 +40,6 @@ export type CurveInput = {
   startFeeBps: number;
   endFeeBps: number;
   feeMinutes: number;
-  creatorFeePct: number;
 };
 
 export type CurvePreview = {
@@ -78,8 +77,12 @@ export const LIMITS = {
   migrationMcapUsd: { min: 5_000, max: 100_000_000 },
   feeBps: { min: 25, max: 9_900 },
   feeMinutes: { min: 1, max: 24 * 60 },
-  creatorFeePct: { min: 0, max: 100 },
 };
+
+/** Every curve built here pays 10% of its trading fees to After Hours, the rest to the creator. */
+export const CREATOR_FEE_SHARE = 90;
+export const PLATFORM_FEE_CLAIMER =
+  "AvjtePkHVAvd4yCtYUkBZqktDr86gEyekRLpSTX96mYj";
 
 function clampInput(raw: Partial<CurveInput>): CurveInput {
   const n = (v: unknown, d: number, min: number, max: number) => {
@@ -111,14 +114,6 @@ function clampInput(raw: Partial<CurveInput>): CurveInput {
     ),
     feeMinutes: Math.round(
       n(raw.feeMinutes, 60, LIMITS.feeMinutes.min, LIMITS.feeMinutes.max),
-    ),
-    creatorFeePct: Math.round(
-      n(
-        raw.creatorFeePct,
-        50,
-        LIMITS.creatorFeePct.min,
-        LIMITS.creatorFeePct.max,
-      ),
     ),
   };
 }
@@ -214,7 +209,7 @@ function build(input: CurveInput, stock: Awaited<ReturnType<typeof stockFor>>) {
       },
       dynamicFeeEnabled: true,
       collectFeeMode: CollectFeeMode.QuoteToken,
-      creatorTradingFeePercentage: input.creatorFeePct,
+      creatorTradingFeePercentage: CREATOR_FEE_SHARE,
       poolCreationFee: 0,
       enableFirstSwapWithMinFee: false,
     },
@@ -224,9 +219,9 @@ function build(input: CurveInput, stock: Awaited<ReturnType<typeof stockFor>>) {
       migrationFee: { feePercentage: 0, creatorFeePercentage: 0 },
     },
     liquidityDistribution: {
-      partnerPermanentLockedLiquidityPercentage: 50,
+      partnerPermanentLockedLiquidityPercentage: 100 - CREATOR_FEE_SHARE,
       partnerLiquidityPercentage: 0,
-      creatorPermanentLockedLiquidityPercentage: 50,
+      creatorPermanentLockedLiquidityPercentage: CREATOR_FEE_SHARE,
       creatorLiquidityPercentage: 0,
     },
     lockedVesting: {
@@ -293,7 +288,7 @@ export async function previewCurve(
       endBps: input.endFeeBps,
       minutes: input.feeMinutes,
       afterBps: 100,
-      creatorPct: input.creatorFeePct,
+      creatorPct: CREATOR_FEE_SHARE,
     },
     warnings,
     params: jsonSafe(params) as Record<string, unknown>,
@@ -334,7 +329,7 @@ export async function buildCreateTransaction(
   const tx = await c.partner.createConfigAndPool({
     ...params,
     config: config.publicKey,
-    feeClaimer: owner,
+    feeClaimer: new PublicKey(PLATFORM_FEE_CLAIMER),
     leftoverReceiver: owner,
     quoteMint: new PublicKey(stock.mint),
     payer: owner,

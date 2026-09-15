@@ -12,6 +12,7 @@ import { CountUp } from "@/components/count-up";
 import { Tilt } from "@/components/motion";
 import { snapshotsSince } from "@/lib/db";
 import { TickerBadge } from "@/components/ticker-badge";
+import { CurveShape } from "@/components/curve-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -240,6 +241,35 @@ export default function HowPage() {
             </div>
           )}
         </Step>
+
+        <Step
+          n="04"
+          title="Or launch a token priced in a stock"
+          text="Curves are the other half. On Meteora, a new token can be sold along a bonding curve whose quote is a tokenized stock instead of SOL: buyers pay in TSLAx or SPYx, the price climbs with every buy, and once a set amount is raised the pool graduates to an open market with its liquidity locked forever. We watch every such curve, let you buy in or sell back from your wallet, and let you launch one anchored to the stock's real price."
+        >
+          <div className="rounded-2xl bg-soft p-4">
+            <div className="text-muted">
+              <CurveShape
+                startLabel="start: $5k market cap"
+                endLabel="graduation: $50k"
+                raiseLabel="price climbs with every buy in the stock token"
+                ratio={10}
+                progress={0.42}
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Link href="/curves" className="btn btn-sm flex-1">
+                See live curves
+              </Link>
+              <Link
+                href="/curves/build"
+                className="btn btn-sm flex-1 border border-line bg-white text-ink hover:bg-soft"
+              >
+                Build one
+              </Link>
+            </div>
+          </div>
+        </Step>
       </section>
 
       {/* Issuers */}
@@ -314,7 +344,8 @@ export default function HowPage() {
           see before you sign, so the price on the button is the price you get.
           No subscription, no spread of our own, no data sales. Limit orders
           carry only Jupiter&apos;s 0.1% on fills. A 25 USD buy costs about six
-          cents.
+          cents. Curves built through After Hours pay us 10% of the trading fees
+          they earn; the creator keeps 90%.
         </p>
       </section>
 
