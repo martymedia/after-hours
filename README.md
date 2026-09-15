@@ -71,6 +71,16 @@ two minutes from `getMultipleAccounts`, token names from the RPC's DAS
 priced in USD through the stock's own onchain price, with the stock's
 freshness pill so a stale quote cannot pass as a real valuation.
 
+`/curves/build` is the other half: a curve builder for issuers. Pick a stock,
+set the starting and graduation market caps in dollars, choose a fee path;
+the server converts through the stock's onchain price, builds the config with
+the SDK's `buildCurveWithMarketCap`, runs `validateConfigParameters`, and
+shows what the curve does (start price, graduation price, quote to raise,
+fee schedule) plus the raw parameters. "Create on mainnet" builds one
+`createConfigAndPool` transaction with the stock's token badge; the config and
+launch-mint keypairs are generated server-side and co-sign, the user's wallet
+pays and signs. Liquidity on graduation is permanently locked.
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.

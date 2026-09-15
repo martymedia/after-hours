@@ -67,11 +67,16 @@ export default async function CurvesPage({
             onchain price, the same one the rest of this site shows.
           </p>
         </div>
-        <p className="text-muted num text-xs">
-          {data.scannedAgoMs != null
-            ? `Scanned ${formatAgo(data.scannedAgoMs)} · live pools refreshed every 2 min`
-            : "First scan pending"}
-        </p>
+        <div className="flex items-center gap-3">
+          <Link href="/curves/build" className="btn btn-sm">
+            Build a curve
+          </Link>
+          <p className="text-muted num text-xs">
+            {data.scannedAgoMs != null
+              ? `Scanned ${formatAgo(data.scannedAgoMs)} · live pools refreshed every 2 min`
+              : "First scan pending"}
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
