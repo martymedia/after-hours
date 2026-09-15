@@ -552,8 +552,11 @@ export function CurveBuilder({
           </div>
           <p className="text-muted mt-2 text-xs">
             {connected && !named ? "Name it first. " : ""}
-            One transaction, about 0.05 SOL in rent, no creation fee. This
-            launches a real token in your name.
+            One transaction, about 0.03 SOL in rent, no creation fee. This
+            launches a real token in your name. It creates a config, a mint and
+            a pool and moves nothing else out of your wallet; some wallets flag
+            token launches from young sites as risky, so read what the wallet
+            shows before you sign.
           </p>
           {step === "error" && error && (
             <div
