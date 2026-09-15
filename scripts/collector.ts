@@ -2,6 +2,8 @@
 //   every 60 s   price snapshot for every tracked token (Jupiter price v3)
 //   every 6 h    rebuild the universe (new listings, liquidity changes)
 //   hourly       top up hourly candles from GeckoTerminal (backfill 7 days once)
+//   every 30 min  scan Meteora DBC for launch pools quoted in our stocks;
+//                 live pools refreshed every 2 min
 //
 // Run with: node scripts/collector.ts   (Node 24, no build step)
 
@@ -23,16 +25,24 @@ import { MIN_LIST_LIQUIDITY_USD, buildUniverse } from "../src/lib/universe.ts";
 import { hourlyCandles, topPoolFor } from "../src/lib/geckoterminal.ts";
 import { fetchEarnings } from "../src/lib/earnings.ts";
 import { notificationSweep } from "../src/lib/notifications.ts";
+import {
+  fillCurveMetadata,
+  refreshLiveCurves,
+  scanCurves,
+} from "../src/lib/dbc.ts";
 
 const SNAPSHOT_EVERY_MS = 60_000;
 const UNIVERSE_EVERY_MS = 6 * 3600_000;
 const CANDLES_EVERY_MS = 3600_000;
 const KEEP_SNAPSHOTS_MS = 14 * 86400_000;
 const EARNINGS_EVERY_MS = 12 * 3600_000;
+const CURVES_SCAN_EVERY_MS = 30 * 60_000;
+const CURVES_LIVE_EVERY_MS = 2 * 60_000;
 const GECKO_PACE_MS = 6000; // GeckoTerminal throttles hard; ~10 requests per minute is safe
 const GECKO_BACKOFF_MS = 65_000;
 
-const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);
+const log = (...args: unknown[]) =>
+  console.log(new Date().toISOString(), ...args);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function refreshUniverse(): Promise<void> {
@@ -56,13 +66,17 @@ async function snapshot(): Promise<void> {
       usd_price: p?.usdPrice ?? null,
       ref_price: p?.stockData?.price ?? null,
       ref_source: p?.stockData?.id ?? null,
-      ref_updated_at: p?.stockData?.updatedAt ? Date.parse(p.stockData.updatedAt) : null,
+      ref_updated_at: p?.stockData?.updatedAt
+        ? Date.parse(p.stockData.updatedAt)
+        : null,
       liquidity: p?.liquidity ?? null,
       block_id: p?.blockId ?? null,
     };
   });
   insertSnapshots(rows);
-  log(`snapshot: ${rows.filter((r) => r.usd_price != null).length}/${rows.length} priced`);
+  log(
+    `snapshot: ${rows.filter((r) => r.usd_price != null).length}/${rows.length} priced`,
+  );
 }
 
 async function refreshCandles(): Promise<void> {
@@ -118,23 +132,62 @@ async function main(): Promise<void> {
   // Candle backfill runs alongside the snapshot loop so snapshots start now.
   const candleLoop = async () => {
     for (;;) {
-      const earningsAge = Date.now() - Number(getMeta("earnings_updated_at") ?? 0);
+      const earningsAge =
+        Date.now() - Number(getMeta("earnings_updated_at") ?? 0);
       if (earningsAge >= EARNINGS_EVERY_MS) {
-        await refreshEarnings().catch((err) => log("earnings failed:", err.message));
+        await refreshEarnings().catch((err) =>
+          log("earnings failed:", err.message),
+        );
       }
       if (Date.now() - lastCandles >= CANDLES_EVERY_MS) {
         lastCandles = Date.now();
-        await refreshCandles().catch((err) => log("candles failed:", err.message));
+        await refreshCandles().catch((err) =>
+          log("candles failed:", err.message),
+        );
       }
       await sleep(30_000);
     }
   };
   void candleLoop();
 
+  // Meteora DBC pools quoted in our stocks: full scan every 30 min, live
+  // pools and missing token names every 2 min.
+  const curveLoop = async () => {
+    for (;;) {
+      const stocks = listTokens().map((t) => ({
+        mint: t.mint,
+        decimals: t.decimals,
+      }));
+      const scanAge = Date.now() - Number(getMeta("curves_scanned_at") ?? 0);
+      if (scanAge >= CURVES_SCAN_EVERY_MS) {
+        try {
+          const r = await scanCurves(stocks, log);
+          setMeta("curves_scanned_at", String(Date.now()));
+          log(
+            `curves: ${r.configs} configs, ${r.pools} pools quoted in ${stocks.length} stocks`,
+          );
+        } catch (err) {
+          log("curves scan failed:", (err as Error).message);
+        }
+      } else {
+        await refreshLiveCurves(stocks).catch((err) =>
+          log("curves refresh failed:", (err as Error).message),
+        );
+      }
+      await fillCurveMetadata(150).catch((err) =>
+        log("curves metadata failed:", (err as Error).message),
+      );
+      await sleep(CURVES_LIVE_EVERY_MS);
+    }
+  };
+  void curveLoop();
+
   // Notifications: order fills and price alerts, once a minute.
   const notifyLoop = async () => {
     for (;;) {
-      await notificationSweep().catch((err) => log("notifications failed:", (err as Error).message));
+      await notificationSweep().catch((err) =>
+        log("notifications failed:", (err as Error).message),
+      );
       await sleep(60_000);
     }
   };

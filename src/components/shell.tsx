@@ -6,7 +6,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, LineChart, CalendarDays, BookOpen, ChevronsLeft, ChevronsRight, Search } from "lucide-react";
+import {
+  Home,
+  LineChart,
+  CalendarDays,
+  BookOpen,
+  Orbit,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+} from "lucide-react";
 import { Logo, LogoMark } from "./logo";
 import { StockSearch } from "./stock-search";
 import { SiteFooter } from "./site-footer";
@@ -14,20 +23,48 @@ import { useSlidingPill } from "./motion";
 import dynamic from "next/dynamic";
 
 // Client-only: wallet entries depend on the browser's wallets.
-const WalletNavLink = dynamic(() => import("./wallet-nav").then((m) => m.WalletNavLink), { ssr: false });
+const WalletNavLink = dynamic(
+  () => import("./wallet-nav").then((m) => m.WalletNavLink),
+  { ssr: false },
+);
 
 const NAV = [
   { href: "/", label: "Overview", icon: Home, match: (p: string) => p === "/" },
-  { href: "/stocks", label: "Stocks", icon: LineChart, match: (p: string) => p.startsWith("/stock") },
-  { href: "/earnings", label: "Earnings", icon: CalendarDays, match: (p: string) => p.startsWith("/earnings") },
+  {
+    href: "/stocks",
+    label: "Stocks",
+    icon: LineChart,
+    match: (p: string) => p.startsWith("/stock"),
+  },
+  {
+    href: "/earnings",
+    label: "Earnings",
+    icon: CalendarDays,
+    match: (p: string) => p.startsWith("/earnings"),
+  },
+  // Not in the phone tab bar either; reachable from the rail and the footer.
+  {
+    href: "/curves",
+    label: "Curves",
+    icon: Orbit,
+    match: (p: string) => p.startsWith("/curves"),
+    phone: false,
+  },
   // Not in the phone tab bar: that row has room for four, and the wallet takes the fourth.
-  { href: "/how", label: "How it works", icon: BookOpen, match: (p: string) => p.startsWith("/how"), phone: false },
+  {
+    href: "/how",
+    label: "How it works",
+    icon: BookOpen,
+    match: (p: string) => p.startsWith("/how"),
+    phone: false,
+  },
 ];
 
 const TITLES: [(p: string) => boolean, string][] = [
   [(p) => p === "/", "Overview"],
   [(p) => p.startsWith("/stock"), "Stocks"],
   [(p) => p.startsWith("/earnings"), "Earnings"],
+  [(p) => p.startsWith("/curves"), "Curves"],
   [(p) => p.startsWith("/how"), "How it works"],
   [(p) => p.startsWith("/wallet"), "Wallet"],
 ];
@@ -55,7 +92,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
   };
 
   const title = TITLES.find(([m]) => m(pathname))?.[1] ?? "After Hours";
-  const activeTab = NAV.find((n) => n.match(pathname))?.href ?? (pathname.startsWith("/wallet") ? "/wallet" : null);
+  const activeTab =
+    NAV.find((n) => n.match(pathname))?.href ??
+    (pathname.startsWith("/wallet") ? "/wallet" : null);
   const { bar: tabBarRef, pill: tabPillRef } = useSlidingPill(activeTab);
 
   return (
@@ -66,7 +105,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
           expanded ? "w-56" : "w-24"
         }`}
       >
-        <Link href="/" aria-label="After Hours home" className="flex h-9 items-center px-1">
+        <Link
+          href="/"
+          aria-label="After Hours home"
+          className="flex h-9 items-center px-1"
+        >
           {expanded ? <Logo size={30} /> : <LogoMark size={32} />}
         </Link>
         <nav className="mt-10 flex flex-col gap-2">
@@ -82,14 +125,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   active ? "text-ink" : "text-muted hover:text-ink"
                 }`}
               >
-                <span className={`icon-badge h-10 w-10 shrink-0 ${active ? "bg-ink text-white border-ink" : ""}`}>
+                <span
+                  className={`icon-badge h-10 w-10 shrink-0 ${active ? "bg-ink text-white border-ink" : ""}`}
+                >
                   <n.icon size={18} strokeWidth={1.75} />
                 </span>
                 {expanded && <span>{n.label}</span>}
               </Link>
             );
           })}
-          <WalletNavLink variant="rail" expanded={expanded} pathname={pathname} />
+          <WalletNavLink
+            variant="rail"
+            expanded={expanded}
+            pathname={pathname}
+          />
         </nav>
         <button
           type="button"
@@ -110,14 +159,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col px-4 pb-24 sm:px-6 lg:pb-8 lg:pr-8 lg:pl-6">
         <header className="flex items-center justify-between gap-4 py-5">
-          <Link href="/" className="shrink-0 lg:hidden" aria-label="After Hours home">
+          <Link
+            href="/"
+            className="shrink-0 lg:hidden"
+            aria-label="After Hours home"
+          >
             <Logo size={30} />
           </Link>
-          <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">{title}</h1>
+          <h1 className="hidden text-2xl font-semibold tracking-tight lg:block">
+            {title}
+          </h1>
           <div className="flex items-center gap-3">
             <WalletNavLink variant="chip" pathname={pathname} />
             <StockSearch />
-            <Link href="/stocks#find" className="icon-badge h-9 w-9 sm:hidden" aria-label="Search stocks">
+            <Link
+              href="/stocks#find"
+              className="icon-badge h-9 w-9 sm:hidden"
+              aria-label="Search stocks"
+            >
               <Search size={16} strokeWidth={1.75} />
             </Link>
           </div>
@@ -129,7 +188,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Bottom bar (phones) */}
-      <nav ref={tabBarRef} className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden">
+      <nav
+        ref={tabBarRef}
+        className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden"
+      >
         <span ref={tabPillRef} className="t-tabbar-pill" aria-hidden="true" />
         {NAV.filter((n) => n.phone !== false).map((n) => {
           const active = n.match(pathname);
@@ -141,7 +203,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 active ? "text-ink" : "text-muted"
               }`}
             >
-              <span data-pill-target={n.href} className={`icon-badge relative z-[1] h-8 w-8 ${active ? "border-transparent bg-transparent text-white" : ""}`}>
+              <span
+                data-pill-target={n.href}
+                className={`icon-badge relative z-[1] h-8 w-8 ${active ? "border-transparent bg-transparent text-white" : ""}`}
+              >
                 <n.icon size={16} strokeWidth={1.75} />
               </span>
               {n.label}

@@ -16,11 +16,11 @@ ARG NEXT_PUBLIC_SOLANA_RPC_URL=https://solana-rpc.publicnode.com
 ENV NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL
 RUN npm run build
 
-# The one dependency the collector needs that the web app's standalone trace
-# does not carry (the collector runs from src/). Installed alone to stay small.
+# Dependencies the collector needs that the web app's standalone trace does
+# not carry (the collector runs from src/): web push and the Meteora DBC SDK.
 FROM node:24-alpine AS collector-deps
 WORKDIR /deps
-RUN npm init -y >/dev/null && npm install web-push@3 --no-audit --no-fund --ignore-scripts
+RUN npm init -y >/dev/null && npm install web-push@3 @meteora-ag/dynamic-bonding-curve-sdk@1 --no-audit --no-fund --ignore-scripts
 
 FROM node:24-alpine AS runner
 WORKDIR /app

@@ -58,6 +58,19 @@ Solscan link. Nothing is stored; disconnecting removes the entry.
 - The overview has a treemap of tradable stocks: area by liquidity, colour by
   gap to the reference.
 
+## Curves (Meteora DBC monitor)
+
+`/curves` watches Meteora Dynamic Bonding Curve launches that use one of our
+tokenized stocks as the quote token. The collector finds them without walking
+the whole program: a pool config stores its quote mint at byte offset 8 and a
+pool stores its config at offset 72, so two filtered `getProgramAccounts`
+calls per stock and config cover everything (`src/lib/dbc.ts`, tables in
+`src/lib/dbc-db.ts`). Full scan every 30 minutes, live pools refreshed every
+two minutes from `getMultipleAccounts`, token names from the RPC's DAS
+`getAsset`. The page shows progress to graduation, quote raised and fees,
+priced in USD through the stock's own onchain price, with the stock's
+freshness pill so a stale quote cannot pass as a real valuation.
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.

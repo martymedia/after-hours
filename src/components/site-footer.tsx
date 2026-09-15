@@ -16,14 +16,17 @@ export function SiteFooter() {
           <Link href="/earnings" className="hover:text-ink">
             Earnings
           </Link>
+          <Link href="/curves" className="hover:text-ink">
+            Curves
+          </Link>
           <Link href="/how" className="hover:text-ink">
             How it works
           </Link>
         </nav>
       </div>
       <p className="mt-3 leading-relaxed">
-        A screener with a buy button. We never hold your funds. Nothing here is investment advice. Not
-        available to US persons.
+        A screener with a buy button. We never hold your funds. Nothing here is
+        investment advice. Not available to US persons.
       </p>
     </footer>
   );
