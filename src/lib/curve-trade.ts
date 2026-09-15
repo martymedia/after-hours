@@ -7,11 +7,12 @@ import { BN } from "@coral-xyz/anchor";
 import {
   DynamicBondingCurveClient,
   getCurrentPoint,
+  getPriceFromSqrtPrice,
   swapQuote,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { SITE_URL } from "./brand.ts";
 import { latestSnapshots, listTokens } from "./db.ts";
-import { poolsByCreator } from "./dbc-db.ts";
+import { configsByAddress, poolsByCreator } from "./dbc-db.ts";
 import { isOffensive } from "./profanity.ts";
 import { imageUrl } from "./curves.ts";
 import { rawBalance } from "./wallet.ts";
@@ -223,8 +224,29 @@ export type CreatorCurve = CreatorFees & {
   progress: number;
   migrated: boolean;
   raisedQuote: number;
+  raisedUsd: number | null;
+  /** Graduation price over starting price, for drawing the curve. */
+  ratio: number;
+  /** Creator fees in USD. */
   usd: number | null;
 };
+
+/**
+ * How steep this curve is: the graduation price over the starting price.
+ * On a single segment the square root of the price grows linearly with the
+ * quote raised, so the current price and the progress give the whole shape.
+ * Curves nobody has bought yet carry no information; those get a plain 10x.
+ */
+function curveRatio(
+  startPrice: number | null,
+  price: number | null,
+  progress: number,
+): number {
+  if (!startPrice || !price || progress < 0.01) return 10;
+  const sqrtR = 1 + (Math.sqrt(price / startPrice) - 1) / progress;
+  const r = sqrtR ** 2;
+  return Number.isFinite(r) ? Math.max(1.5, Math.min(200, r)) : 10;
+}
 
 /** Every curve this wallet created, with the creator fees waiting on each. */
 export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
@@ -235,6 +257,7 @@ export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
   const prices = new Map(
     latestSnapshots().map((s) => [s.mint, s.usd_price ?? null]),
   );
+  const configs = configsByAddress();
   const out: CreatorCurve[] = [];
   for (const [i, p] of rows.slice(0, 20).entries()) {
     const t = tokens.get(p.quote_mint);
@@ -253,6 +276,22 @@ export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
     } catch {
       // Fees unreadable right now; the curve is still listed.
     }
+    const cfg = configs.get(p.config);
+    let startPrice: number | null = null;
+    if (cfg) {
+      try {
+        startPrice = Number(
+          getPriceFromSqrtPrice(
+            new BN(cfg.sqrt_start_price),
+            cfg.token_decimal,
+            t.decimals,
+          ).toString(),
+        );
+      } catch {
+        startPrice = null;
+      }
+    }
+    const raisedQuote = Number(p.quote_reserve) / 10 ** t.decimals;
     out.push({
       ...f,
       baseMint: p.base_mint,
@@ -262,7 +301,9 @@ export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
       underlying: t.underlying,
       progress: p.is_migrated ? 1 : p.progress,
       migrated: p.is_migrated === 1,
-      raisedQuote: Number(p.quote_reserve) / 10 ** t.decimals,
+      raisedQuote,
+      raisedUsd: price != null ? raisedQuote * price : null,
+      ratio: curveRatio(startPrice, p.price_quote, p.progress),
       usd: price != null ? f.quoteFee * price : null,
     });
   }

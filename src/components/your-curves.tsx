@@ -1,14 +1,17 @@
 "use client";
 
-// Wallet page: the curves this wallet created. Addresses to copy, how far
-// each curve is, and the trading fees waiting to be claimed.
+// Wallet page: the curves this wallet launched, each drawn as its own
+// curve with a marker where the buyers have got to. Addresses to copy and
+// the trading fees waiting to be claimed sit on the same tile.
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import type { CreatorCurve } from "@/lib/curve-trade";
 import { formatUsd } from "@/lib/format";
 import { ClaimFeesButton } from "./curve-trade";
 import { CopyField } from "./copy-field";
+import { CurveShape } from "./curve-shape";
 import { PoolAvatar } from "./pool-avatar";
 
 function fmt(n: number): string {
@@ -42,68 +45,113 @@ export function YourCurves({ owner }: { owner: string }) {
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Your curves</h2>
           <p className="text-muted text-sm">
-            {waiting.length > 0
-              ? `${usd > 0 ? formatUsd(usd) : "Fees"} in trading fees waiting for you. Claiming sends them to this wallet.`
-              : `${curves.length === 1 ? "One curve" : `${curves.length} curves`} launched from this wallet. Trading fees land here as people trade.`}
+            {waiting.length > 0 ? (
+              <>
+                <span className="text-up font-medium">
+                  {usd > 0 ? formatUsd(usd) : "Trading fees"} waiting for you.
+                </span>{" "}
+                Claiming sends them to this wallet.
+              </>
+            ) : (
+              `${curves.length === 1 ? "One token" : `${curves.length} tokens`} launched from this wallet. Trading fees land here as people buy.`
+            )}
           </p>
         </div>
         <Link href="/curves/build" className="btn btn-sm">
           Build another
         </Link>
       </div>
-      <ul className="mt-3 divide-y divide-line">
+
+      <ul className="mt-4 grid gap-3 xl:grid-cols-2">
         {curves.map((c) => {
           const pct = Math.round(c.progress * 100);
           const open = c.quoteFee > 0 && !claimed.includes(c.pool);
           return (
-            <li key={c.pool} className="py-4">
-              <div className="flex items-center gap-3">
+            <li
+              key={c.pool}
+              className="relative overflow-hidden rounded-2xl bg-ink p-4 text-white"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-blue/25 blur-3xl"
+              />
+              <div className="relative flex items-center gap-3">
                 <PoolAvatar
                   image={c.image}
                   symbol={c.symbol}
                   name={c.name}
-                  size={36}
+                  size={38}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">
-                    {c.name}
-                    {c.symbol && (
-                      <span className="text-muted ml-1.5 text-xs font-normal">
-                        {c.symbol}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-muted num text-xs">
-                    {c.migrated
-                      ? "graduated"
-                      : `${pct < 1 ? "<1" : pct}% of the way to graduation`}
-                    {" · "}
-                    {fmt(c.raisedQuote)} {c.quoteSymbol} raised
-                    {open
-                      ? ` · ${fmt(c.quoteFee)} ${c.quoteSymbol} in fees for you`
-                      : ""}
+                  <div className="truncate font-medium">{c.name}</div>
+                  <div className="text-on-dark-muted truncate text-xs">
+                    {c.symbol ? `${c.symbol} · ` : ""}priced in {c.quoteSymbol}
                   </div>
                 </div>
-                {open ? (
-                  <ClaimFeesButton
-                    pool={c.pool}
-                    label={`Claim ${fmt(c.quoteFee)} ${c.quoteSymbol}`}
-                    className="btn btn-sm"
-                    onDone={() => setClaimed((s) => [...s, c.pool])}
-                  />
-                ) : (
-                  <Link
-                    href={`/curves/${c.underlying}`}
-                    className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
-                  >
-                    {c.quoteSymbol} curves
-                  </Link>
-                )}
+                <Link
+                  href={`/curves/${c.underlying}`}
+                  className="icon-badge h-8 w-8 shrink-0 border-white/20 bg-transparent text-white hover:bg-white/10"
+                  aria-label={`${c.quoteSymbol} curves`}
+                >
+                  <ArrowUpRight size={15} strokeWidth={1.75} />
+                </Link>
               </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <CopyField label="Pool" value={c.pool} />
-                <CopyField label="Token mint" value={c.baseMint} />
+
+              {/* The curve itself, with a marker where the buyers stand */}
+              <div className="relative mt-3 text-white/60">
+                <CurveShape
+                  startLabel="start"
+                  endLabel="graduation"
+                  raiseLabel={
+                    c.migrated
+                      ? "graduated to an open pool"
+                      : `${fmt(c.raisedQuote)} ${c.quoteSymbol} raised${c.raisedUsd != null ? ` ≈ ${formatUsd(c.raisedUsd, 0)}` : ""}`
+                  }
+                  ratio={c.ratio}
+                  fill="#8fb3ff"
+                  progress={c.progress}
+                />
               </div>
+
+              <div className="num relative mt-1 grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-on-dark-muted text-xs">
+                    {c.migrated ? "Final" : "To graduation"}
+                  </div>
+                  <div className="text-xl leading-tight font-semibold">
+                    {c.migrated ? "100%" : `${pct < 1 ? "<1" : pct}%`}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-on-dark-muted text-xs">Your fees</div>
+                  <div className="text-xl leading-tight font-semibold">
+                    {c.quoteFee > 0
+                      ? c.usd != null
+                        ? formatUsd(c.usd)
+                        : `${fmt(c.quoteFee)} ${c.quoteSymbol}`
+                      : "–"}
+                  </div>
+                </div>
+              </div>
+
+              {open && (
+                <ClaimFeesButton
+                  pool={c.pool}
+                  label={`Claim ${fmt(c.quoteFee)} ${c.quoteSymbol}`}
+                  className="btn btn-white btn-sm relative mt-3 w-full"
+                  onDone={() => setClaimed((s) => [...s, c.pool])}
+                />
+              )}
+
+              <details className="relative mt-3">
+                <summary className="text-on-dark-muted cursor-pointer text-xs hover:text-white">
+                  Addresses
+                </summary>
+                <div className="mt-2 grid gap-2">
+                  <CopyField label="Pool" value={c.pool} dark />
+                  <CopyField label="Token mint" value={c.baseMint} dark />
+                </div>
+              </details>
             </li>
           );
         })}

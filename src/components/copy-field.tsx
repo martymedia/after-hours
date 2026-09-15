@@ -27,7 +27,7 @@ export function CopyField({
   };
   return (
     <div
-      className={`flex items-center gap-2 rounded-2xl p-3 ${dark ? "bg-white/10" : "bg-soft"} ${className}`}
+      className={`flex min-w-0 items-center gap-2 rounded-2xl p-3 ${dark ? "bg-white/10" : "bg-soft"} ${className}`}
     >
       <div className="min-w-0 flex-1">
         <div
