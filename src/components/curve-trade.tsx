@@ -495,11 +495,13 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
 export function ClaimFeesButton({
   pool,
   label,
+  role = "creator",
   className = "pill bg-soft-up text-up hover:bg-line",
   onDone,
 }: {
   pool: string;
   label: string;
+  role?: "creator" | "partner";
   className?: string;
   onDone?: (signature: string) => void;
 }) {
@@ -518,6 +520,7 @@ export function ClaimFeesButton({
         body: JSON.stringify({
           pool,
           action: "claim",
+          role,
           owner: connected.account.address,
         }),
       });

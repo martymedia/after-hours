@@ -2,7 +2,7 @@
 //   GET ?owner=<address>
 
 import type { NextRequest } from "next/server";
-import { creatorCurves } from "@/lib/curve-trade";
+import { creatorCurves, partnerCurves } from "@/lib/curve-trade";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,12 @@ export async function GET(req: NextRequest) {
   if (!BASE58.test(owner))
     return Response.json({ error: "bad owner" }, { status: 400 });
   try {
+    const [pools, partner] = await Promise.all([
+      creatorCurves(owner),
+      partnerCurves(owner),
+    ]);
     return Response.json(
-      { pools: await creatorCurves(owner) },
+      { pools, partner },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (err) {

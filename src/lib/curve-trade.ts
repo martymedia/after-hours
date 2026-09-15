@@ -12,7 +12,11 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { SITE_URL } from "./brand.ts";
 import { latestSnapshots, listTokens } from "./db.ts";
-import { configsByAddress, poolsByCreator } from "./dbc-db.ts";
+import {
+  configsByAddress,
+  poolsByCreator,
+  poolsByFeeClaimer,
+} from "./dbc-db.ts";
 import { isOffensive } from "./profanity.ts";
 import { imageUrl } from "./curves.ts";
 import { rawBalance } from "./wallet.ts";
@@ -201,18 +205,30 @@ export type CreatorFees = {
   quoteSymbol: string;
 };
 
-export async function creatorFees(pool: string): Promise<CreatorFees> {
+/** "creator" is the wallet that launched a curve, "partner" is us. */
+export type FeeRole = "creator" | "partner";
+
+export async function poolFees(
+  pool: string,
+  role: FeeRole = "creator",
+): Promise<CreatorFees> {
   const { c, state, config, stock } = await loadPool(pool);
   const m = await c.state.getPoolFeeMetrics(pool);
+  const quote =
+    role === "partner" ? m.current.partnerQuoteFee : m.current.creatorQuoteFee;
+  const base =
+    role === "partner" ? m.current.partnerBaseFee : m.current.creatorBaseFee;
   return {
     pool,
     creator: state.creator.toBase58(),
-    quoteFee:
-      Number(m.current.creatorQuoteFee.toString()) / 10 ** stock.decimals,
-    baseFee:
-      Number(m.current.creatorBaseFee.toString()) / 10 ** config.tokenDecimal,
+    quoteFee: Number(quote.toString()) / 10 ** stock.decimals,
+    baseFee: Number(base.toString()) / 10 ** config.tokenDecimal,
     quoteSymbol: stock.symbol,
   };
+}
+
+export async function creatorFees(pool: string): Promise<CreatorFees> {
+  return poolFees(pool, "creator");
 }
 
 export type CreatorCurve = CreatorFees & {
@@ -250,9 +266,21 @@ function curveRatio(
 
 /** Every curve this wallet created, with the creator fees waiting on each. */
 export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
-  const rows = poolsByCreator(owner).filter(
-    (p) => !isOffensive(p.name, p.symbol),
-  );
+  return curvesFor(owner, "creator");
+}
+
+/** Every curve that owes this wallet a partner share of its trading fees. */
+export async function partnerCurves(owner: string): Promise<CreatorCurve[]> {
+  return curvesFor(owner, "partner");
+}
+
+async function curvesFor(
+  owner: string,
+  role: FeeRole,
+): Promise<CreatorCurve[]> {
+  const rows = (
+    role === "partner" ? poolsByFeeClaimer(owner) : poolsByCreator(owner)
+  ).filter((p) => !isOffensive(p.name, p.symbol));
   const tokens = new Map(listTokens().map((t) => [t.mint, t]));
   const prices = new Map(
     latestSnapshots().map((s) => [s.mint, s.usd_price ?? null]),
@@ -272,7 +300,7 @@ export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
       quoteSymbol: t.symbol,
     };
     try {
-      f = await creatorFees(p.pool);
+      f = await poolFees(p.pool, role);
     } catch {
       // Fees unreadable right now; the curve is still listed.
     }
@@ -310,26 +338,60 @@ export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
   return out;
 }
 
-/** Claim every unclaimed creator fee of a pool; only the pool's creator can sign it. */
+/** Claim the unclaimed fees of a pool; only the creator or the fee claimer can sign it. */
 export async function buildClaimCreatorFees(
   pool: string,
-  creator: string,
+  owner: string,
+  role: FeeRole = "creator",
 ): Promise<{ transaction: string }> {
-  const { c, state } = await loadPool(pool);
-  if (state.creator.toBase58() !== creator)
-    throw new Error("only the creator of this curve can claim its fees");
-  const key = new PublicKey(creator);
+  const { c, state, config } = await loadPool(pool);
+  const entitled =
+    role === "partner"
+      ? config.feeClaimer.toBase58()
+      : state.creator.toBase58();
+  if (entitled !== owner)
+    throw new Error(
+      role === "partner"
+        ? "only the fee claimer of this curve can claim the platform share"
+        : "only the creator of this curve can claim its fees",
+    );
+  const key = new PublicKey(owner);
   const max = new BN("18446744073709551615");
-  const tx = await c.creator.claimCreatorTradingFee({
-    creator: key,
-    payer: key,
-    pool: new PublicKey(pool),
-    maxBaseAmount: max,
-    maxQuoteAmount: max,
-  });
+  const tx =
+    role === "partner"
+      ? await c.partner.claimPartnerTradingFee({
+          feeClaimer: key,
+          payer: key,
+          pool: new PublicKey(pool),
+          maxBaseAmount: max,
+          maxQuoteAmount: max,
+        })
+      : await c.creator.claimCreatorTradingFee({
+          creator: key,
+          payer: key,
+          pool: new PublicKey(pool),
+          maxBaseAmount: max,
+          maxQuoteAmount: max,
+        });
   const { blockhash } = await c.connection.getLatestBlockhash("confirmed");
   tx.feePayer = key;
   tx.recentBlockhash = blockhash;
+  // Receiving fees can mean opening a token account, which costs rent. A
+  // wallet that cannot pay it should hear that here, not from a failed
+  // transaction it already signed.
+  try {
+    const sim = await c.connection.simulateTransaction(tx);
+    if (
+      sim.value.err &&
+      (sim.value.logs ?? []).join(" ").includes("insufficient lamports")
+    )
+      throw new Error(
+        "this wallet needs a little more SOL to receive the fees; about 0.005 SOL covers the token account and the network fee",
+      );
+  } catch (err) {
+    if ((err as Error).message.startsWith("this wallet needs")) throw err;
+    // Anything else: let the wallet decide, the simulation is only a courtesy.
+  }
   const wire = tx.serialize({
     requireAllSignatures: false,
     verifySignatures: false,

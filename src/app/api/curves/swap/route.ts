@@ -23,6 +23,7 @@ type Body = {
   owner?: string;
   execute?: boolean;
   action?: "fees" | "claim";
+  role?: "creator" | "partner";
 };
 
 export async function POST(req: NextRequest) {
@@ -46,9 +47,13 @@ export async function POST(req: NextRequest) {
           { error: "connect a wallet first" },
           { status: 400 },
         );
-      return Response.json(await buildClaimCreatorFees(pool, body.owner!), {
-        headers: { "cache-control": "no-store" },
-      });
+      const role = body.role === "partner" ? "partner" : "creator";
+      return Response.json(
+        await buildClaimCreatorFees(pool, body.owner!, role),
+        {
+          headers: { "cache-control": "no-store" },
+        },
+      );
     }
     const side = body.side === "sell" ? "sell" : "buy";
     const amount = Number(body.amount);

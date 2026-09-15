@@ -226,6 +226,18 @@ export function poolsByCreator(creator: string): DbcPoolRow[] {
     .all(creator) as DbcPoolRow[];
 }
 
+/** Every pool whose config pays its partner fees to this wallet. */
+export function poolsByFeeClaimer(claimer: string): DbcPoolRow[] {
+  return db()
+    .prepare(
+      `SELECT p.* FROM dbc_pools p
+       JOIN dbc_configs c ON c.config = p.config
+       WHERE c.fee_claimer = ? AND CAST(p.trading_quote_fee AS REAL) > 0
+       ORDER BY CAST(p.trading_quote_fee AS REAL) DESC LIMIT 30`,
+    )
+    .all(claimer) as DbcPoolRow[];
+}
+
 export function configsByAddress(): Map<string, DbcConfigRow> {
   return new Map(listConfigs().map((c) => [c.config, c]));
 }
