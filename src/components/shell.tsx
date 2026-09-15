@@ -42,15 +42,13 @@ const NAV = [
     icon: CalendarDays,
     match: (p: string) => p.startsWith("/earnings"),
   },
-  // Not in the phone tab bar either; reachable from the rail and the footer.
   {
     href: "/curves",
     label: "Curves",
     icon: Orbit,
     match: (p: string) => p.startsWith("/curves"),
-    phone: false,
   },
-  // Not in the phone tab bar: that row has room for four, and the wallet takes the fourth.
+  // Not in the phone tab bar: five tabs fill that row, and the wallet takes the fifth.
   {
     href: "/how",
     label: "How it works",
@@ -199,7 +197,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Link
               key={n.href}
               href={n.href}
-              className={`flex flex-col items-center gap-1 rounded-xl px-3 py-1 text-[11px] font-medium ${
+              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium ${
                 active ? "text-ink" : "text-muted"
               }`}
             >
