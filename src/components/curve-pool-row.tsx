@@ -28,6 +28,12 @@ export function units(v: number, symbol: string): string {
   const n = v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
   return `${n} ${symbol}`;
 }
+/** A token count, short: 1.2M, 4.5k, 12.34. */
+export function tokenCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return n >= 1 ? n.toFixed(2) : Number(n.toPrecision(3)).toString();
+}
 export function compactUsd(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}k`;
@@ -67,20 +73,32 @@ export function PoolRow({
   p,
   symbol,
   stock,
+  held,
+  mine,
 }: {
   p: CurvePool;
   symbol: string;
   stock?: PoolStockInfo;
+  /** What the connected wallet holds of this token, in UI units. */
+  held?: number | null;
+  /** The connected wallet created this curve. */
+  mine?: boolean;
 }) {
   return (
     <li className="grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 py-3.5 text-sm sm:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(0,1fr)_auto]">
       <PoolAvatar image={p.image} symbol={p.symbol} name={p.name} size={40} />
       <span className="min-w-0">
-        <span className="block truncate font-medium">
-          {p.name}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+          <span className="truncate font-medium">{p.name}</span>
           {p.symbol && (
-            <span className="text-muted ml-1.5 text-xs font-normal">
-              {p.symbol}
+            <span className="text-muted shrink-0 text-xs">{p.symbol}</span>
+          )}
+          {mine && (
+            <span className="pill shrink-0 bg-soft text-muted">yours</span>
+          )}
+          {held != null && held > 0 && (
+            <span className="pill num shrink-0 bg-blue-soft text-blue">
+              you hold {tokenCount(held)}
             </span>
           )}
         </span>

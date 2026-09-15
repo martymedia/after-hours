@@ -24,7 +24,7 @@ import {
   deriveDbcPoolAddress,
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import { SITE_URL } from "./brand.ts";
-import { latestSnapshots, listTokens } from "./db.ts";
+import { latestSnapshots, listTokens, setMeta } from "./db.ts";
 import { effectiveMultiplier, getPrices } from "./jupiter.ts";
 
 const RPC_URL =
@@ -305,7 +305,12 @@ export type CreateResult = {
 
 /** One transaction: create the config and initialise its pool. The payer signs in the wallet. */
 export async function buildCreateTransaction(
-  raw: Partial<CurveInput> & { name: string; symbol: string; uri?: string },
+  raw: Partial<CurveInput> & {
+    name: string;
+    symbol: string;
+    image?: string;
+    uri?: string;
+  },
   payer: string,
 ): Promise<CreateResult> {
   const preview = await previewCurve(raw);
@@ -319,12 +324,28 @@ export async function buildCreateTransaction(
     .toUpperCase();
   if (name.length < 2 || symbol.length < 2)
     throw new Error("name and symbol are required");
-  const uri = (raw.uri ?? "").trim() || `${SITE_URL}/curves`;
+  const image = (raw.image ?? "").trim().slice(0, 300);
+  if (image && !/^https:\/\/\S+$/i.test(image))
+    throw new Error("the icon must be a public https link");
   const stock = preview.stock;
   const params = build(preview.input, stock);
   const owner = new PublicKey(payer);
   const config = Keypair.generate();
   const baseMint = Keypair.generate();
+  // Wallets read name, symbol and icon from this URL; we serve it from the
+  // mint address, which is known here because we generate its keypair.
+  const mint = baseMint.publicKey.toBase58();
+  setMeta(
+    `curve_token:${mint}`,
+    JSON.stringify({
+      name,
+      symbol,
+      image: image || null,
+      quote: stock.symbol,
+      ts: Date.now(),
+    }),
+  );
+  const uri = (raw.uri ?? "").trim() || `${SITE_URL}/api/curves/token/${mint}`;
   const c = dbc();
   const tx = await c.partner.createConfigAndPool({
     ...params,

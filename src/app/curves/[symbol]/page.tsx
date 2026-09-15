@@ -6,7 +6,7 @@ import { curvesForStock } from "@/lib/curves";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { formatAgo, formatUsd } from "@/lib/format";
 import { CurveShape } from "@/components/curve-shape";
-import { PoolRow, compactUsd, units } from "@/components/curve-pool-row";
+import { compactUsd, units } from "@/components/curve-pool-row";
 import { CurvePoolList } from "@/components/curve-pool-list";
 import { TickerBadge } from "@/components/ticker-badge";
 
@@ -147,19 +147,14 @@ export default async function StockCurvesPage({ params }: Props) {
       )}
 
       {graduated.length > 0 && (
-        <section className="card p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-semibold">Graduated</h3>
-            <span className="text-muted text-xs">
-              the curve filled and the liquidity moved to a DAMM v2 pool
-            </span>
-          </div>
-          <ul className="mt-2 divide-y divide-line">
-            {graduated.map((p) => (
-              <PoolRow key={p.pool} p={p} symbol={s.symbol} />
-            ))}
-          </ul>
-        </section>
+        <CurvePoolList
+          pools={graduated}
+          symbol={s.symbol}
+          stock={info}
+          title="Graduated"
+          note="the curve filled and the liquidity moved to a DAMM v2 pool"
+          search={false}
+        />
       )}
 
       {idle > 0 && (

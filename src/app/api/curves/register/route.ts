@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 export async function POST(req: NextRequest) {
-  let body: { pool?: string; name?: string; symbol?: string };
+  let body: { pool?: string; name?: string; symbol?: string; image?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -21,9 +21,14 @@ export async function POST(req: NextRequest) {
   try {
     const name = (body.name ?? "").trim().slice(0, 32) || null;
     const symbol = (body.symbol ?? "").trim().slice(0, 10) || null;
-    return Response.json(await registerCurve(body.pool!, { name, symbol }), {
-      headers: { "cache-control": "no-store" },
-    });
+    const raw = (body.image ?? "").trim().slice(0, 300);
+    const image = /^https:\/\/\S+$/i.test(raw) ? raw : null;
+    return Response.json(
+      await registerCurve(body.pool!, { name, symbol, image }),
+      {
+        headers: { "cache-control": "no-store" },
+      },
+    );
   } catch (err) {
     return Response.json({ error: (err as Error).message }, { status: 400 });
   }

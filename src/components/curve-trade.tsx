@@ -89,14 +89,9 @@ async function confirmOrThrow(sig: string): Promise<void> {
 
 export function CurvePoolActions(props: PoolActionProps) {
   const [open, setOpen] = useState(false);
-  const connected = useConnectedWallet(solanaClient);
-  const isCreator = connected?.account.address === props.creator;
   if (props.migrated) return null;
   return (
-    <span className="flex items-center gap-2">
-      {isCreator && (
-        <CreatorFees pool={props.pool} quoteSymbol={props.quoteSymbol} />
-      )}
+    <>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -105,7 +100,7 @@ export function CurvePoolActions(props: PoolActionProps) {
         Trade
       </button>
       {open && <TradeModal {...props} onClose={() => setOpen(false)} />}
-    </span>
+    </>
   );
 }
 
@@ -555,44 +550,5 @@ export function ClaimFeesButton({
             ? "Try again"
             : label}
     </button>
-  );
-}
-
-function CreatorFees({
-  pool,
-  quoteSymbol,
-}: {
-  pool: string;
-  quoteSymbol: string;
-}) {
-  const [fees, setFees] = useState<{
-    quoteFee: number;
-    baseFee: number;
-  } | null>(null);
-  const [claimed, setClaimed] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/curves/swap", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ pool, action: "fees" }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b: { quoteFee?: number; baseFee?: number } | null) => {
-        if (!cancelled && b && typeof b.quoteFee === "number")
-          setFees({ quoteFee: b.quoteFee, baseFee: b.baseFee ?? 0 });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [pool, claimed]);
-  if (!fees || (fees.quoteFee <= 0 && fees.baseFee <= 0)) return null;
-  return (
-    <ClaimFeesButton
-      pool={pool}
-      label={`Claim ${fmtQuote(fees.quoteFee)} ${quoteSymbol}`}
-      onDone={() => setClaimed(true)}
-    />
   );
 }

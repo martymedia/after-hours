@@ -82,7 +82,9 @@ launch-mint keypairs are generated server-side and co-sign, the user's wallet
 pays and signs. Liquidity on graduation is permanently locked. Every curve
 built here names our revenue wallet as the partner fee claimer with a fixed
 90/10 split of trading fees (creator/After Hours), mirrored in the locked
-liquidity after graduation.
+liquidity after graduation. The mint points its metadata URI at
+`/api/curves/token/<mint>`, which we serve from what the builder stored, so
+a creator only pastes a link to an icon.
 
 Every live curve on a stock page has a Trade button: buy the launch token
 with the stock token or sell it back to the curve, quoted with the SDK's

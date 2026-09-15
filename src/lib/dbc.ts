@@ -174,7 +174,7 @@ export async function scanCurves(
  */
 export async function registerCurve(
   pool: string,
-  meta: { name: string | null; symbol: string | null },
+  meta: { name: string | null; symbol: string | null; image?: string | null },
 ): Promise<{ pool: string; quoteMint: string }> {
   const c = dbc();
   const fetched = (await c.state.getPool(pool)) as unknown as
@@ -198,11 +198,11 @@ export async function registerCurve(
   };
   upsertConfigs([cfg]);
   upsertPools([poolState(pool, raw, cfg, stock.decimals)]);
-  if (meta.name || meta.symbol)
+  if (meta.name || meta.symbol || meta.image)
     setPoolMetadata(pool, {
       name: meta.name,
       symbol: meta.symbol,
-      image: null,
+      image: meta.image ?? null,
     });
   return { pool, quoteMint };
 }

@@ -21,6 +21,7 @@ import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
 import { CurveShape } from "./curve-shape";
+import { PoolAvatar } from "./pool-avatar";
 import { CopyField } from "./copy-field";
 import { Seg, SuccessCheck, SwapText } from "./motion";
 import { TickerBadge } from "./ticker-badge";
@@ -102,6 +103,7 @@ export function CurveBuilder({
   const [feeId, setFeeId] = useState<FeeId>("standard");
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
+  const [image, setImage] = useState("");
   const [preview, setPreview] = useState<CurvePreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -190,6 +192,7 @@ export function CurveBuilder({
           create: true,
           name,
           symbol,
+          image,
           payer: connected.account.address,
         }),
       });
@@ -228,7 +231,7 @@ export function CurveBuilder({
       fetch("/api/curves/register", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ pool: body.pool, name, symbol }),
+        body: JSON.stringify({ pool: body.pool, name, symbol, image }),
       }).catch(() => {});
     } catch (err) {
       const [title, hint] = explainError((err as Error).message ?? String(err));
@@ -530,6 +533,34 @@ export function CurveBuilder({
               />
             </label>
           </div>
+          <label className="mt-3 block">
+            <span className="text-muted text-xs font-medium">
+              Icon, as a link (optional)
+            </span>
+            <span className="mt-1.5 flex items-center gap-2">
+              <PoolAvatar
+                key={image}
+                image={image.trim() || null}
+                symbol={symbol}
+                name={name || "?"}
+                size={40}
+              />
+              <input
+                type="url"
+                value={image}
+                onChange={(e) => setImage(e.target.value)}
+                placeholder="https://example.com/icon.png"
+                maxLength={300}
+                className="h-10 min-w-0 flex-1 rounded-full bg-soft px-4 text-sm outline-none"
+                aria-label="Icon URL"
+              />
+            </span>
+            <span className="text-muted mt-1.5 block text-xs">
+              A square image on a public https link. We host the token metadata
+              that points at it, so wallets and explorers show it. Without a
+              link the token carries its letters.
+            </span>
+          </label>
           <div className="mt-3">
             {!ready ? (
               <span className="btn w-full opacity-50">Checking wallets…</span>

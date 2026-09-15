@@ -182,6 +182,29 @@ export async function rawBalance(
   }
 }
 
+/** Every token balance of a wallet, by mint, in UI units. */
+export async function allBalances(
+  owner: string,
+): Promise<Record<string, number>> {
+  const parts = await Promise.all(
+    TOKEN_PROGRAMS.map((programId) =>
+      rpc<{ value: RpcTokenAccount[] }>("getTokenAccountsByOwner", [
+        owner,
+        { programId },
+        { encoding: "jsonParsed" },
+      ]),
+    ),
+  );
+  const amounts: Record<string, number> = {};
+  for (const part of parts)
+    for (const acc of part.value) {
+      const info = acc.account.data.parsed.info;
+      const n = info.tokenAmount.uiAmount ?? 0;
+      if (n > 0) amounts[info.mint] = (amounts[info.mint] ?? 0) + n;
+    }
+  return amounts;
+}
+
 export async function rpc<T>(method: string, params: unknown[]): Promise<T> {
   let lastError: Error | null = null;
   for (const url of RPC_URLS) {

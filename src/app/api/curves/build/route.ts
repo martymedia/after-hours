@@ -17,6 +17,7 @@ type Body = Partial<CurveInput> & {
   create?: boolean;
   name?: string;
   symbol?: string;
+  image?: string;
   uri?: string;
   payer?: string;
 };
