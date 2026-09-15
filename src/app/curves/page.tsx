@@ -169,7 +169,7 @@ function Stat({
 
 function StockCard({ s, index }: { s: CurveStock; index: number }) {
   const top = s.pools
-    .filter((p) => p.migrated || p.progress > 0)
+    .filter((p) => !p.migrated && p.progress > 0)
     .sort(
       (a, b) => Number(a.name.startsWith("(")) - Number(b.name.startsWith("(")),
     )

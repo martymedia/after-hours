@@ -197,12 +197,20 @@ function build(input: CurveInput, stock: Awaited<ReturnType<typeof stockFor>>) {
     fee: {
       baseFeeParams: {
         baseFeeMode: BaseFeeMode.FeeSchedulerExponential,
-        feeSchedulerParam: {
-          startingFeeBps: input.startFeeBps,
-          endingFeeBps: input.endFeeBps,
-          numberOfPeriod: periods,
-          totalDuration: input.feeMinutes * 60,
-        },
+        feeSchedulerParam:
+          input.startFeeBps === input.endFeeBps
+            ? {
+                startingFeeBps: input.startFeeBps,
+                endingFeeBps: input.endFeeBps,
+                numberOfPeriod: 0,
+                totalDuration: 0,
+              }
+            : {
+                startingFeeBps: input.startFeeBps,
+                endingFeeBps: input.endFeeBps,
+                numberOfPeriod: periods,
+                totalDuration: input.feeMinutes * 60,
+              },
       },
       dynamicFeeEnabled: true,
       collectFeeMode: CollectFeeMode.QuoteToken,

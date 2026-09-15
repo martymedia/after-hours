@@ -45,6 +45,12 @@ export default async function StockCurvesPage({ params }: Props) {
     s.tradability === "thin" ||
     s.tradability === "none";
   const leader = live[0] ?? null;
+  const info = {
+    mint: s.mint,
+    symbol: s.symbol,
+    underlying: s.underlying,
+    price: s.price,
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -139,7 +145,7 @@ export default async function StockCurvesPage({ params }: Props) {
           </div>
           <ul className="mt-2 divide-y divide-line">
             {live.slice(0, 20).map((p) => (
-              <PoolRow key={p.pool} p={p} symbol={s.symbol} />
+              <PoolRow key={p.pool} p={p} symbol={s.symbol} stock={info} />
             ))}
           </ul>
           {live.length > 20 && (
@@ -152,7 +158,7 @@ export default async function StockCurvesPage({ params }: Props) {
               </summary>
               <ul className="mt-2 divide-y divide-line">
                 {live.slice(20).map((p) => (
-                  <PoolRow key={p.pool} p={p} symbol={s.symbol} />
+                  <PoolRow key={p.pool} p={p} symbol={s.symbol} stock={info} />
                 ))}
               </ul>
             </details>

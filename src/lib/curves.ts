@@ -5,6 +5,7 @@ import { getMeta, listTokens } from "./db.ts";
 import { listConfigs, listPools, type DbcPoolRow } from "./dbc-db.ts";
 import { getRadar } from "./radar.ts";
 import type { Tradability } from "./radar-types.ts";
+import { isOffensive } from "./profanity.ts";
 
 export type CurvePool = {
   pool: string;
@@ -47,6 +48,8 @@ export type CurveStock = {
 export type CurvesOverview = {
   stocks: CurveStock[];
   totals: {
+    /** Pools hidden for offensive names. */
+    hidden: number;
     stocksUsed: number;
     configs: number;
     pools: number;
@@ -97,9 +100,14 @@ export async function curvesOverview(): Promise<CurvesOverview> {
     configCount.set(c.quote_mint, (configCount.get(c.quote_mint) ?? 0) + 1);
 
   const byStock = new Map<string, CurveStock>();
+  let hidden = 0;
   for (const p of pools) {
     const t = tokens.get(p.quote_mint);
     if (!t) continue;
+    if (isOffensive(p.name, p.symbol)) {
+      hidden++;
+      continue;
+    }
     const r = radar.get(p.quote_mint);
     let s = byStock.get(p.quote_mint);
     if (!s) {
@@ -152,6 +160,7 @@ export async function curvesOverview(): Promise<CurvesOverview> {
       return acc;
     },
     {
+      hidden,
       stocksUsed: stocks.length,
       configs: configs.length,
       pools: 0,

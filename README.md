@@ -81,6 +81,13 @@ fee schedule) plus the raw parameters. "Create on mainnet" builds one
 launch-mint keypairs are generated server-side and co-sign, the user's wallet
 pays and signs. Liquidity on graduation is permanently locked.
 
+Every live curve on a stock page has a Trade button: buy the launch token
+with the stock token or sell it back to the curve, quoted with the SDK's
+`swapQuote` and sent as one `pool.swap` transaction the wallet signs
+(`src/lib/curve-trade.ts`). A creator who connects the wallet that made a
+curve sees the trading fees it has earned and can claim them. Pools whose
+name or symbol carries slurs or crude words are hidden (`src/lib/profanity.ts`).
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.

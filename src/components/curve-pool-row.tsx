@@ -4,6 +4,14 @@
 
 import type { CurvePool } from "@/lib/curves";
 import { formatUsd } from "@/lib/format";
+import { CurvePoolActions } from "./curve-trade";
+
+export type PoolStockInfo = {
+  mint: string;
+  symbol: string;
+  underlying: string;
+  price: number | null;
+};
 
 const when = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -52,7 +60,15 @@ export function PoolAvatar({ p, size = 32 }: { p: CurvePool; size?: number }) {
 }
 
 /** Full row for the stock page. */
-export function PoolRow({ p, symbol }: { p: CurvePool; symbol: string }) {
+export function PoolRow({
+  p,
+  symbol,
+  stock,
+}: {
+  p: CurvePool;
+  symbol: string;
+  stock?: PoolStockInfo;
+}) {
   const pct = Math.round(p.progress * 100);
   return (
     <li className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3 text-sm sm:grid-cols-[2.25rem_minmax(0,1.3fr)_minmax(0,1fr)_auto]">
@@ -89,14 +105,30 @@ export function PoolRow({ p, symbol }: { p: CurvePool; symbol: string }) {
           </span>
         )}
       </span>
-      <a
-        href={`https://solscan.io/account/${p.pool}`}
-        target="_blank"
-        rel="noreferrer"
-        className="text-muted-2 hover:text-ink text-xs"
-      >
-        Solscan
-      </a>
+      <span className="flex items-center gap-2">
+        {stock && (
+          <CurvePoolActions
+            pool={p.pool}
+            creator={p.creator}
+            baseMint={p.baseMint}
+            baseName={p.name}
+            baseSymbol={p.symbol}
+            quoteMint={stock.mint}
+            quoteSymbol={stock.symbol}
+            underlying={stock.underlying}
+            stockPrice={stock.price}
+            migrated={p.migrated}
+          />
+        )}
+        <a
+          href={`https://solscan.io/account/${p.pool}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-muted-2 hover:text-ink text-xs"
+        >
+          Solscan
+        </a>
+      </span>
     </li>
   );
 }
