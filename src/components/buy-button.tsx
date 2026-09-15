@@ -486,9 +486,14 @@ export function explainError(raw: string): [string, string] {
     ];
   }
   if (t.startsWith("onchain:")) {
+    if (t.includes("insufficient") || t.includes('"custom":1'))
+      return [
+        "Not enough SOL in this wallet.",
+        "The transaction ran out of SOL for rent and fees. Top the wallet up, or switch to the one you meant to use.",
+      ];
     return [
       "The transaction failed onchain.",
-      "Your wallet was not charged beyond the network fee. Try again; if it repeats, the pool may be too thin for this size.",
+      "Your wallet was not charged beyond the network fee. Try again; if it repeats, the amount may be too large for this market.",
     ];
   }
   return [

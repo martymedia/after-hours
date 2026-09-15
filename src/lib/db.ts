@@ -337,6 +337,14 @@ export function getMeta(key: string): string | null {
   return row?.value ?? null;
 }
 
+/** The first meta value whose key starts with this prefix. */
+export function findMeta(prefix: string): string | null {
+  const row = getDb()
+    .prepare("SELECT value FROM meta WHERE key LIKE ? ORDER BY key LIMIT 1")
+    .get(`${prefix}%`) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
 export function setMeta(key: string, value: string): void {
   getDb()
     .prepare(

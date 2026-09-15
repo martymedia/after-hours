@@ -83,6 +83,8 @@ export const LIMITS = {
 export const CREATOR_FEE_SHARE = 90;
 export const PLATFORM_FEE_CLAIMER =
   "AvjtePkHVAvd4yCtYUkBZqktDr86gEyekRLpSTX96mYj";
+/** Rent for config, mint and pool, plus room for the network fee. */
+const MIN_CREATE_LAMPORTS = 32_000_000;
 
 function clampInput(raw: Partial<CurveInput>): CurveInput {
   const n = (v: unknown, d: number, min: number, max: number) => {
@@ -330,6 +332,13 @@ export async function buildCreateTransaction(
   const stock = preview.stock;
   const params = build(preview.input, stock);
   const owner = new PublicKey(payer);
+  // Config, mint and pool all pay rent. A wallet that cannot cover it would
+  // sign a transaction that fails onchain, so say it here instead.
+  const lamports = await dbc().connection.getBalance(owner);
+  if (lamports < MIN_CREATE_LAMPORTS)
+    throw new Error(
+      `this wallet holds ${(lamports / 1e9).toFixed(4)} SOL; creating a curve needs about 0.03 SOL of rent plus the network fee`,
+    );
   const config = Keypair.generate();
   const baseMint = Keypair.generate();
   // Wallets read name, symbol and icon from this URL; we serve it from the
@@ -345,7 +354,9 @@ export async function buildCreateTransaction(
       ts: Date.now(),
     }),
   );
-  const uri = (raw.uri ?? "").trim() || `${SITE_URL}/api/curves/token/${mint}`;
+  // Short on purpose: name, symbol and this URL all travel inside the
+  // creation transaction, which has 1232 bytes for everything.
+  const uri = (raw.uri ?? "").trim() || `${SITE_URL}/t/${mint.slice(0, 10)}`;
   const c = dbc();
   const tx = await c.partner.createConfigAndPool({
     ...params,
