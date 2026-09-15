@@ -13,6 +13,7 @@ import { SITE_URL } from "./brand.ts";
 import { latestSnapshots, listTokens } from "./db.ts";
 import { poolsByCreator } from "./dbc-db.ts";
 import { isOffensive } from "./profanity.ts";
+import { imageUrl } from "./curves.ts";
 import { rawBalance } from "./wallet.ts";
 
 const RPC_URL =
@@ -213,17 +214,20 @@ export async function creatorFees(pool: string): Promise<CreatorFees> {
   };
 }
 
-export type CreatorClaimable = CreatorFees & {
+export type CreatorCurve = CreatorFees & {
+  baseMint: string;
   name: string;
   symbol: string | null;
+  image: string | null;
   underlying: string;
+  progress: number;
+  migrated: boolean;
+  raisedQuote: number;
   usd: number | null;
 };
 
-/** Every curve this wallet created that has creator fees waiting. */
-export async function creatorClaimables(
-  owner: string,
-): Promise<CreatorClaimable[]> {
+/** Every curve this wallet created, with the creator fees waiting on each. */
+export async function creatorCurves(owner: string): Promise<CreatorCurve[]> {
   const rows = poolsByCreator(owner).filter(
     (p) => !isOffensive(p.name, p.symbol),
   );
@@ -231,25 +235,36 @@ export async function creatorClaimables(
   const prices = new Map(
     latestSnapshots().map((s) => [s.mint, s.usd_price ?? null]),
   );
-  const out: CreatorClaimable[] = [];
+  const out: CreatorCurve[] = [];
   for (const [i, p] of rows.slice(0, 20).entries()) {
     const t = tokens.get(p.quote_mint);
     if (!t) continue;
     if (i > 0) await new Promise((r) => setTimeout(r, 250));
+    const price = prices.get(p.quote_mint) ?? null;
+    let f: CreatorFees = {
+      pool: p.pool,
+      creator: owner,
+      quoteFee: 0,
+      baseFee: 0,
+      quoteSymbol: t.symbol,
+    };
     try {
-      const f = await creatorFees(p.pool);
-      if (f.quoteFee <= 0 && f.baseFee <= 0) continue;
-      const price = prices.get(p.quote_mint) ?? null;
-      out.push({
-        ...f,
-        name: p.name ?? "(name pending)",
-        symbol: p.symbol,
-        underlying: t.underlying,
-        usd: price != null ? f.quoteFee * price : null,
-      });
+      f = await creatorFees(p.pool);
     } catch {
-      // A pool the RPC could not read right now is simply left out.
+      // Fees unreadable right now; the curve is still listed.
     }
+    out.push({
+      ...f,
+      baseMint: p.base_mint,
+      name: p.name ?? "(name pending)",
+      symbol: p.symbol,
+      image: imageUrl(p.image),
+      underlying: t.underlying,
+      progress: p.is_migrated ? 1 : p.progress,
+      migrated: p.is_migrated === 1,
+      raisedQuote: Number(p.quote_reserve) / 10 ** t.decimals,
+      usd: price != null ? f.quoteFee * price : null,
+    });
   }
   return out;
 }

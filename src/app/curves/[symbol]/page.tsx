@@ -7,6 +7,7 @@ import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { formatAgo, formatUsd } from "@/lib/format";
 import { CurveShape } from "@/components/curve-shape";
 import { PoolRow, compactUsd, units } from "@/components/curve-pool-row";
+import { CurvePoolList } from "@/components/curve-pool-list";
 import { TickerBadge } from "@/components/ticker-badge";
 
 export const dynamic = "force-dynamic";
@@ -136,34 +137,13 @@ export default async function StockCurvesPage({ params }: Props) {
       )}
 
       {live.length > 0 && (
-        <section className="card p-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-semibold">Live, by progress</h3>
-            <span className="text-muted num text-xs">
-              {live.length} curves · {units(s.raisedQuote, s.symbol)} in them
-            </span>
-          </div>
-          <ul className="mt-2 divide-y divide-line">
-            {live.slice(0, 20).map((p) => (
-              <PoolRow key={p.pool} p={p} symbol={s.symbol} stock={info} />
-            ))}
-          </ul>
-          {live.length > 20 && (
-            <details className="group mt-2">
-              <summary className="btn btn-sm mx-auto flex w-fit cursor-pointer list-none border border-line bg-card text-ink hover:bg-soft [&::-webkit-details-marker]:hidden">
-                <span className="group-open:hidden">
-                  Show {live.length - 20} more
-                </span>
-                <span className="hidden group-open:inline">Show fewer</span>
-              </summary>
-              <ul className="mt-2 divide-y divide-line">
-                {live.slice(20).map((p) => (
-                  <PoolRow key={p.pool} p={p} symbol={s.symbol} stock={info} />
-                ))}
-              </ul>
-            </details>
-          )}
-        </section>
+        <CurvePoolList
+          pools={live}
+          symbol={s.symbol}
+          stock={info}
+          title="Live, by progress"
+          note={`${live.length} curves · ${units(s.raisedQuote, s.symbol)} in them`}
+        />
       )}
 
       {graduated.length > 0 && (

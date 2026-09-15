@@ -20,7 +20,7 @@ import {
 import { SellPanel } from "./sell-panel";
 import { OpenOrders } from "./open-orders";
 import { NotificationsCard } from "./notifications-card";
-import { CreatorFeesBanner } from "./creator-fees-banner";
+import { YourCurves } from "./your-curves";
 import {
   useConnectedWallet,
   useDisconnect,
@@ -520,7 +520,7 @@ export function WalletView({ address }: { address?: string }) {
         />
       </div>
 
-      {!readOnly && <CreatorFeesBanner owner={owner} />}
+      {!readOnly && <YourCurves owner={owner} />}
       <OpenOrders owner={owner} readOnly={readOnly} />
       {!readOnly && <NotificationsCard owner={owner} stocks={d.stocks} />}
 

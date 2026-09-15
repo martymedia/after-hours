@@ -1,8 +1,8 @@
-// Curves a wallet created that have creator fees waiting to be claimed.
+// Curves a wallet created, with the creator fees waiting on each.
 //   GET ?owner=<address>
 
 import type { NextRequest } from "next/server";
-import { creatorClaimables } from "@/lib/curve-trade";
+import { creatorCurves } from "@/lib/curve-trade";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "bad owner" }, { status: 400 });
   try {
     return Response.json(
-      { pools: await creatorClaimables(owner) },
+      { pools: await creatorCurves(owner) },
       { headers: { "cache-control": "no-store" } },
     );
   } catch (err) {

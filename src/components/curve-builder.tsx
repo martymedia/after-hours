@@ -21,6 +21,7 @@ import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
 import { CurveShape } from "./curve-shape";
+import { CopyField } from "./copy-field";
 import { Seg, SuccessCheck, SwapText } from "./motion";
 import { TickerBadge } from "./ticker-badge";
 
@@ -223,6 +224,12 @@ export function CurveBuilder({
         symbol: body.symbol ?? symbol,
       });
       setStep("done");
+      // List it right away; the scanner would find it within half an hour anyway.
+      fetch("/api/curves/register", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pool: body.pool, name, symbol }),
+      }).catch(() => {});
     } catch (err) {
       const [title, hint] = explainError((err as Error).message ?? String(err));
       setStep("error");
@@ -253,21 +260,15 @@ export function CurveBuilder({
               {created.symbol} is live on its curve.
             </p>
             <p className="text-on-dark-muted text-sm">
-              Priced in {stock?.symbol}. It shows up under Curves within two
-              minutes.
+              Priced in {stock?.symbol}. It is listed under Curves and on your
+              wallet page, where you can claim its fees.
             </p>
           </div>
         </div>
-        <dl className="num mt-4 grid gap-2 text-xs sm:grid-cols-2">
-          <div className="rounded-2xl bg-white/10 p-3">
-            <dt className="text-on-dark-muted">Pool</dt>
-            <dd className="mt-0.5 break-all">{created.pool}</dd>
-          </div>
-          <div className="rounded-2xl bg-white/10 p-3">
-            <dt className="text-on-dark-muted">Token mint</dt>
-            <dd className="mt-0.5 break-all">{created.baseMint}</dd>
-          </div>
-        </dl>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <CopyField label="Pool" value={created.pool} dark />
+          <CopyField label="Token mint" value={created.baseMint} dark />
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={`https://solscan.io/tx/${created.signature}`}
@@ -277,6 +278,12 @@ export function CurveBuilder({
           >
             View on Solscan
           </a>
+          <Link
+            href="/wallet"
+            className="btn btn-sm border border-white/20 bg-transparent hover:bg-white/10"
+          >
+            Your curves in the wallet
+          </Link>
           <Link
             href="/curves"
             className="btn btn-sm border border-white/20 bg-transparent hover:bg-white/10"

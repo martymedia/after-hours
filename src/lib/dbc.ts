@@ -14,6 +14,7 @@ import {
 } from "@meteora-ag/dynamic-bonding-curve-sdk";
 import type { BN } from "@coral-xyz/anchor";
 import { SITE_URL } from "./brand.ts";
+import { listTokens } from "./db.ts";
 import {
   configsByAddress,
   livePools,
@@ -164,6 +165,46 @@ export async function scanCurves(
     await sleep(PACE_MS);
   }
   return { configs: configRows.length, pools };
+}
+
+/**
+ * A curve created through the builder, written to our tables right away so
+ * the creator sees it without waiting for the next full scan. Only pools
+ * quoted in a stock we track are accepted.
+ */
+export async function registerCurve(
+  pool: string,
+  meta: { name: string | null; symbol: string | null },
+): Promise<{ pool: string; quoteMint: string }> {
+  const c = dbc();
+  const fetched = (await c.state.getPool(pool)) as unknown as
+    { poolState?: RawPool } | RawPool | null;
+  if (!fetched) throw new Error("pool not found onchain yet");
+  const raw = ((fetched as { poolState?: RawPool }).poolState ??
+    fetched) as RawPool;
+  const config = await c.state.getPoolConfig(raw.config);
+  if (!config) throw new Error("pool config not found");
+  const quoteMint = config.quoteMint.toBase58();
+  const stock = listTokens().find((t) => t.mint === quoteMint);
+  if (!stock) throw new Error("quote token is not a stock we track");
+  const cfg = {
+    config: raw.config.toBase58(),
+    quote_mint: quoteMint,
+    fee_claimer: config.feeClaimer.toBase58(),
+    token_decimal: config.tokenDecimal,
+    threshold: dec(config.migrationQuoteThreshold),
+    sqrt_start_price: dec(config.sqrtStartPrice),
+    migration_option: config.migrationOption,
+  };
+  upsertConfigs([cfg]);
+  upsertPools([poolState(pool, raw, cfg, stock.decimals)]);
+  if (meta.name || meta.symbol)
+    setPoolMetadata(pool, {
+      name: meta.name,
+      symbol: meta.symbol,
+      image: null,
+    });
+  return { pool, quoteMint };
 }
 
 /** Refresh the live pools (not graduated, some progress) in batches of 100 accounts. */
