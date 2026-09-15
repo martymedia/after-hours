@@ -30,7 +30,12 @@ const STEPS = [
   },
 ];
 
-export default function CurveBuildPage() {
+export default async function CurveBuildPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stock?: string }>;
+}) {
+  const { stock } = await searchParams;
   return (
     <div className="flex flex-col gap-5">
       <section className="card-dark overflow-hidden p-6 sm:p-8">
@@ -84,7 +89,7 @@ export default function CurveBuildPage() {
           </div>
         </div>
       </section>
-      <CurveBuilder />
+      <CurveBuilder initialMint={stock ?? null} />
     </div>
   );
 }

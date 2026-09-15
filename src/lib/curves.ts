@@ -170,3 +170,15 @@ export async function curvesOverview(): Promise<CurvesOverview> {
     scannedAgoMs: scannedAt ? Date.now() - scannedAt : null,
   };
 }
+
+/** One stock, by its Wall Street ticker, with every pool quoted in it. */
+export async function curvesForStock(
+  underlying: string,
+): Promise<CurveStock | null> {
+  const data = await curvesOverview();
+  return (
+    data.stocks.find(
+      (s) => s.underlying.toUpperCase() === underlying.toUpperCase(),
+    ) ?? null
+  );
+}

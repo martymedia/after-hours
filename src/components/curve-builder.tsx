@@ -81,7 +81,11 @@ function compact(n: number): string {
   return formatUsd(n, 0);
 }
 
-export function CurveBuilder() {
+export function CurveBuilder({
+  initialMint = null,
+}: {
+  initialMint?: string | null;
+}) {
   const [stocks, setStocks] = useState<RadarRow[]>([]);
   const [stockMint, setStockMint] = useState("");
   const [form, setForm] = useState(DEFAULTS);
@@ -115,13 +119,16 @@ export function CurveBuilder() {
         setStockMint(
           (m) =>
             m ||
+            (initialMint && rows.some((r) => r.mint === initialMint)
+              ? initialMint
+              : "") ||
             rows.find((r) => r.symbol === "SPYx")?.mint ||
             rows[0]?.mint ||
             "",
         );
       })
       .catch(() => {});
-  }, []);
+  }, [initialMint]);
 
   useEffect(() => {
     if (!stockMint) return;
