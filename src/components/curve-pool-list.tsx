@@ -4,10 +4,11 @@
 // address, so a creator can paste what the builder gave them. When a
 // wallet is connected, rows carry what that wallet created and holds.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Search } from "lucide-react";
 import { useConnectedWallet } from "@solana/kit-plugin-wallet/react";
 import type { CurvePool } from "@/lib/curves";
+import { useHeldMints } from "@/lib/held-mints";
 import { solanaClient } from "@/lib/solana-client";
 import { PoolRow, type PoolStockInfo } from "./curve-pool-row";
 
@@ -30,23 +31,9 @@ export function CurvePoolList({
 }) {
   const [q, setQ] = useState("");
   const [all, setAll] = useState(false);
-  const [amounts, setAmounts] = useState<Record<string, number>>({});
+  const amounts = useHeldMints();
   const connected = useConnectedWallet(solanaClient);
   const owner = connected?.account.address ?? null;
-
-  useEffect(() => {
-    if (!owner) return;
-    let cancelled = false;
-    fetch(`/api/balances?owner=${owner}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b: { amounts?: Record<string, number> } | null) => {
-        if (!cancelled && b?.amounts) setAmounts(b.amounts);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [owner]);
 
   const needle = search ? q.trim().toLowerCase() : "";
   const hits = needle
@@ -88,7 +75,7 @@ export function CurvePoolList({
           moment ago can take a minute to appear.
         </p>
       ) : (
-        <ul className="mt-2 divide-y divide-line">
+        <ul className="mt-2 -mx-3 divide-y divide-line">
           {shown.map((p) => (
             <PoolRow
               key={p.pool}

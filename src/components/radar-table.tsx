@@ -15,6 +15,7 @@ import {
   gapTone,
   gapWords,
 } from "@/lib/format";
+import { useHeldMints } from "@/lib/held-mints";
 import { Sparkline } from "./sparkline";
 import { TickerBadge } from "./ticker-badge";
 import { PopNumber, Seg } from "./motion";
@@ -78,6 +79,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [show, setShow] = useState<Show>("all");
   const [q, setQ] = useState("");
+  const held = useHeldMints();
 
   // The magnifier in the top bar links here with #find: put the cursor in the box.
   useEffect(() => {
@@ -274,7 +276,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
             <Link
               key={row.underlying}
               href={`/stock/${row.underlying}`}
-              className="flex items-center gap-3 px-4 py-3 active:bg-soft"
+              className={`flex items-center gap-3 px-4 py-3 active:bg-soft ${held[row.mint] ? "held" : ""}`}
             >
               <TickerBadge symbol={row.symbol} logo={row.logo} size={36} />
               <span className="min-w-0 flex-1">
@@ -360,6 +362,7 @@ export function RadarTable({ initial }: { initial: RadarData }) {
                   key={row.underlying}
                   row={row}
                   elapsedMs={now - Date.parse(data.generatedAt)}
+                  held={Boolean(held[row.mint])}
                 />
               ))}
               {rows.length === 0 && (
@@ -380,10 +383,20 @@ export function RadarTable({ initial }: { initial: RadarData }) {
   );
 }
 
-function Row({ row, elapsedMs }: { row: RadarRow; elapsedMs: number }) {
+function Row({
+  row,
+  elapsedMs,
+  held,
+}: {
+  row: RadarRow;
+  elapsedMs: number;
+  held?: boolean;
+}) {
   const ageMs = row.ageMs == null ? null : row.ageMs + elapsedMs;
   return (
-    <tr className="border-b border-line last:border-b-0">
+    <tr
+      className={`border-b border-line last:border-b-0 ${held ? "held" : ""}`}
+    >
       <td className="px-5 py-3">
         <Link
           href={`/stock/${row.underlying}`}

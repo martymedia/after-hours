@@ -113,6 +113,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     image,
     progress,
     raisedQuote,
+    quoteMint,
     quoteSymbol,
     underlying,
     stockPrice,
@@ -121,6 +122,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   const [side, setSide] = useState<Side>("buy");
   const [text, setText] = useState(spendFor(25, stockPrice));
   const [held, setHeld] = useState<number | null>(null);
+  const [quoteHeld, setQuoteHeld] = useState<number | null>(null);
   const [fetched, setFetched] = useState<CurveQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("idle");
@@ -139,22 +141,23 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     baseSymbol ?? (baseName === "(name pending)" ? "tokens" : baseName);
   const pct = Math.round(progress * 100);
 
-  // The launch token held by the wallet, for the sell side.
+  // What the wallet holds of both sides: the launch token to sell, and the
+  // stock token to pay with. One call covers both.
   useEffect(() => {
     if (!owner) return;
     let cancelled = false;
-    fetch(`/api/holding?owner=${owner}&mint=${baseMint}`, {
-      cache: "no-store",
-    })
+    fetch(`/api/balances?owner=${owner}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((b: { amount?: number } | null) => {
-        if (!cancelled && b && typeof b.amount === "number") setHeld(b.amount);
+      .then((b: { amounts?: Record<string, number> } | null) => {
+        if (cancelled || !b?.amounts) return;
+        setHeld(b.amounts[baseMint] ?? 0);
+        setQuoteHeld(b.amounts[quoteMint] ?? 0);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [owner, baseMint, step]);
+  }, [owner, baseMint, quoteMint, step]);
 
   // A quote is only shown while it matches the current input.
   const quote =
@@ -195,6 +198,9 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   };
   const busy =
     step === "building" || step === "signing" || step === "confirming";
+  // A buy the wallet cannot pay for: say so before the wallet does.
+  const short =
+    side === "buy" && valid && quoteHeld != null && amount > quoteHeld;
 
   async function trade() {
     if (!connected?.signer || !valid) return;
@@ -371,11 +377,15 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
                     {p === 1 ? "All" : `${p * 100}%`}
                   </button>
                 ))}
-            <span className="text-muted num ml-auto text-xs">
+            <span
+              className={`num ml-auto text-xs ${short ? "text-down" : "text-muted"}`}
+            >
               {side === "buy"
-                ? stockPrice && valid
-                  ? `≈ ${formatUsd(amount * stockPrice)}`
-                  : ""
+                ? quoteHeld != null
+                  ? `you have ${fmtQuote(quoteHeld)} ${quoteSymbol}`
+                  : stockPrice && valid
+                    ? `≈ ${formatUsd(amount * stockPrice)}`
+                    : ""
                 : held != null
                   ? `you hold ${fmtTok(held)}`
                   : ""}
@@ -435,6 +445,12 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               <span className="btn w-full opacity-50">Checking wallets…</span>
             ) : !connected ? (
               <ConnectButton label="Connect wallet to trade" />
+            ) : short ? (
+              // Paying for this needs a stock token the wallet does not have
+              // enough of. Send them where they can get it, in one step.
+              <Link href={`/stock/${underlying}`} className="btn w-full">
+                Buy {quoteSymbol} first
+              </Link>
             ) : (
               <button
                 type="button"
@@ -483,6 +499,15 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               <p className="text-muted mt-0.5 text-sm leading-relaxed">
                 {error.hint}
               </p>
+              {/* Ran out of the stock token: the way out is one tap away. */}
+              {/\bnot enough\b/i.test(error.title + error.hint) && (
+                <Link
+                  href={`/stock/${underlying}`}
+                  className="btn btn-sm mt-3 w-full"
+                >
+                  Buy {quoteSymbol}
+                </Link>
+              )}
             </div>
           )}
         </>

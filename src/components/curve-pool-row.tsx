@@ -85,7 +85,9 @@ export function PoolRow({
   mine?: boolean;
 }) {
   return (
-    <li className="grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 py-3.5 text-sm sm:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(0,1fr)_auto]">
+    <li
+      className={`grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 px-3 py-3.5 text-sm sm:grid-cols-[2.5rem_minmax(0,1.2fr)_minmax(0,1fr)_auto] ${held != null && held > 0 ? "held" : ""}`}
+    >
       <PoolAvatar image={p.image} symbol={p.symbol} name={p.name} size={40} />
       <span className="min-w-0">
         <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">

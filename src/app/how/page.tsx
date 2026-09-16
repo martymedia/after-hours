@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { ISSUERS, ISSUER_ORDER } from "@/lib/issuers";
 import { getRadar } from "@/lib/radar";
 import { gapStatsAcross } from "@/lib/gap-stats";
@@ -281,20 +282,62 @@ export default function HowPage() {
           Same company, different wrappers. The legal structure decides what you
           actually hold, so we name it on every stock page.
         </p>
-        <ul className="mt-5 divide-y divide-line border-y border-line">
-          {ISSUER_ORDER.filter((id) => ISSUERS[id].enabled).map((id) => (
-            <li key={id} className="grid gap-2 py-5 sm:grid-cols-12 sm:gap-6">
-              <div className="sm:col-span-3">
-                <div className="font-semibold">{ISSUERS[id].name}</div>
-                <span className="pill mt-1 bg-soft text-ink">
-                  {ISSUERS[id].structureShort}
-                </span>
-              </div>
-              <p className="text-muted text-sm leading-relaxed sm:col-span-9">
-                {ISSUERS[id].structure}
-              </p>
-            </li>
-          ))}
+        <ul className="mt-5 grid gap-4 lg:grid-cols-2">
+          {ISSUER_ORDER.filter(
+            (id) =>
+              ISSUERS[id].enabled && data.rows.some((r) => r.issuer === id),
+          ).map((id) => {
+            const mine = data.rows.filter((r) => r.issuer === id);
+            return (
+              <li
+                key={id}
+                className="flex flex-col rounded-2xl border border-line p-5"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {ISSUERS[id].name}
+                    </div>
+                    <span className="pill mt-1.5 bg-soft text-ink">
+                      {ISSUERS[id].structureShort}
+                    </span>
+                  </div>
+                  {/* The stocks we track from this issuer, as their own logos. */}
+                  <div className="flex shrink-0 items-center -space-x-2">
+                    {mine.slice(0, 5).map((r) => (
+                      <span
+                        key={r.underlying}
+                        className="ring-2 ring-card rounded-full"
+                      >
+                        <TickerBadge
+                          symbol={r.symbol}
+                          logo={r.logo}
+                          size={28}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-muted mt-3 flex-1 text-sm leading-relaxed">
+                  {ISSUERS[id].structure}
+                </p>
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                  <span className="text-muted num">
+                    {mine.length} {mine.length === 1 ? "stock" : "stocks"} here
+                  </span>
+                  <a
+                    href={ISSUERS[id].url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-medium hover:underline"
+                  >
+                    {ISSUERS[id].url.replace(/^https:\/\//, "")}
+                    <ArrowUpRight size={14} strokeWidth={2} />
+                  </a>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

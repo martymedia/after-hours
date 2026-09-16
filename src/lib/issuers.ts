@@ -1,7 +1,8 @@
 // Issuer metadata. The structure label matters: only same-structure tokens
 // are directly comparable, and a beginner deserves to know what they hold.
 
-export type IssuerId = "xstocks" | "backpack" | "prestocks" | "tessera" | "ondo";
+export type IssuerId =
+  "xstocks" | "backpack" | "prestocks" | "tessera" | "ondo";
 
 export type IssuerInfo = {
   id: IssuerId;
@@ -11,6 +12,8 @@ export type IssuerInfo = {
   structureShort: string;
   /** Jupiter tag that identifies the issuer. */
   tag: string;
+  /** The issuer's own site, linked wherever we name them. */
+  url: string;
   /** Search queries that surface this issuer's tokens on Jupiter. */
   searchQueries: string[];
   /** Listed public companies only in v1: pre-IPO tokens have no Wall Street
@@ -26,6 +29,7 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
       "Tracker certificate issued by Backed (Switzerland), backed 1:1 by shares held with a custodian. Dividends arrive as USDC.",
     structureShort: "Tracker, 1:1 backed",
     tag: "xstocks",
+    url: "https://xstocks.com",
     searchQueries: [],
     enabled: true,
   },
@@ -36,6 +40,7 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
       "Real share held by Backpack Securities, a US broker-dealer. Redeemable into the actual stock for onboarded holders.",
     structureShort: "Real share, redeemable",
     tag: "backpack",
+    url: "https://backpack.exchange",
     searchQueries: ["Backpack Securities"],
     enabled: true,
   },
@@ -46,15 +51,18 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
       "Synthetic exposure to a private company via an SPV. No enforceable claim on shares. Higher risk.",
     structureShort: "Synthetic pre-IPO",
     tag: "prestocks",
+    url: "https://prestocks.com",
     searchQueries: ["PreStocks"],
     enabled: false,
   },
   tessera: {
     id: "tessera",
     name: "Tessera",
-    structure: "Tokenized exposure to a private company. Check the issuer's terms before trading.",
+    structure:
+      "Tokenized exposure to a private company. Check the issuer's terms before trading.",
     structureShort: "Pre-IPO exposure",
     tag: "tessera",
+    url: "https://app.tessera.pe",
     searchQueries: ["Tessera", "T-"],
     enabled: false,
   },
@@ -65,12 +73,19 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
       "Structured note backed 1:1 by shares at a US broker-dealer. Mint and redeem through Ondo only, no onchain pools.",
     structureShort: "Note, no onchain liquidity",
     tag: "ondo",
+    url: "https://ondo.finance",
     searchQueries: ["Ondo Tokenized"],
     enabled: true,
   },
 };
 
-export const ISSUER_ORDER: IssuerId[] = ["xstocks", "backpack", "prestocks", "tessera", "ondo"];
+export const ISSUER_ORDER: IssuerId[] = [
+  "xstocks",
+  "backpack",
+  "prestocks",
+  "tessera",
+  "ondo",
+];
 
 export function issuerFromTags(tags: string[] | undefined): IssuerId | null {
   if (!tags) return null;

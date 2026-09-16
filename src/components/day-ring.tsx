@@ -53,8 +53,11 @@ export function DayRing({ className = "" }: { className?: string }) {
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
+    // Far enough back that the ticks at radius 1.17 and the halo around the
+    // marker stay inside the frame: at the old distance they projected past
+    // the edge and the ring was cut off.
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-    camera.position.set(0, 2.05, 3.1);
+    camera.position.set(0, 2.67, 4.03);
     camera.lookAt(0, -0.05, 0);
 
     const group = new THREE.Group();
