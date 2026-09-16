@@ -445,12 +445,6 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               <span className="btn w-full opacity-50">Checking wallets…</span>
             ) : !connected ? (
               <ConnectButton label="Connect wallet to trade" />
-            ) : short ? (
-              // Paying for this needs a stock token the wallet does not have
-              // enough of. Send them where they can get it, in one step.
-              <Link href={`/stock/${underlying}`} className="btn w-full">
-                Buy {quoteSymbol} first
-              </Link>
             ) : (
               <button
                 type="button"
