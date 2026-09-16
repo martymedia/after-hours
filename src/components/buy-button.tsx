@@ -452,6 +452,17 @@ export function explainError(raw: string): [string, string] {
       `This curve is priced in ${short[1]}, and your wallet is short for this size. Buy some first, or lower the amount.`,
     ];
   }
+  if (
+    t.includes("block not available") ||
+    t.includes("failed to get block time") ||
+    t.includes("429") ||
+    t.includes("timeout")
+  ) {
+    return [
+      "The network was busy.",
+      "A Solana node did not answer in time. Nothing was sent. Try again in a moment.",
+    ];
+  }
   if (t.includes("0x177e") || t.includes("6014")) {
     return [
       "The route needs rebuilding.",

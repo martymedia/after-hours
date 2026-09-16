@@ -65,6 +65,26 @@ async function loadPool(pool: string) {
   return { c, fetched, state, config, stock, price };
 }
 
+/**
+ * Where the curve stands in time, for the fee schedule. The SDK asks the
+ * RPC for the block time of the current slot, which fails outright when
+ * that block is not on the node yet ("Block not available for slot ..."),
+ * and a quote should not die of that. A timestamp curve can use the clock:
+ * chain time tracks it within a second or two, and the fee schedule works
+ * in minutes.
+ */
+async function currentPointOf(
+  connection: Connection,
+  activationType: number,
+): Promise<BN> {
+  try {
+    return await getCurrentPoint(connection, activationType);
+  } catch {
+    if (activationType === 1) return new BN(Math.floor(Date.now() / 1000));
+    return new BN(await connection.getSlot("finalized"));
+  }
+}
+
 export type CurveQuote = {
   side: "buy" | "sell";
   /** What goes in and what comes out, in UI units. */
@@ -97,7 +117,7 @@ export async function quoteCurve(
     Math.floor(amount * 10 ** (side === "buy" ? qDec : bDec)).toString(),
   );
   if (amountIn.lten(0)) throw new Error("amount too small");
-  const currentPoint = await getCurrentPoint(
+  const currentPoint = await currentPointOf(
     c.connection,
     config.activationType,
   );
