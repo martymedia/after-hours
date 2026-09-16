@@ -78,6 +78,11 @@ function fmtTok(n: number): string {
 function spendFor(usd: number, stockPrice: number | null): string {
   return stockPrice ? String(Number((usd / stockPrice).toFixed(4))) : "0.01";
 }
+/** A share of a balance, rounded down so "All" never asks for more than there is. */
+function partOf(balance: number, share: number): string {
+  const n = Math.floor(balance * share * 1e6) / 1e6;
+  return String(n);
+}
 
 /** Signs and sends a server-built transaction, resolving to its signature. */
 async function signTx(signer: Signer, base64: string): Promise<string> {
@@ -129,7 +134,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     onClose,
   } = props;
   const [side, setSide] = useState<Side>("buy");
-  const [text, setText] = useState(spendFor(25, stockPrice));
+  const [typed, setTyped] = useState<string | null>(null);
   const [held, setHeld] = useState<number | null>(null);
   const [quoteHeld, setQuoteHeld] = useState<number | null>(null);
   // Buying the stock token to pay with, without leaving this window.
@@ -148,6 +153,15 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   const ready = useWalletReady();
   const connected = useConnectedWallet(solanaClient);
   const owner = connected?.account.address ?? null;
+  // The amount starts from what the wallet can actually afford, and stays
+  // whatever was typed once someone types.
+  const balance = side === "buy" ? quoteHeld : held;
+  const suggested = balance
+    ? partOf(balance, side === "buy" ? 0.25 : 1)
+    : side === "buy"
+      ? spendFor(25, stockPrice)
+      : "0";
+  const text = typed ?? suggested;
   const amount = Number(text.replace(",", "."));
   const valid = Number.isFinite(amount) && amount > 0;
   const tokenLabel =
@@ -217,11 +231,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   const switchSide = (s: Side) => {
     setSide(s);
     setFetched(null);
-    setText(
-      s === "sell" && held
-        ? String(Number(held.toFixed(4)))
-        : spendFor(25, stockPrice),
-    );
+    setTyped(null);
   };
   const busy =
     step === "building" || step === "signing" || step === "confirming";
@@ -427,7 +437,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
               type="text"
               inputMode="decimal"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => setTyped(e.target.value)}
               className="num w-full bg-transparent text-2xl font-semibold outline-none"
               aria-label={
                 side === "buy"
@@ -440,32 +450,34 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
             </span>
           </label>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {side === "buy"
-              ? stockPrice &&
-                USD_PRESETS.map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => setText(spendFor(u, stockPrice))}
-                    className="pill bg-soft text-ink hover:bg-line"
-                  >
-                    {formatUsd(u, 0)}
-                  </button>
-                ))
-              : held != null &&
-                held > 0 &&
-                PARTS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() =>
-                      setText(String(Number((held * p).toFixed(4))))
-                    }
-                    className="pill bg-soft text-ink hover:bg-line"
-                  >
-                    {p === 1 ? "All" : `${p * 100}%`}
-                  </button>
-                ))}
+            {/* Shares of what the wallet holds, not dollar amounts: the price
+                moves between the click and the trade, the balance does not. */}
+            {balance ? (
+              PARTS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setTyped(partOf(balance ?? 0, p))}
+                  className="pill bg-soft text-ink hover:bg-line"
+                >
+                  {p === 1 ? "All" : `${p * 100}%`}
+                </button>
+              ))
+            ) : side === "buy" && stockPrice ? (
+              // No balance to divide up yet, so give a sense of size in dollars.
+              USD_PRESETS.map((u) => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setTyped(spendFor(u, stockPrice))}
+                  className="pill bg-soft text-ink hover:bg-line"
+                >
+                  {formatUsd(u, 0)}
+                </button>
+              ))
+            ) : (
+              <span />
+            )}
             <span
               className={`num ml-auto text-xs ${short ? "text-down" : "text-muted"}`}
             >
