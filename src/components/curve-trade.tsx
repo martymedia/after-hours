@@ -7,6 +7,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { ArrowLeft, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   getBase58Decoder,
@@ -19,9 +20,17 @@ import { solanaClient } from "@/lib/solana-client";
 import { useWalletReady } from "@/lib/wallet-ready";
 import { formatUsd } from "@/lib/format";
 import { explainError, waitForConfirmation } from "./buy-button";
+import type { RadarData } from "@/lib/radar-types";
 import { Modal, ModalClose } from "./modal";
 import { Seg, SuccessCheck, SwapText } from "./motion";
 import { PoolAvatar } from "./pool-avatar";
+
+const BuyPanel = dynamic(() => import("./buy-panel").then((m) => m.BuyPanel), {
+  ssr: false,
+  loading: () => (
+    <div className="t-shimmer h-40 rounded-2xl bg-soft" aria-hidden="true" />
+  ),
+});
 
 const ConnectButton = dynamic(
   () => import("./wallet-connect").then((m) => m.ConnectButton),
@@ -123,6 +132,10 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
   const [text, setText] = useState(spendFor(25, stockPrice));
   const [held, setHeld] = useState<number | null>(null);
   const [quoteHeld, setQuoteHeld] = useState<number | null>(null);
+  // Buying the stock token to pay with, without leaving this window.
+  const [buying, setBuying] = useState(false);
+  const [radar, setRadar] = useState<RadarData | null>(null);
+  const [refresh, setRefresh] = useState(0);
   const [fetched, setFetched] = useState<CurveQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("idle");
@@ -157,7 +170,21 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
     return () => {
       cancelled = true;
     };
-  }, [owner, baseMint, quoteMint, step]);
+  }, [owner, baseMint, quoteMint, step, refresh]);
+
+  useEffect(() => {
+    if (!buying || radar) return;
+    let cancelled = false;
+    fetch("/api/radar", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: RadarData | null) => {
+        if (!cancelled && b) setRadar(b);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [buying, radar]);
 
   // A quote is only shown while it matches the current input.
   const quote =
@@ -239,6 +266,68 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
       setStep("error");
       setError({ title, hint });
     }
+  }
+
+  // Buying the stock token to pay with: the same window, one step aside.
+  if (buying) {
+    const row = radar?.rows.find((r) => r.mint === quoteMint) ?? null;
+    return (
+      <Modal ariaLabel={`Buy ${quoteSymbol}`} onClose={onClose}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <button
+              type="button"
+              onClick={() => {
+                setBuying(false);
+                setRefresh((n) => n + 1);
+              }}
+              className="text-muted hover:text-ink inline-flex items-center gap-1 text-xs"
+            >
+              <ArrowLeft size={13} strokeWidth={2} />
+              Back to {tokenLabel}
+            </button>
+            <p className="mt-1 text-lg leading-tight font-semibold">
+              Buy {quoteSymbol}
+            </p>
+            <p className="text-muted text-sm">
+              The stock token this curve is priced in. Buy it here, then trade
+              the curve with it.
+            </p>
+          </div>
+          <ModalClose />
+        </div>
+        <div className="mt-4">
+          {radar && row ? (
+            <BuyPanel
+              embedded
+              mint={row.mint}
+              symbol={row.symbol}
+              referencePhrase={radar.reference.phrase}
+              phase={radar.phase.phase}
+              ageMs={row.ageMs}
+              liquidity={row.liquidity}
+            />
+          ) : radar ? (
+            <p className="text-muted text-sm">
+              {quoteSymbol} is not one of the stocks we list, so we cannot quote
+              it here.{" "}
+              <Link
+                href={`/stock/${underlying}`}
+                className="hover:text-ink underline underline-offset-4"
+              >
+                Open its page
+              </Link>
+              .
+            </p>
+          ) : (
+            <div
+              className="t-shimmer h-40 rounded-2xl bg-soft"
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </Modal>
+    );
   }
 
   return (
@@ -473,12 +562,13 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
             {side === "buy" ? (
               <>
                 Paid in {quoteSymbol} from your wallet. None yet?{" "}
-                <Link
-                  href={`/stock/${underlying}`}
-                  className="underline underline-offset-4 hover:text-ink"
+                <button
+                  type="button"
+                  onClick={() => setBuying(true)}
+                  className="hover:text-ink underline underline-offset-4"
                 >
                   Buy {quoteSymbol} first
-                </Link>
+                </button>
                 .{" "}
               </>
             ) : null}
@@ -487,20 +577,28 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
           {step === "error" && error && (
             <div
               key={error.title}
-              className="rise t-shake mt-3 rounded-2xl border border-line bg-soft p-4"
+              className="rise t-shake mt-3 rounded-2xl border border-down/25 bg-soft-down p-4"
             >
-              <p className="text-sm font-semibold">{error.title}</p>
-              <p className="text-muted mt-0.5 text-sm leading-relaxed">
-                {error.hint}
-              </p>
-              {/* Ran out of the stock token: the way out is one tap away. */}
+              <div className="flex items-start gap-3">
+                <span className="bg-down flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white">
+                  <X size={16} strokeWidth={2.5} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{error.title}</p>
+                  <p className="text-muted mt-0.5 text-sm leading-relaxed">
+                    {error.hint}
+                  </p>
+                </div>
+              </div>
+              {/* Short of the stock token: buy it here, then come back. */}
               {/\bnot enough\b/i.test(error.title + error.hint) && (
-                <Link
-                  href={`/stock/${underlying}`}
+                <button
+                  type="button"
+                  onClick={() => setBuying(true)}
                   className="btn btn-sm mt-3 w-full"
                 >
                   Buy {quoteSymbol}
-                </Link>
+                </button>
               )}
             </div>
           )}

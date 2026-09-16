@@ -445,6 +445,13 @@ export function explainError(raw: string): [string, string] {
       "Every buy needs a little SOL for the network fee and, the first time, for the token account. Add about 0.02 SOL and try again.",
     ];
   }
+  const short = raw.match(/not enough (\S+) in the wallet/i);
+  if (short) {
+    return [
+      `Not enough ${short[1]}.`,
+      `This curve is priced in ${short[1]}, and your wallet is short for this size. Buy some first, or lower the amount.`,
+    ];
+  }
   if (t.includes("0x177e") || t.includes("6014")) {
     return [
       "The route needs rebuilding.",
