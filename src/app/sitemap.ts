@@ -1,26 +1,22 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/brand";
 import { listTokens } from "@/lib/db";
-import { listPools } from "@/lib/dbc-db";
+import { curvesOverview } from "@/lib/curves";
 
 // Built per request: the stock list lives in the collector's database.
 export const dynamic = "force-dynamic";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pages whose numbers move with the market can honestly say "just now";
   // the explainers cannot, so they carry no date at all rather than a
   // fresh one on every fetch.
   const now = new Date();
-  const tokens = listTokens();
-  const stocks = [...new Set(tokens.map((t) => t.underlying))].sort();
-  const underlyingOf = new Map(tokens.map((t) => [t.mint, t.underlying]));
-  const withCurves = [
-    ...new Set(
-      listPools()
-        .map((p) => underlyingOf.get(p.quote_mint))
-        .filter((u): u is string => Boolean(u)),
-    ),
-  ].sort();
+  const stocks = [...new Set(listTokens().map((t) => t.underlying))].sort();
+  // The same source the curve pages read, so we never list one that 404s:
+  // a stock whose only pools are hidden has no page.
+  const withCurves = (await curvesOverview()).stocks
+    .map((s) => s.underlying)
+    .sort();
 
   return [
     {
