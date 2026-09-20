@@ -229,6 +229,13 @@ export type PreIpoCompany = PreIpoRow & {
   candles: { ts: number; close: number }[];
   /** Premium against the mark over the last two days, bucketed. */
   premiumHistory: { ts: number; premiumPct: number }[];
+  /** Where today sits in that window, so a number has a scale to be read on. */
+  premiumRange: {
+    low: number;
+    high: number;
+    avg: number;
+    hours: number;
+  } | null;
   structure: string;
   issuerUrl: string;
   /** The other companies, for moving on without going back. */
@@ -249,12 +256,30 @@ export async function getPreIpoCompany(
     close: c.close,
   }));
   const issuer = ISSUERS[row.issuer];
+  // Fifteen-minute buckets, the same shape the gap chart uses for stocks.
+  const premiumHistory = premiumSeries(
+    row.mint,
+    now - 48 * 3600_000,
+    15 * 60_000,
+  );
+  const seen = premiumHistory.map((p) => p.premiumPct);
   return {
     ...row,
     generatedAt: data.generatedAt,
     candles,
-    // Fifteen-minute buckets, the same shape the gap chart uses for stocks.
-    premiumHistory: premiumSeries(row.mint, now - 48 * 3600_000, 15 * 60_000),
+    premiumHistory,
+    premiumRange:
+      seen.length > 3
+        ? {
+            low: Math.min(...seen),
+            high: Math.max(...seen),
+            avg: seen.reduce((a, b) => a + b, 0) / seen.length,
+            hours:
+              (premiumHistory[premiumHistory.length - 1].ts -
+                premiumHistory[0].ts) /
+              3600_000,
+          }
+        : null,
     structure: issuer?.structure ?? "",
     issuerUrl: issuer?.url ?? "",
     others: data.rows

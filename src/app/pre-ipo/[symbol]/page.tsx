@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Building2,
+  Droplets,
+  Receipt,
+  ScrollText,
+  Timer,
+} from "lucide-react";
 import { getPreIpoCompany, TEST_USD, type PreIpoOther } from "@/lib/pre-ipo";
 import {
   formatAgo,
@@ -12,6 +20,8 @@ import {
   gapWords,
 } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
+import { MarkField } from "@/components/mark-field";
+import { PremiumSpark } from "@/components/premium-spark";
 import { PriceChart } from "@/components/price-chart";
 import { TradeCard } from "@/components/trade-card";
 import { GapChart } from "@/components/gap-chart";
@@ -68,7 +78,17 @@ export default async function PreIpoCompanyPage({ params }: Props) {
   const c = await getPreIpoCompany(symbol);
   if (!c) notFound();
   const now = Date.parse(c.generatedAt);
-  const cheaper = (c.premiumPct ?? 0) < 0;
+  const up = (c.premiumPct ?? 0) > 0;
+  const range = c.premiumRange;
+  // Where today sits in the window we have watched, in plain words.
+  const standing =
+    range && range.high - range.low > 0.2
+      ? (c.premiumPct ?? 0) >= range.high - (range.high - range.low) * 0.2
+        ? "the high end of what we have seen these two days"
+        : (c.premiumPct ?? 0) <= range.low + (range.high - range.low) * 0.2
+          ? "the low end of what we have seen these two days"
+          : "the middle of what we have seen these two days"
+      : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -80,10 +100,11 @@ export default async function PreIpoCompanyPage({ params }: Props) {
         Pre-IPO
       </Link>
 
-      {/* Who the company is, what the market pays, and the way in */}
-      <section className="card-dark overflow-hidden p-6 sm:p-8">
-        <div className="grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-7">
+      {/* The company on the left, the way in on the right */}
+      <div className="grid gap-5 lg:grid-cols-12">
+        <section className="card-dark relative overflow-hidden p-6 sm:p-8 lg:col-span-7">
+          <MarkField />
+          <div className="relative">
             <div className="flex items-center gap-3">
               <TickerBadge symbol={c.symbol} logo={c.logo} size={48} />
               <div className="min-w-0">
@@ -96,20 +117,21 @@ export default async function PreIpoCompanyPage({ params }: Props) {
               </div>
             </div>
 
-            <p className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {formatUsd(c.price)}{" "}
-              <span className={cheaper ? "text-blue-light" : "text-white/70"}>
-                {gapWords(c.premiumPct)}
-              </span>
+            <p
+              className={`mt-6 text-4xl font-semibold tracking-tight sm:text-5xl ${up ? "text-down" : "text-blue-light"}`}
+            >
+              {gapWords(c.premiumPct)}
             </p>
             <p className="text-on-dark-muted mt-1">
-              than {MARK} of {formatUsd(c.mark)} per token.{" "}
+              than {MARK}. The token trades at{" "}
+              <span className="text-white">{formatUsd(c.price)}</span> against a
+              mark of <span className="text-white">{formatUsd(c.mark)}</span>.{" "}
               {c.ageMs == null ? "" : `Last trade ${formatAgo(c.ageMs)}.`}
             </p>
 
             {/* The company itself, at both numbers */}
             {c.markValuation != null && (
-              <div className="mt-5 grid max-w-md grid-cols-2 gap-3">
+              <div className="mt-6 grid max-w-md grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-white/10 p-3">
                   <div className="text-on-dark-muted text-xs">
                     The market says
@@ -129,52 +151,100 @@ export default async function PreIpoCompanyPage({ params }: Props) {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
               <span className={`pill ${PILL[c.tradability]}`}>
                 {TRADABILITY_LABEL[c.tradability]}
               </span>
-              <span className="pill num bg-white/10 text-white">
-                {formatCompactUsd(c.liquidity)} in pools
+              <span className="pill bg-white/10 text-white">
+                trades around the clock
               </span>
-              {c.change24hPct != null && (
-                <span className="pill num bg-white/10 text-white">
-                  {formatPct(c.change24hPct, 1)} in 24h
-                </span>
-              )}
-              {c.impactPct != null && (
-                <span className="pill num bg-white/10 text-white">
-                  {formatUsd(TEST_USD, 0)} buy costs {c.impactPct.toFixed(2)}%
-                </span>
-              )}
             </div>
+
+            {c.premiumSpark.length > 2 && (
+              <div className="mt-6 text-white/70">
+                <PremiumSpark values={c.premiumSpark} strip />
+                <p className="text-on-dark-muted mt-1 text-xs">
+                  the premium over the last two days, against the dashed mark
+                </p>
+              </div>
+            )}
           </div>
-          <div className="lg:col-span-5">
-            <TradeCard
-              mint={c.mint}
-              symbol={c.symbol}
-              name={c.name}
-              logo={c.logo}
-              referencePhrase={MARK}
-              // A private company has no session; the wording behind "closed"
-              // is the careful one, which is the right one here.
-              phase="closed"
-              ageMs={c.ageMs}
-              liquidity={c.liquidity}
-              reference={c.mark}
-              price={c.price}
-              sessionless
-              disabled={c.tradability === "none"}
-            />
-          </div>
+        </section>
+
+        <div className="lg:col-span-5">
+          <TradeCard
+            mint={c.mint}
+            symbol={c.symbol}
+            name={c.name}
+            logo={c.logo}
+            referencePhrase={MARK}
+            // A private company has no session; the wording behind "closed"
+            // is the careful one, which is the right one here.
+            phase="closed"
+            ageMs={c.ageMs}
+            liquidity={c.liquidity}
+            reference={c.mark}
+            price={c.price}
+            sessionless
+            disabled={c.tradability === "none"}
+          />
         </div>
+      </div>
+
+      {/* The four things worth knowing before you press buy */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Fact
+          icon={<Receipt size={16} strokeWidth={1.75} />}
+          label="Cost to get in"
+          value={
+            c.impactPct == null ? "–" : `${c.impactPct.toFixed(2)}% impact`
+          }
+          detail={`on a ${formatUsd(TEST_USD, 0)} buy, from a live route`}
+          tone={c.impactPct != null && c.impactPct > 1 ? "text-warn" : ""}
+        />
+        <Fact
+          icon={<Droplets size={16} strokeWidth={1.75} />}
+          label="Depth"
+          value={formatCompactUsd(c.liquidity)}
+          detail="sitting in onchain pools right now"
+        />
+        <Fact
+          icon={<Timer size={16} strokeWidth={1.75} />}
+          label="Last trade"
+          value={c.ageMs == null ? "–" : formatAgo(c.ageMs)}
+          detail={
+            c.change24hPct == null
+              ? "onchain, around the clock"
+              : `${formatPct(c.change24hPct, 1)} over 24 hours`
+          }
+        />
+        <Fact
+          icon={<Building2 size={16} strokeWidth={1.75} />}
+          label="Premium, two days"
+          value={
+            range
+              ? `${range.low > 0 ? "+" : ""}${range.low.toFixed(1)}% to ${range.high > 0 ? "+" : ""}${range.high.toFixed(1)}%`
+              : "filling in"
+          }
+          detail={
+            standing
+              ? `today sits at ${standing}`
+              : "we started watching this one recently"
+          }
+        />
       </section>
 
       {/* What the company does, and what the token actually is */}
       <section className="grid gap-4 lg:grid-cols-12">
         {c.about && (
           <div className="card p-5 sm:p-6 lg:col-span-7">
-            <h3 className="font-semibold">What {c.name} does</h3>
-            <p className="text-muted mt-2 leading-relaxed">{c.about}</p>
+            <h3 className="flex items-center gap-2 font-semibold">
+              <span className="icon-badge h-7 w-7">
+                <Building2 size={14} strokeWidth={1.75} />
+              </span>
+              What {c.name} does
+            </h3>
+            <p className="text-muted mt-3 leading-relaxed">{c.about}</p>
             <a
               href={c.issuerPage ?? c.issuerUrl}
               target="_blank"
@@ -187,15 +257,25 @@ export default async function PreIpoCompanyPage({ params }: Props) {
           </div>
         )}
         <div className="card p-5 sm:p-6 lg:col-span-5">
-          <h3 className="font-semibold">What you are holding</h3>
-          <p className="text-muted mt-2 text-sm leading-relaxed">
+          <h3 className="flex items-center gap-2 font-semibold">
+            <span className="icon-badge h-7 w-7">
+              <ScrollText size={14} strokeWidth={1.75} />
+            </span>
+            What you are holding
+          </h3>
+          <p className="text-muted mt-3 text-sm leading-relaxed">
             {c.tokenNote ?? c.structure}
           </p>
-          <p className="text-muted mt-3 text-sm leading-relaxed">
-            No ownership, no voting, no dividend, no information rights, and no
-            guaranteed buyer. The mark is {c.issuerName}&apos;s own number for
-            the SPV, not an exchange price and not a valuation of ours.
-          </p>
+          <ul className="text-muted mt-3 space-y-1 text-sm">
+            <li>
+              No ownership, no voting, no dividend, no information rights.
+            </li>
+            <li>No guaranteed buyer when you want out.</li>
+            <li>
+              The mark is {c.issuerName}&apos;s own number, not an exchange
+              price and not a valuation of ours.
+            </li>
+          </ul>
         </div>
       </section>
 
@@ -208,8 +288,10 @@ export default async function PreIpoCompanyPage({ params }: Props) {
           </span>
         </div>
         <p className="text-muted mt-1 max-w-2xl text-sm">
-          How far the onchain price sat from {MARK}. Blue means the market paid
-          less than the issuer&apos;s mark, red means more.
+          How far the onchain price sat from {MARK}.{" "}
+          <span className="text-blue">Blue</span> means the market paid less
+          than the issuer&apos;s mark, <span className="text-down">red</span>{" "}
+          means more.
         </p>
         <div className="mt-3">
           <GapChart
@@ -249,6 +331,39 @@ export default async function PreIpoCompanyPage({ params }: Props) {
             ))}
           </ul>
         </section>
+      )}
+    </div>
+  );
+}
+
+function Fact({
+  icon,
+  label,
+  value,
+  detail,
+  tone = "",
+  pill,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  tone?: string;
+  pill?: string;
+}) {
+  return (
+    <div className="card flex flex-col gap-1 p-4">
+      <div className="text-muted flex items-center gap-2 text-xs font-medium">
+        <span className="icon-badge h-6 w-6">{icon}</span>
+        {label}
+      </div>
+      <div className={`num text-lg leading-tight font-semibold ${tone}`}>
+        {value}
+      </div>
+      {pill ? (
+        <span className={`pill mt-1 w-fit ${pill}`}>{detail}</span>
+      ) : (
+        <div className="text-muted text-xs">{detail}</div>
       )}
     </div>
   );
