@@ -15,6 +15,7 @@ import {
   Rocket,
   ChevronsLeft,
   ChevronsRight,
+  ChevronUp,
   Search,
 } from "lucide-react";
 import { Logo, LogoMark } from "./logo";
@@ -29,8 +30,20 @@ const WalletNavLink = dynamic(
   { ssr: false },
 );
 
+/**
+ * The phone shows four of these and hides the rest behind a chevron. Six
+ * across a 320px row left every label cramped, and a second row that opens
+ * on demand costs nothing until someone wants it.
+ */
 const NAV = [
-  { href: "/", label: "Overview", icon: Home, match: (p: string) => p === "/" },
+  {
+    href: "/",
+    label: "Overview",
+    /** Short enough for a tab. */
+    short: "Home",
+    icon: Home,
+    match: (p: string) => p === "/",
+  },
   {
     href: "/stocks",
     label: "Stocks",
@@ -42,29 +55,57 @@ const NAV = [
     label: "Earnings",
     icon: CalendarDays,
     match: (p: string) => p.startsWith("/earnings"),
+    more: true,
   },
   {
     href: "/pre-ipo",
     label: "Pre-IPO",
     icon: Rocket,
     match: (p: string) => p.startsWith("/pre-ipo"),
-    phone: false,
   },
   {
     href: "/curves",
     label: "Curves",
     icon: Orbit,
     match: (p: string) => p.startsWith("/curves"),
+    more: true,
   },
-  // Not in the phone tab bar: five tabs fill that row, and the wallet takes the fifth.
   {
     href: "/how",
     label: "How it works",
+    short: "How",
     icon: BookOpen,
     match: (p: string) => p.startsWith("/how"),
-    phone: false,
+    more: true,
   },
 ];
+
+function TabLink({
+  n,
+  active,
+  pillTarget,
+}: {
+  n: (typeof NAV)[number];
+  active: boolean;
+  pillTarget: boolean;
+}) {
+  return (
+    <Link
+      href={n.href}
+      className={`flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium ${
+        active ? "text-ink" : "text-muted"
+      }`}
+    >
+      <span
+        data-pill-target={pillTarget ? n.href : undefined}
+        className={`icon-badge relative z-[1] h-8 w-8 ${active && pillTarget ? "border-transparent bg-transparent text-white" : ""}`}
+      >
+        <n.icon size={16} strokeWidth={1.75} />
+      </span>
+      <span className="max-w-full truncate">{n.short ?? n.label}</span>
+    </Link>
+  );
+}
 
 const TITLES: [(p: string) => boolean, string][] = [
   [(p) => p === "/", "Overview"],
@@ -102,7 +143,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const activeTab =
     NAV.find((n) => n.match(pathname))?.href ??
     (pathname.startsWith("/wallet") ? "/wallet" : null);
-  const { bar: tabBarRef, pill: tabPillRef } = useSlidingPill(activeTab);
+  const [moreTouched, setMoreTouched] = useState<boolean | null>(null);
+  const activeInMore = NAV.some((n) => n.more && n.match(pathname));
+  const moreOpen = moreTouched ?? activeInMore;
+  const { bar: tabBarRef, pill: tabPillRef } = useSlidingPill(activeTab, [
+    moreOpen,
+  ]);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-[1440px]">
@@ -194,33 +240,50 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <SiteFooter />
       </div>
 
-      {/* Bottom bar (phones) */}
+      {/* Bottom bar (phones): four tabs, and a chevron for the rest */}
       <nav
         ref={tabBarRef}
-        className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-line bg-card/95 px-1 py-2 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 px-0.5 py-2 backdrop-blur lg:hidden"
       >
         <span ref={tabPillRef} className="t-tabbar-pill" aria-hidden="true" />
-        {NAV.filter((n) => n.phone !== false).map((n) => {
-          const active = n.match(pathname);
-          return (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium ${
-                active ? "text-ink" : "text-muted"
-              }`}
-            >
-              <span
-                data-pill-target={n.href}
-                className={`icon-badge relative z-[1] h-8 w-8 ${active ? "border-transparent bg-transparent text-white" : ""}`}
-              >
-                <n.icon size={16} strokeWidth={1.75} />
-              </span>
-              {n.label}
-            </Link>
-          );
-        })}
-        <WalletNavLink variant="tab" pathname={pathname} />
+        <div className="tab-more" data-open={moreOpen}>
+          <div>
+            <div className="flex justify-around pb-2">
+              {NAV.filter((n) => n.more).map((n) => (
+                <TabLink
+                  key={n.href}
+                  n={n}
+                  active={n.match(pathname)}
+                  // Collapsed, this row has no height, so it must not be
+                  // something the pill can try to sit on.
+                  pillTarget={moreOpen}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-around">
+          {NAV.filter((n) => !n.more).map((n) => (
+            <TabLink key={n.href} n={n} active={n.match(pathname)} pillTarget />
+          ))}
+          <WalletNavLink variant="tab" pathname={pathname} />
+          <button
+            type="button"
+            onClick={() => setMoreTouched(!moreOpen)}
+            aria-expanded={moreOpen}
+            aria-label={moreOpen ? "Fewer tabs" : "More tabs"}
+            className="text-muted hover:text-ink flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium"
+          >
+            <span className="icon-badge relative z-[1] h-8 w-8">
+              <ChevronUp
+                size={16}
+                strokeWidth={2}
+                className={`transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+            {moreOpen ? "Less" : "More"}
+          </button>
+        </div>
       </nav>
     </div>
   );

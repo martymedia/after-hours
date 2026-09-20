@@ -50,7 +50,7 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
       );
       return (
         <ConnectButton
-          className="text-muted flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium"
+          className="text-muted flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium"
           label={tabLabel}
           noWalletLabel={tabLabel}
         />
@@ -104,7 +104,7 @@ export function WalletNavLink({ variant, expanded = true, pathname }: Props) {
     return (
       <Link
         href="/wallet"
-        className={`flex flex-col items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-medium ${active ? "text-ink" : "text-muted"}`}
+        className={`flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium ${active ? "text-ink" : "text-muted"}`}
       >
         <span
           data-pill-target="/wallet"

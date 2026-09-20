@@ -604,6 +604,26 @@
     opacity: 1;
   }
 }
+/* The second tab row slides open. Animating grid-template-rows from 0fr to
+   1fr is the one way to do this without hard-coding a height, and the inner
+   wrapper is what actually clips. */
+.tab-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms var(--ease-smooth-out);
+}
+.tab-more[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.tab-more > div {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-more {
+    transition: none;
+  }
+}
+
 /* A phone animates two paths and no lights. The layer it loses is the
    slowest and widest one, which is the least visible and the most expensive. */
 @media (max-width: 639px) {
