@@ -3,6 +3,7 @@
 // curve page and, in its compact form, inside the stock cards.
 
 import type { CurvePool } from "@/lib/curves";
+import { solscanAccount, solscanToken } from "@/lib/solscan";
 import { formatUsd } from "@/lib/format";
 import { CurvePoolActions } from "./curve-trade";
 import { PoolAvatar } from "./pool-avatar";
@@ -121,14 +122,28 @@ export function PoolRow({
         </span>
       </span>
       <span className="col-span-2 flex items-center justify-end gap-3 sm:col-span-1">
-        <a
-          href={`https://solscan.io/account/${p.pool}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-muted-2 hover:text-ink text-xs"
-        >
-          Solscan
-        </a>
+        {/* Verification belongs on a phone too, so this does not hide. */}
+        <span className="text-muted-2 whitespace-nowrap text-xs">
+          <a
+            href={solscanToken(p.baseMint)}
+            target="_blank"
+            rel="noreferrer"
+            title={`${p.baseMint} on Solscan`}
+            className="hover:text-ink"
+          >
+            Token
+          </a>
+          {" · "}
+          <a
+            href={solscanAccount(p.pool)}
+            target="_blank"
+            rel="noreferrer"
+            title={`${p.pool} on Solscan`}
+            className="hover:text-ink"
+          >
+            Pool
+          </a>
+        </span>
         {stock && (
           <CurvePoolActions
             pool={p.pool}

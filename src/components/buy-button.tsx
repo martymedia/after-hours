@@ -4,6 +4,7 @@
 // Connecting lives in wallet-connect.tsx and is shared with the Wallet page.
 
 import { useState } from "react";
+import { solscanTx } from "@/lib/solscan";
 import {
   getBase58Decoder,
   getBase64EncodedWireTransaction,
@@ -212,7 +213,7 @@ export function BuyButton({
           </div>
         </div>
         <a
-          href={`https://solscan.io/tx/${result.signature}`}
+          href={solscanTx(result.signature)}
           target="_blank"
           rel="noreferrer"
           className="btn btn-sm mt-4 w-full border border-line bg-card text-ink hover:bg-soft"
@@ -274,7 +275,7 @@ export function BuyButton({
         </dl>
         <div className="mt-4 flex gap-2">
           <a
-            href={`https://solscan.io/tx/${result.signature}`}
+            href={solscanTx(result.signature)}
             target="_blank"
             rel="noreferrer"
             className="btn btn-white btn-sm flex-1"

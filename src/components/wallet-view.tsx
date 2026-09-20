@@ -5,6 +5,8 @@
 // Street's last print at the time, and the recent swaps with explorer links.
 
 import dynamic from "next/dynamic";
+import { MintLink } from "@/components/mint-link";
+import { solscanAccount, solscanTx } from "@/lib/solscan";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -293,7 +295,7 @@ export function WalletView({ address }: { address?: string }) {
             />
           </button>
           <a
-            href={`https://solscan.io/account/${owner}`}
+            href={solscanAccount(owner)}
             target="_blank"
             rel="noreferrer"
             className="btn btn-sm border border-line bg-card text-ink hover:bg-soft"
@@ -603,7 +605,7 @@ export function WalletView({ address }: { address?: string }) {
                     </span>
                   )}
                   <a
-                    href={`https://solscan.io/tx/${a.signature}`}
+                    href={solscanTx(a.signature)}
                     target="_blank"
                     rel="noreferrer"
                     className="group flex min-w-0 flex-1 items-center gap-3 py-3 pl-2 transition hover:opacity-80"
@@ -796,6 +798,7 @@ function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
           </span>
         </span>
       </Link>
+      <MintLink mint={h.mint} label="Token" className="shrink-0 text-xs" />
       {onSell && (
         <button
           type="button"

@@ -5,6 +5,7 @@
 // the trading fees waiting to be claimed sit on the same tile.
 
 import Link from "next/link";
+import { MintLink } from "@/components/mint-link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { CreatorCurve } from "@/lib/curve-trade";
@@ -167,6 +168,12 @@ export function YourCurves({ owner }: { owner: string }) {
                   <div className="mt-2 grid gap-2">
                     <CopyField label="Pool" value={c.pool} dark />
                     <CopyField label="Token mint" value={c.baseMint} dark />
+                    <MintLink
+                      mint={c.baseMint}
+                      label="Open the token on Solscan"
+                      dark
+                      className="text-xs"
+                    />
                   </div>
                 </details>
               </li>

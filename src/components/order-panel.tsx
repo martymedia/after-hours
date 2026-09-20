@@ -7,6 +7,7 @@
 // a modal, which owns the header.
 
 import dynamic from "next/dynamic";
+import { solscanTx } from "@/lib/solscan";
 import { useEffect, useState } from "react";
 import {
   getBase58Decoder,
@@ -286,7 +287,7 @@ export function OrderPanel({
             See open orders
           </Link>
           <a
-            href={`https://solscan.io/tx/${placed.signature}`}
+            href={solscanTx(placed.signature)}
             target="_blank"
             rel="noreferrer"
             className="btn btn-sm flex-1 border border-white/20 bg-transparent hover:bg-white/10"

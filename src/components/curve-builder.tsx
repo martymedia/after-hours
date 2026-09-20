@@ -5,6 +5,7 @@
 // else folds away. The preview runs the SDK's validation on the server.
 
 import dynamic from "next/dynamic";
+import { solscanTx } from "@/lib/solscan";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -274,7 +275,7 @@ export function CurveBuilder({
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <a
-            href={`https://solscan.io/tx/${created.signature}`}
+            href={solscanTx(created.signature)}
             target="_blank"
             rel="noreferrer"
             className="btn btn-white btn-sm"

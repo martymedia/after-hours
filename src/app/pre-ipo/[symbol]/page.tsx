@@ -24,6 +24,7 @@ import { companyStories } from "@/lib/hn";
 import { CompanyStories } from "@/components/company-stories";
 import { LogoMark } from "@/components/logo-mark";
 import { MarkField } from "@/components/mark-field";
+import { MintLink } from "@/components/mint-link";
 import { PremiumSpark } from "@/components/premium-spark";
 import { PriceChart } from "@/components/price-chart";
 import { TradeCard } from "@/components/trade-card";
@@ -115,8 +116,12 @@ export default async function PreIpoCompanyPage({ params }: Props) {
                 <h2 className="truncate text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">
                   {c.name}
                 </h2>
-                <p className="text-on-dark-muted num text-sm">
-                  {c.symbol} · {c.issuerName} · private company
+                <p className="text-on-dark-muted num flex flex-wrap items-center gap-x-1.5 text-sm">
+                  <span>
+                    {c.symbol} · {c.issuerName} · private company
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <MintLink mint={c.mint} dark />
                 </p>
               </div>
             </div>

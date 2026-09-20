@@ -16,6 +16,7 @@ import { PriceChart } from "@/components/price-chart";
 import { TradeCard } from "@/components/trade-card";
 import { StatCard } from "@/components/stat-card";
 import { TickerBadge } from "@/components/ticker-badge";
+import { MintLink } from "@/components/mint-link";
 import { GapChart } from "@/components/gap-chart";
 import { Tip } from "@/components/tip";
 import { GapHistory } from "@/components/gap-history";
@@ -238,7 +239,8 @@ export default async function StockPage({ params }: Props) {
                       <div className="text-sm font-medium">{t.issuerName}</div>
                       <div className="text-muted text-xs">
                         {t.symbol} ·{" "}
-                        <Tip text={t.structure}>{t.structureShort}</Tip>
+                        <Tip text={t.structure}>{t.structureShort}</Tip> ·{" "}
+                        <MintLink mint={t.mint} />
                       </div>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { solscanTx } from "@/lib/solscan";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
@@ -135,7 +136,7 @@ export default async function TradePage({ params, searchParams }: Props) {
           {t.kind === "bought" ? `Buy ${t.symbol} too` : `See ${t.symbol}`}
         </Link>
         <a
-          href={`https://solscan.io/tx/${t.signature}`}
+          href={solscanTx(t.signature)}
           target="_blank"
           rel="noreferrer"
           className="btn w-full border border-line bg-card text-ink hover:bg-soft"

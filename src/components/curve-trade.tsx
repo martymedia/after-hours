@@ -6,6 +6,7 @@
 // built server-side and signed in the user's wallet.
 
 import dynamic from "next/dynamic";
+import { solscanTx } from "@/lib/solscan";
 import Link from "next/link";
 import { ArrowLeft, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -402,7 +403,7 @@ function TradeModal(props: PoolActionProps & { onClose: () => void }) {
           </div>
           <div className="mt-4 flex gap-2">
             <a
-              href={`https://solscan.io/tx/${done.signature}`}
+              href={solscanTx(done.signature)}
               target="_blank"
               rel="noreferrer"
               className="btn btn-white btn-sm flex-1"
