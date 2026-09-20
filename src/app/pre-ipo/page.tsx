@@ -25,6 +25,22 @@ export function premiumWords(pct: number | null): string {
   return `${Math.abs(pct).toFixed(1)}% ${pct > 0 ? "above" : "below"} the mark`;
 }
 
+/**
+ * The opening of the issuer's blurb, cut at a sentence end. A clamp alone
+ * put an ellipsis mid-sentence on every one of the eight cards, which reads
+ * as a bug rather than as a summary.
+ */
+function lead(about: string, max = 165): string {
+  const sentences = about.match(/[^.!?]+[.!?]+\s*/g);
+  if (!sentences) return about;
+  let out = "";
+  for (const s of sentences) {
+    if (out && (out + s).trim().length > max) break;
+    out += s;
+  }
+  return (out || sentences[0]).trim();
+}
+
 export default async function PreIpoPage() {
   const data = await getPreIpo();
   const t = data.totals;
@@ -132,19 +148,28 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
       </div>
 
       {/* What the market is doing, in words */}
-      <div className="relative flex flex-1 flex-col gap-2 overflow-hidden p-5">
+      <div className="relative flex flex-1 flex-col gap-2.5 overflow-hidden p-5">
         <LogoMark
           logo={r.logo}
           size={150}
           opacity={0.05}
           className="-right-6 -bottom-6"
         />
-        <div
-          className={`num relative text-3xl leading-none font-semibold ${gapTone(r.premiumPct)}`}
-        >
-          {premiumWords(r.premiumPct)}
+        {r.about && (
+          <p className="relative line-clamp-4 text-sm leading-relaxed">
+            {lead(r.about)}
+          </p>
+        )}
+
+        <div className="border-line relative mt-auto border-t pt-3">
+          <p className="label-micro text-muted-2">Against the mark</p>
+          <div
+            className={`num mt-1 text-xl leading-none font-semibold ${gapTone(r.premiumPct)}`}
+          >
+            {premiumWords(r.premiumPct)}
+          </div>
         </div>
-        <p className="text-muted relative flex-1 text-sm leading-relaxed">
+        <p className="text-muted relative text-sm leading-relaxed">
           {known ? (
             <>
               Buyers are paying{" "}

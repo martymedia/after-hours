@@ -1,6 +1,11 @@
-// Gap radar: onchain price versus the reference over the last 48 hours as
-// bars around a zero line. Blue above (onchain higher), grey below.
+"use client";
 
+// Gap radar: onchain price versus the reference over the last 48 hours as
+// bars around a zero line. Red above (onchain higher), blue below. Pointing
+// at a bar reads out the hour it covers and what the gap was then, because
+// "on average 26% over two days" hides every hour that was not average.
+
+import { useState } from "react";
 import type { GapPoint } from "@/lib/stock-types";
 import { gapSentence, gapTone, gapWords } from "@/lib/format";
 
@@ -14,6 +19,13 @@ const timeLabel = new Intl.DateTimeFormat("en-US", {
   hour: "numeric",
 });
 
+const readoutLabel = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  weekday: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
 export function GapChart({
   series,
   referencePhrase,
@@ -23,6 +35,7 @@ export function GapChart({
   referencePhrase: string;
   dark?: boolean;
 }) {
+  const [hover, setHover] = useState<GapPoint | null>(null);
   const axis = dark ? "rgba(255,255,255,0.22)" : "var(--line)";
   const label = dark ? "var(--on-dark-muted)" : "var(--muted)";
   if (series.length < 4) {
@@ -45,13 +58,40 @@ export function GapChart({
   const avg = series.reduce((a, p) => a + p.gapPct, 0) / series.length;
   const ticks = [series[0], series[Math.floor(series.length / 2)], last];
 
+  function pick(target: SVGSVGElement, clientX: number) {
+    const rect = target.getBoundingClientRect();
+    const px = ((clientX - rect.left) / rect.width) * W;
+    const ts =
+      from + ((px - PAD.left) / (W - PAD.left - PAD.right)) * (to - from);
+    let best = series[0];
+    for (const p of series)
+      if (Math.abs(p.ts - ts) < Math.abs(best.ts - ts)) best = p;
+    setHover(best);
+  }
+  // A finger gets the same readout as a pointer, and it stays after lifting.
+  const onTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    const t = e.touches[0];
+    if (t) pick(e.currentTarget, t.clientX);
+  };
+
+  // Near the right edge the card would hang off the chart, so it flips.
+  const flip = hover ? x(hover.ts) > W * 0.6 : false;
+  const box = { w: 166, h: 42 };
+  const card = dark ? "#ffffff" : "var(--ink)";
+  const cardInk = dark ? "var(--ink)" : "#ffffff";
+  const cardMuted = dark ? "var(--muted)" : "rgba(255,255,255,0.65)";
+
   return (
     <div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full"
+        className="h-auto w-full cursor-crosshair touch-pan-y"
         role="img"
         aria-label="Gap between onchain and reference price"
+        onMouseMove={(e) => pick(e.currentTarget, e.clientX)}
+        onMouseLeave={() => setHover(null)}
+        onTouchStart={onTouch}
+        onTouchMove={onTouch}
       >
         <line
           x1={PAD.left}
@@ -72,6 +112,7 @@ export function GapChart({
               height={Math.max(1, h)}
               rx={1}
               fill={up ? "var(--down)" : "var(--blue)"}
+              opacity={hover && hover.ts !== p.ts ? 0.4 : 1}
             />
           );
         })}
@@ -98,6 +139,37 @@ export function GapChart({
             {timeLabel.format(new Date(t.ts))}
           </text>
         ))}
+
+        {hover && (
+          <g>
+            <line
+              x1={x(hover.ts)}
+              x2={x(hover.ts)}
+              y1={PAD.top}
+              y2={H - PAD.bottom}
+              stroke={axis}
+            />
+            <circle
+              cx={x(hover.ts)}
+              cy={zero - hover.gapPct * scale}
+              r="3.5"
+              fill={hover.gapPct >= 0 ? "var(--down)" : "var(--blue)"}
+              stroke={dark ? "var(--ink)" : "#ffffff"}
+              strokeWidth="1.5"
+            />
+            <g
+              transform={`translate(${flip ? x(hover.ts) - box.w - 8 : x(hover.ts) + 8}, ${PAD.top})`}
+            >
+              <rect width={box.w} height={box.h} rx="12" fill={card} />
+              <text x="11" y="17" fontSize="11" fill={cardMuted}>
+                {readoutLabel.format(new Date(hover.ts))} ET
+              </text>
+              <text x="11" y="32" fontSize="12.5" fontWeight="600" fill={cardInk}>
+                {gapWords(hover.gapPct)}
+              </text>
+            </g>
+          </g>
+        )}
       </svg>
       <p
         className={`mt-2 text-sm ${dark ? "text-on-dark-muted" : "text-muted"}`}
@@ -108,7 +180,7 @@ export function GapChart({
         </span>
         ; on average{" "}
         <span className={`num ${gapTone(avg)}`}>{gapWords(avg)}</span> over the
-        last two days.
+        last two days. Point at a bar for that hour on its own.
       </p>
     </div>
   );
