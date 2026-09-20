@@ -490,7 +490,7 @@ export function WalletView({ address }: { address?: string }) {
           index={3}
           icon={ArrowUpRight}
           label="Best position"
-          href={best ? `/stock/${best.underlying}` : undefined}
+          href={best ? pageFor(best) : undefined}
           value={best ? best.name : "–"}
           detail={
             best ? (
@@ -511,7 +511,7 @@ export function WalletView({ address }: { address?: string }) {
           index={4}
           icon={CalendarDays}
           label="Next report"
-          href={nextReport ? `/stock/${nextReport.underlying}` : "/earnings"}
+          href={nextReport ? pageFor(nextReport) : "/earnings"}
           value={nextReport ? nextReport.name : "–"}
           detail={
             nextReport && nextReport.nextEarnings
@@ -593,7 +593,7 @@ export function WalletView({ address }: { address?: string }) {
                 >
                   {a.underlying ? (
                     <Link
-                      href={`/stock/${a.underlying}`}
+                      href={pageFor(a)}
                       className="shrink-0 py-3 transition hover:opacity-80"
                       aria-label={`${a.name} stock page`}
                     >
@@ -652,8 +652,8 @@ export function WalletView({ address }: { address?: string }) {
                             {" · "}
                             <span className={gapTone(a.vsRefPct)}>
                               {gapWords(a.vsRefPct) === "in line"
-                                ? "in line with Wall Street"
-                                : `${gapWords(a.vsRefPct)} than Wall Street`}
+                                ? `in line with ${referenceWords(a.preIpo)}`
+                                : `${gapWords(a.vsRefPct)} than ${referenceWords(a.preIpo)}`}
                             </span>
                           </>
                         )}
@@ -757,6 +757,14 @@ function HeroStat({
   );
 }
 
+/** Where a token's own page lives. A private company was never listed. */
+const pageFor = (t: { preIpo: boolean; underlying: string }) =>
+  t.preIpo ? `/pre-ipo/${t.underlying}` : `/stock/${t.underlying}`;
+
+/** What the price at the time is being compared against, in words. */
+const referenceWords = (preIpo: boolean) =>
+  preIpo ? "the mark" : "Wall Street";
+
 function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
   const tone =
     h.unrealized == null
@@ -767,7 +775,7 @@ function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
   return (
     <li className="flex items-center gap-2">
       <Link
-        href={`/stock/${h.underlying}`}
+        href={pageFor(h)}
         className="flex min-w-0 flex-1 items-center gap-3 py-3 transition hover:opacity-80"
       >
         <TickerBadge symbol={h.symbol} logo={h.logo} size={40} />

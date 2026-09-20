@@ -18,6 +18,12 @@ export type JupiterSearchToken = {
   stats24h?: { priceChange?: number; buyVolume?: number; sellVolume?: number };
 };
 
+export type ScaledUiConfig = {
+  multiplier: number;
+  newMultiplier?: number;
+  newMultiplierEffectiveAt?: string;
+};
+
 export type JupiterPrice = {
   usdPrice?: number;
   liquidity?: number;
@@ -25,11 +31,7 @@ export type JupiterPrice = {
   decimals?: number;
   priceChange24h?: number;
   stockData?: { id: string; price: number; mcap?: number; updatedAt: string };
-  scaledUiConfig?: {
-    multiplier: number;
-    newMultiplier?: number;
-    newMultiplierEffectiveAt?: string;
-  };
+  scaledUiConfig?: ScaledUiConfig;
 };
 
 /**
@@ -39,24 +41,25 @@ export type JupiterPrice = {
  * makes "sell all" ask for more raw units than the wallet holds (error 0x1788).
  */
 export function effectiveMultiplier(
-  price:
-    | {
-        scaledUiConfig?: {
-          multiplier: number;
-          newMultiplier?: number;
-          newMultiplierEffectiveAt?: string;
-        };
-      }
-    | undefined,
+  price: { scaledUiConfig?: ScaledUiConfig } | undefined,
+  /** The moment to read it as of; a past trade needs the rate it was made under. */
+  asOf: number = Date.now(),
 ): number {
-  const c = price?.scaledUiConfig;
-  if (!c) return 1;
-  const at = c.newMultiplierEffectiveAt
-    ? Date.parse(c.newMultiplierEffectiveAt)
+  return multiplierOf(price?.scaledUiConfig, asOf);
+}
+
+/** The same rule, for a config read back out of the database. */
+export function multiplierOf(
+  config: ScaledUiConfig | null | undefined,
+  asOf: number = Date.now(),
+): number {
+  if (!config) return 1;
+  const at = config.newMultiplierEffectiveAt
+    ? Date.parse(config.newMultiplierEffectiveAt)
     : NaN;
-  if (c.newMultiplier && Number.isFinite(at) && at <= Date.now())
-    return c.newMultiplier;
-  return c.multiplier ?? 1;
+  if (config.newMultiplier && Number.isFinite(at) && at <= asOf)
+    return config.newMultiplier;
+  return config.multiplier ?? 1;
 }
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {

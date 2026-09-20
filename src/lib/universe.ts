@@ -28,6 +28,12 @@ export type UniverseToken = {
   issuer: IssuerId;
   decimals: number;
   logo: string | null;
+  /**
+   * Jupiter's scaledUiConfig as JSON. A mint with this extension reports a
+   * raw amount on chain that has to be multiplied to reach the units its
+   * price is quoted in, and every xStock plus some PreStocks use it.
+   */
+  scaled_ui: string | null;
   liquidity: number;
 };
 
@@ -148,6 +154,7 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
       issuer: "xstocks",
       decimals: p.decimals ?? 8,
       logo: asset.logo ?? null,
+      scaled_ui: p.scaledUiConfig ? JSON.stringify(p.scaledUiConfig) : null,
       liquidity: p.liquidity ?? 0,
     });
   }
@@ -171,6 +178,9 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
           issuer: "prestocks",
           decimals: price.decimals ?? 9,
           logo: a.image ?? null,
+          scaled_ui: price.scaledUiConfig
+            ? JSON.stringify(price.scaledUiConfig)
+            : null,
           liquidity: price.liquidity ?? 0,
         });
       }
@@ -202,9 +212,29 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
           issuer: issuerId,
           decimals: t.decimals,
           logo: t.icon ?? null,
+          scaled_ui: null,
           liquidity: t.liquidity ?? 0,
         });
       }
+    }
+  }
+
+  // 3b. Anything that arrived without a scaled-UI config gets one from the
+  //     price feed, which is the only place that reports it. Getting this
+  //     wrong misprices a whole position, so it is worth the extra call.
+  const missing = [...byMint.values()]
+    .filter((t) => t.scaled_ui === null)
+    .map((t) => t.mint);
+  if (missing.length > 0) {
+    try {
+      const prices = await getPrices(missing);
+      for (const mint of missing) {
+        const config = prices[mint]?.scaledUiConfig;
+        if (config) byMint.get(mint)!.scaled_ui = JSON.stringify(config);
+      }
+    } catch {
+      // A mint left without a config is read as multiplier 1, which is what
+      // it was before this existed.
     }
   }
 

@@ -73,6 +73,10 @@ export function getDb(): DatabaseSync {
   }[];
   if (!cols.some((c) => c.name === "logo"))
     db.exec("ALTER TABLE tokens ADD COLUMN logo TEXT");
+  // Additive migration: the scaled-UI config, so a raw chain amount can be
+  // turned into the units every price on this site is quoted in.
+  if (!cols.some((c) => c.name === "scaled_ui"))
+    db.exec("ALTER TABLE tokens ADD COLUMN scaled_ui TEXT");
   return db;
 }
 
@@ -84,6 +88,8 @@ export type TokenRow = {
   issuer: string;
   decimals: number;
   logo: string | null;
+  /** Jupiter's scaledUiConfig as JSON, or null for a plain mint. */
+  scaled_ui: string | null;
   active: number;
   updated_at: number;
 };
@@ -115,11 +121,12 @@ export function upsertTokens(
   const d = getDb();
   const now = Date.now();
   const stmt = d.prepare(`
-    INSERT INTO tokens (mint, symbol, name, underlying, issuer, decimals, logo, active, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+    INSERT INTO tokens (mint, symbol, name, underlying, issuer, decimals, logo, scaled_ui, active, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     ON CONFLICT(mint) DO UPDATE SET
       symbol = excluded.symbol, name = excluded.name, underlying = excluded.underlying,
-      issuer = excluded.issuer, decimals = excluded.decimals, logo = excluded.logo, active = 1,
+      issuer = excluded.issuer, decimals = excluded.decimals, logo = excluded.logo,
+      scaled_ui = excluded.scaled_ui, active = 1,
       updated_at = excluded.updated_at
   `);
   d.exec("BEGIN");
@@ -133,6 +140,7 @@ export function upsertTokens(
         r.issuer,
         r.decimals,
         r.logo,
+        r.scaled_ui,
         now,
       );
     }

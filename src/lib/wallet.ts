@@ -13,8 +13,8 @@ import {
   sparkSeries,
   type TokenRow,
 } from "./db.ts";
-import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { USDC_MINT } from "./jupiter.ts";
+import { ISSUERS, isPreIpo, type IssuerId } from "./issuers.ts";
+import { multiplierOf, USDC_MINT, type ScaledUiConfig } from "./jupiter.ts";
 import { nyYmd } from "./market-phase.ts";
 import { SITE_URL } from "./brand.ts";
 import { getRadar } from "./radar.ts";
@@ -47,6 +47,8 @@ export type Holding = {
   underlying: string;
   issuer: IssuerId;
   issuerName: string;
+  /** A private company: it lives under /pre-ipo and has no closing bell. */
+  preIpo: boolean;
   logo: string | null;
   amount: number;
   price: number | null;
@@ -82,15 +84,19 @@ export type Activity = {
   symbol: string;
   name: string;
   underlying: string;
+  preIpo: boolean;
   logo: string | null;
   amount: number;
   /** USDC that changed hands in the same transaction, if any. */
   usd: number | null;
   /** USDC per share in this swap. */
   perShare: number | null;
-  /** Reference (Wall Street) price at the time, from our snapshots. */
+  /**
+   * The reference at the time, from our snapshots: the last Wall Street print
+   * for a listed stock, the issuer's mark for a private company.
+   */
   refAtTime: number | null;
-  /** perShare vs refAtTime, percent. Negative: paid less than the last print. */
+  /** perShare vs refAtTime, percent. Negative: paid less than the reference. */
   vsRefPct: number | null;
   feeSol: number;
 };
@@ -363,24 +369,35 @@ export async function getWallet(
       orderStock.set(orderOwner, stock);
   }
 
+  // The rate that was in force when a given trade happened, not today's.
+  const scaled = new Map<string, ScaledUiConfig | null>();
+  for (const [mint, t] of tokens) {
+    let config: ScaledUiConfig | null = null;
+    try {
+      config = t.scaled_ui ? (JSON.parse(t.scaled_ui) as ScaledUiConfig) : null;
+    } catch {
+      // A malformed row means multiplier 1, which is the old behaviour.
+    }
+    scaled.set(mint, config);
+  }
+  const uiUnits = (mint: string, raw: number, at: number) =>
+    raw * multiplierOf(scaled.get(mint), at || Date.now());
+
   const activity: Activity[] = [];
   for (const { signature, tx } of txs) {
     if (!tx?.meta || tx.meta.err) continue;
-    const deltas = new Map<string, number>();
+    const ts = (tx.blockTime ?? 0) * 1000;
+    const raw = new Map<string, number>();
     for (const b of tx.meta.preTokenBalances)
       if (b.owner === owner)
-        deltas.set(
-          b.mint,
-          (deltas.get(b.mint) ?? 0) - (b.uiTokenAmount.uiAmount ?? 0),
-        );
+        raw.set(b.mint, (raw.get(b.mint) ?? 0) - (b.uiTokenAmount.uiAmount ?? 0));
     for (const b of tx.meta.postTokenBalances)
       if (b.owner === owner)
-        deltas.set(
-          b.mint,
-          (deltas.get(b.mint) ?? 0) + (b.uiTokenAmount.uiAmount ?? 0),
-        );
+        raw.set(b.mint, (raw.get(b.mint) ?? 0) + (b.uiTokenAmount.uiAmount ?? 0));
+    const deltas = new Map(
+      [...raw].map(([mint, d]) => [mint, uiUnits(mint, d, ts)]),
+    );
     const usdcDelta = deltas.get(USDC_MINT) ?? 0;
-    const ts = (tx.blockTime ?? 0) * 1000;
     // Limit-order fill: what the order account paid out (USDC on a buy, shares
     // on a sell) shows up as a decrease on accounts the wallet does not own.
     const fill = Boolean(
@@ -396,7 +413,7 @@ export async function getWallet(
       for (const b of tx.meta.preTokenBalances) {
         if (b.owner === owner) continue;
         const after = post.get(b.accountIndex)?.uiTokenAmount.uiAmount ?? 0;
-        const d = after - (b.uiTokenAmount.uiAmount ?? 0);
+        const d = uiUnits(b.mint, after - (b.uiTokenAmount.uiAmount ?? 0), ts);
         if (d < 0) paidOut.set(b.mint, (paidOut.get(b.mint) ?? 0) - d);
       }
     }
@@ -438,6 +455,7 @@ export async function getWallet(
         symbol: t.symbol,
         name: t.name,
         underlying: t.underlying,
+        preIpo: isPreIpo(t.issuer as IssuerId),
         logo: t.logo ?? null,
         amount,
         usd,
@@ -479,6 +497,7 @@ export async function getWallet(
         symbol: t?.symbol ?? "USDC",
         name: t?.name ?? "Limit order",
         underlying: t?.underlying ?? "",
+        preIpo: t ? isPreIpo(t.issuer as IssuerId) : false,
         logo: t?.logo ?? null,
         amount: Math.abs(usdcDelta),
         usd: Math.abs(usdcDelta),
@@ -505,6 +524,7 @@ export async function getWallet(
           symbol: t.symbol,
           name: t.name,
           underlying: t.underlying,
+          preIpo: isPreIpo(t.issuer as IssuerId),
           logo: t.logo ?? null,
           amount,
           usd: usdcDelta,
@@ -549,6 +569,7 @@ export async function getWallet(
       underlying: t.underlying,
       issuer: t.issuer as IssuerId,
       issuerName: ISSUERS[t.issuer as IssuerId]?.name ?? t.issuer,
+      preIpo: isPreIpo(t.issuer as IssuerId),
       logo: t.logo ?? null,
       amount,
       price,
