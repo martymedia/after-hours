@@ -576,10 +576,37 @@
 
 /* Pre-IPO panels: marks drawn faintly behind the words. */
 .mark-field {
-  opacity: 0.3;
+  opacity: 0.5;
+}
+/* One tile wide, which is exactly the period of every path in the field, so
+   the repeat has no seam. Each layer runs at its own speed, and that
+   difference is the whole illusion of depth. */
+.mf-drift {
+  animation: mf-drift linear infinite;
+  will-change: transform;
+}
+@keyframes mf-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-800px);
+  }
+}
+.mf-pulse {
+  animation: mf-pulse ease-in-out infinite alternate;
+}
+@keyframes mf-pulse {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mark-field circle {
-    display: none;
+  .mf-drift,
+  .mf-pulse {
+    animation: none;
   }
 }

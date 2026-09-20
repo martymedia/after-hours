@@ -9,6 +9,7 @@ import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
 import { getPreIpo } from "@/lib/pre-ipo";
 import { PremiumBars } from "@/components/premium-bars";
+import { PoweredBy } from "@/components/powered-by";
 import {
   formatDuration,
   formatPct,
@@ -248,8 +249,11 @@ export default async function OverviewPage() {
         <section className="card-dark order-4 overflow-hidden p-6 sm:p-8">
           <div className="grid items-center gap-8 lg:grid-cols-12">
             <div className="lg:col-span-5">
-              <p className="text-blue-light text-sm font-medium">Pre-IPO</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-blue-light text-sm font-medium">Pre-IPO</p>
+                <PoweredBy />
+              </div>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
                 Companies that never opened on an exchange trade here too.
               </h2>
               <p className="text-on-dark-muted mt-3 leading-relaxed">
