@@ -68,7 +68,6 @@ const NAV = [
     label: "Curves",
     icon: Orbit,
     match: (p: string) => p.startsWith("/curves"),
-    more: true,
   },
   {
     href: "/how",
