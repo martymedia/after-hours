@@ -9,9 +9,15 @@ const API = "https://hn.algolia.com/api/v1/search_by_date";
 const TTL_MS = 20 * 60_000;
 const MAX = 6;
 
+/** What the poster attached: a talk, a paper, an old piece. */
+export type Tag = "video" | "pdf" | "audio" | "year";
+
 export type Story = {
   id: string;
   title: string;
+  /** "Show HN", "Ask HN", "Launch HN", when the post is one of those. */
+  prefix: string | null;
+  tags: { kind: Tag; label: string }[];
   /** The article, or the discussion when the post has no link of its own. */
   url: string;
   discussion: string;
@@ -31,6 +37,39 @@ type Hit = {
 };
 
 const cache = new Map<string, { ts: number; stories: Story[] }>();
+
+/**
+ * Hacker News puts the medium in the title: "A talk about X [video]",
+ * "The paper [pdf]", "Something [2019]" for a repost of an old piece, and
+ * "Show HN:" in front of what someone built. That is a convention, not part
+ * of the headline, so we lift it out and let the page show it as a mark.
+ */
+const TRAILING = /\s*\[(video|pdf|audio|\d{4})\]\s*$/i;
+const NOISE = /\s*\[(flagged|dupe|dead)\]\s*$/i;
+const PREFIX = /^(Show|Ask|Tell|Launch) HN:\s*/i;
+
+function readTitle(raw: string) {
+  let title = raw.trim();
+  const tags: { kind: Tag; label: string }[] = [];
+  for (;;) {
+    const noise = title.match(NOISE);
+    if (noise) {
+      title = title.slice(0, noise.index).trim();
+      continue;
+    }
+    const m = title.match(TRAILING);
+    if (!m) break;
+    const found = m[1].toLowerCase();
+    const kind: Tag = /^\d{4}$/.test(found) ? "year" : (found as Tag);
+    // Leftmost wins on the page, and we are peeling from the right.
+    tags.unshift({ kind, label: kind === "year" ? found : found.toUpperCase() });
+    title = title.slice(0, m.index).trim();
+  }
+  const p = title.match(PREFIX);
+  const prefix = p ? `${p[1][0].toUpperCase()}${p[1].slice(1).toLowerCase()} HN` : null;
+  if (p) title = title.slice(p[0].length).trim();
+  return { title, tags, prefix };
+}
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -67,9 +106,13 @@ export async function companyStories(name: string): Promise<Story[]> {
       } catch {
         // A malformed link stays pointed at the discussion.
       }
+      const read = readTitle(h.title);
+      if (!read.title) continue;
       stories.push({
         id: h.objectID,
-        title: h.title,
+        title: read.title,
+        prefix: read.prefix,
+        tags: read.tags,
         url: h.url ?? discussion,
         discussion,
         source,
