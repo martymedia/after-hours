@@ -70,9 +70,9 @@ const TERMS = [
     number on this page, and nothing here is investment advice.
   </>,
   <>
-    This is <strong>experimental software</strong>, built for a hackathon and
-    served as is. Features can change or break, and liquidity for these tokens
-    is not guaranteed by anyone.
+    This is <strong>early software</strong>, served as is. Features can change,
+    things can break, and liquidity for these tokens is not guaranteed by
+    anyone.
   </>,
   <>
     You are of legal age and not a US person, and using this is lawful where
