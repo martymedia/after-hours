@@ -108,12 +108,6 @@ export default async function PreIpoCompanyPage({ params }: Props) {
       <div className="grid gap-5 lg:grid-cols-12">
         <section className="card-dark relative overflow-hidden p-6 sm:p-8 lg:col-span-7">
           <MarkField />
-          <LogoMark
-            logo={c.logo}
-            size={280}
-            opacity={0.06}
-            className="-top-10 -right-10"
-          />
           <div className="relative">
             <div className="flex items-center gap-3">
               <TickerBadge symbol={c.symbol} logo={c.logo} size={48} />

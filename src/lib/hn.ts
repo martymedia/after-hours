@@ -7,7 +7,7 @@
 
 const API = "https://hn.algolia.com/api/v1/search_by_date";
 const TTL_MS = 20 * 60_000;
-const MAX = 4;
+const MAX = 6;
 
 export type Story = {
   id: string;
