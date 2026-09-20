@@ -15,6 +15,8 @@ import { snapshotsSince } from "@/lib/db";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CurveShape } from "@/components/curve-shape";
 import { PremiumBars } from "@/components/premium-bars";
+import { MarkField } from "@/components/mark-field";
+import { PoweredBy } from "@/components/powered-by";
 import { getPreIpo } from "@/lib/pre-ipo";
 
 export const dynamic = "force-dynamic";
@@ -276,16 +278,47 @@ export default async function HowPage() {
         </Step>
         <Step
           n="05"
+          id="pre-ipo"
           title="Or a company that never listed"
-          text={`OpenAI, SpaceX and six other private companies trade as PreStocks tokens: SPV exposure, not shares. They have no closing bell, so the only honest reference is the mark their issuer carries them at. We show the distance to it, what a small buy really costs, and we say plainly that this is not a share.`}
+          text={`OpenAI, SpaceX and six other private companies trade as PreStocks tokens: SPV exposure to the company, not shares in it. They have no closing bell, so the only honest reference is the mark their issuer carries them at. We show the distance to that mark, what a small buy really costs, and we say plainly that this is not a share.`}
+          badge={<PoweredBy dark={false} />}
         >
-          <div className="rounded-2xl bg-soft p-4">
-            <div className="text-muted">
-              <PremiumBars rows={preIpo.rows} />
+          <div className="card-dark relative overflow-hidden p-5">
+            <MarkField />
+            <div className="relative">
+              <p className="label-micro text-blue-light">Today, against the mark</p>
+              <div className="mt-3 text-white">
+                <PremiumBars rows={preIpo.rows} />
+              </div>
+              <p className="text-on-dark-muted mt-4 text-xs">
+                Left of the line the market pays{" "}
+                <span className="text-blue-light">less than the mark</span>,
+                right of it <span className="text-down">more</span>. The mark is{" "}
+                <a
+                  href={ISSUERS.prestocks.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white underline underline-offset-2"
+                >
+                  PreStocks
+                </a>
+                &apos; own number, not an exchange print and not ours.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/pre-ipo" className="btn btn-sm btn-white flex-1">
+                  See the premiums
+                </Link>
+                <a
+                  href={ISSUERS.prestocks.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-sm flex-1 border border-white/25 bg-white/5 text-white hover:bg-white/10"
+                >
+                  About PreStocks
+                  <ArrowUpRight size={14} strokeWidth={2} />
+                </a>
+              </div>
             </div>
-            <Link href="/pre-ipo" className="btn btn-sm mt-3 w-full">
-              See the premiums
-            </Link>
           </div>
         </Step>
       </section>
@@ -439,21 +472,30 @@ export default async function HowPage() {
 
 function Step({
   n,
+  id,
   title,
   text,
+  badge,
   children,
 }: {
   n: string;
+  /** Anchor, so another page can send a reader straight to this step. */
+  id?: string;
   title: string;
   text: string;
+  badge?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="card grid gap-6 p-6 sm:p-8 lg:grid-cols-12 lg:gap-10">
+    <div
+      id={id}
+      className="card grid scroll-mt-24 gap-6 p-6 sm:p-8 lg:grid-cols-12 lg:gap-10"
+    >
       <div className="lg:col-span-5">
         <div className="num text-blue text-sm font-semibold">{n}</div>
         <h3 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h3>
         <p className="text-muted mt-3 leading-relaxed">{text}</p>
+        {badge && <div className="mt-4">{badge}</div>}
       </div>
       <div className="lg:col-span-7">
         <Tilt>{children}</Tilt>

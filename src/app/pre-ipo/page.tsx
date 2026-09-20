@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import { getPreIpo, type PreIpoRow } from "@/lib/pre-ipo";
 import { formatCompactUsd, gapTone } from "@/lib/format";
 import { LogoMark } from "@/components/logo-mark";
 import { MarkField } from "@/components/mark-field";
 import { PremiumBars } from "@/components/premium-bars";
 import { PremiumSpark } from "@/components/premium-spark";
+import { PoweredBy } from "@/components/powered-by";
 import { TickerBadge } from "@/components/ticker-badge";
 
 export const dynamic = "force-dynamic";
@@ -53,29 +54,29 @@ export default async function PreIpoPage() {
         <MarkField />
         <div className="relative grid items-center gap-8 lg:grid-cols-12">
           <div className="lg:col-span-6">
-            <p className="text-blue-light text-sm font-medium">Pre-IPO</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-blue-light text-sm font-medium">Pre-IPO</p>
+              <PoweredBy />
+            </div>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
               Companies that never opened on an exchange, priced anyway.
             </h2>
             <p className="text-on-dark-muted mt-4 leading-relaxed">
-              OpenAI, SpaceX and six others trade on Solana as PreStocks tokens.
-              Each one is{" "}
+              OpenAI, SpaceX and six others trade on Solana as{" "}
               <span className="font-medium text-white">
-                SPV exposure to a private company, not a share
+                SPV exposure, not shares
               </span>
-              , and none of them has a closing bell to be measured against. What
-              they do have is a{" "}
-              <span className="font-medium text-white">mark</span>: the value
-              their issuer carries the company at. Buyers can pay{" "}
+              . With no closing bell, the only honest reference is the{" "}
+              <span className="font-medium text-white">mark</span> their issuer
+              carries them at. Buyers pay{" "}
               <span className="text-down font-medium">more than the mark</span>{" "}
               or{" "}
               <span className="text-blue-light font-medium">less than it</span>,
-              and how far they stray is the only honest number here.
+              and that distance is the number on this page.
             </p>
             {widest?.premiumPct != null && (
-              <p className="mt-4 text-lg leading-snug font-medium">
-                Today the market is furthest from the mark on {widest.name},
-                paying{" "}
+              <p className="mt-4 leading-snug font-medium">
+                Furthest from the mark today: {widest.name}, at{" "}
                 <span
                   className={
                     widest.premiumPct < 0 ? "text-blue-light" : "text-down"
@@ -86,6 +87,19 @@ export default async function PreIpoPage() {
                 .
               </p>
             )}
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              <a href="#companies" className="btn btn-white">
+                Start trading
+                <ArrowDown size={16} strokeWidth={2} />
+              </a>
+              <Link
+                href="/how#pre-ipo"
+                className="btn border border-white/25 bg-white/5 text-white hover:bg-white/10"
+              >
+                Learn more
+                <ArrowRight size={16} strokeWidth={2} />
+              </Link>
+            </div>
           </div>
           <div className="text-white lg:col-span-6">
             <PremiumBars rows={data.rows} />
@@ -100,7 +114,10 @@ export default async function PreIpoPage() {
       </section>
 
       {/* One box per company: a number, a sentence, a measurement */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section
+        id="companies"
+        className="grid scroll-mt-24 gap-4 md:grid-cols-2 xl:grid-cols-3"
+      >
         {data.rows.map((r, i) => (
           <CompanyCard key={r.underlying} r={r} index={i} />
         ))}
