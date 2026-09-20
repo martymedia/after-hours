@@ -4,6 +4,7 @@
 
 export const SITE_URL = "https://after-hour.net";
 export const SITE_NAME = "After Hours";
+export const REPO_URL = "https://github.com/martymedia/after-hours";
 export const TAGLINE = "Trade stocks when Wall Street sleeps.";
 export const DESCRIPTION =
   "Tokenized stocks keep trading on Solana after the bell and all weekend. See which ones are moving, whether the onchain price is fresh, how far it drifts from the last Wall Street print, and buy from your own wallet.";

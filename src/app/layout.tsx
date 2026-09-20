@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { Shell } from "@/components/shell";
+import { SiteGate } from "@/components/site-gate";
 import "./globals.css";
 import { DESCRIPTION, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/brand";
 
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         <Shell>{children}</Shell>
+        <SiteGate />
       </body>
     </html>
   );

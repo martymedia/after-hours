@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { REPO_URL } from "@/lib/brand";
 import { Logo } from "./logo";
 
 export function SiteFooter() {
@@ -26,7 +27,7 @@ export function SiteFooter() {
             How it works
           </Link>
           <a
-            href="https://github.com/martymedia/after-hours"
+            href={REPO_URL}
             target="_blank"
             rel="noreferrer"
             className="hover:text-ink"
