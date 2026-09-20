@@ -20,6 +20,8 @@ import {
   gapWords,
 } from "@/lib/format";
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
+import { companyStories } from "@/lib/hn";
+import { CompanyStories } from "@/components/company-stories";
 import { MarkField } from "@/components/mark-field";
 import { PremiumSpark } from "@/components/premium-spark";
 import { PriceChart } from "@/components/price-chart";
@@ -77,6 +79,7 @@ export default async function PreIpoCompanyPage({ params }: Props) {
   const { symbol } = await params;
   const c = await getPreIpoCompany(symbol);
   if (!c) notFound();
+  const stories = await companyStories(c.name);
   const now = Date.parse(c.generatedAt);
   const up = (c.premiumPct ?? 0) > 0;
   const range = c.premiumRange;
@@ -278,6 +281,8 @@ export default async function PreIpoCompanyPage({ params }: Props) {
           </ul>
         </div>
       </section>
+
+      <CompanyStories name={c.name} stories={stories} now={now} />
 
       {/* Our own measurement: how the premium moved */}
       <section className="card p-5 sm:p-6">
