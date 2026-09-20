@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getPreIpo, type PreIpoRow } from "@/lib/pre-ipo";
 import { formatCompactUsd, gapTone } from "@/lib/format";
+import { LogoMark } from "@/components/logo-mark";
 import { MarkField } from "@/components/mark-field";
 import { PremiumBars } from "@/components/premium-bars";
 import { PremiumSpark } from "@/components/premium-spark";
@@ -91,7 +92,10 @@ export default async function PreIpoPage() {
 
       {/* The honesty, spelled out once */}
       <section className="card p-5 sm:p-6">
-        <h3 className="font-semibold">What you are actually holding</h3>
+        <p className="label-micro text-muted-2">The instrument</p>
+        <h3 className="mt-1 text-xl font-semibold tracking-tight">
+          What you are actually holding
+        </h3>
         <p className="text-muted mt-2 max-w-3xl leading-relaxed">
           A PreStocks token is backed one to one by SPV exposure that tracks a
           private company. It is not a share: no ownership, no voting, no
@@ -128,13 +132,19 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
       </div>
 
       {/* What the market is doing, in words */}
-      <div className="flex flex-1 flex-col gap-2 p-5">
+      <div className="relative flex flex-1 flex-col gap-2 overflow-hidden p-5">
+        <LogoMark
+          logo={r.logo}
+          size={150}
+          opacity={0.05}
+          className="-right-6 -bottom-6"
+        />
         <div
-          className={`num text-3xl leading-none font-semibold ${gapTone(r.premiumPct)}`}
+          className={`num relative text-3xl leading-none font-semibold ${gapTone(r.premiumPct)}`}
         >
           {premiumWords(r.premiumPct)}
         </div>
-        <p className="text-muted flex-1 text-sm leading-relaxed">
+        <p className="text-muted relative flex-1 text-sm leading-relaxed">
           {known ? (
             <>
               Buyers are paying{" "}
@@ -156,7 +166,7 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
             `We cannot read a mark for ${r.name} right now, so there is no premium to show.`
           )}
         </p>
-        <span className="text-muted-2 group-hover:text-ink inline-flex items-center gap-1 text-xs transition">
+        <span className="text-muted-2 group-hover:text-ink relative inline-flex items-center gap-1 text-xs transition">
           Price, cost to trade and the premium over time
           <ArrowRight size={13} strokeWidth={2} />
         </span>

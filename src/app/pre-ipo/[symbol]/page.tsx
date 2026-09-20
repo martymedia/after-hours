@@ -22,6 +22,7 @@ import {
 import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
 import { companyStories } from "@/lib/hn";
 import { CompanyStories } from "@/components/company-stories";
+import { LogoMark } from "@/components/logo-mark";
 import { MarkField } from "@/components/mark-field";
 import { PremiumSpark } from "@/components/premium-spark";
 import { PriceChart } from "@/components/price-chart";
@@ -107,6 +108,12 @@ export default async function PreIpoCompanyPage({ params }: Props) {
       <div className="grid gap-5 lg:grid-cols-12">
         <section className="card-dark relative overflow-hidden p-6 sm:p-8 lg:col-span-7">
           <MarkField />
+          <LogoMark
+            logo={c.logo}
+            size={280}
+            opacity={0.06}
+            className="-top-10 -right-10"
+          />
           <div className="relative">
             <div className="flex items-center gap-3">
               <TickerBadge symbol={c.symbol} logo={c.logo} size={48} />
@@ -195,7 +202,10 @@ export default async function PreIpoCompanyPage({ params }: Props) {
       </div>
 
       {/* The four things worth knowing before you press buy */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        className="card rise grid divide-line sm:grid-cols-2 sm:divide-x xl:grid-cols-4"
+        style={{ "--i": 1 } as React.CSSProperties}
+      >
         <Fact
           icon={<Receipt size={16} strokeWidth={1.75} />}
           label="Cost to get in"
@@ -238,13 +248,20 @@ export default async function PreIpoCompanyPage({ params }: Props) {
       </section>
 
       {/* What the company does, and what the token actually is */}
-      <section className="grid gap-4 lg:grid-cols-12">
+      <section
+        className="rise grid gap-4 lg:grid-cols-12"
+        style={{ "--i": 2 } as React.CSSProperties}
+      >
         {c.about && (
-          <div className="card p-5 sm:p-6 lg:col-span-7">
-            <h3 className="flex items-center gap-2 font-semibold">
-              <span className="icon-badge h-7 w-7">
-                <Building2 size={14} strokeWidth={1.75} />
-              </span>
+          <div className="card relative overflow-hidden p-5 sm:p-6 lg:col-span-7">
+            <LogoMark
+              logo={c.logo}
+              size={180}
+              opacity={0.05}
+              className="-right-8 -bottom-8"
+            />
+            <p className="label-micro text-blue relative">The company</p>
+            <h3 className="relative mt-1 text-xl font-semibold tracking-tight">
               What {c.name} does
             </h3>
             <p className="text-muted mt-3 leading-relaxed">{c.about}</p>
@@ -260,7 +277,8 @@ export default async function PreIpoCompanyPage({ params }: Props) {
           </div>
         )}
         <div className="card p-5 sm:p-6 lg:col-span-5">
-          <h3 className="flex items-center gap-2 font-semibold">
+          <p className="label-micro text-muted-2">The instrument</p>
+          <h3 className="mt-1 flex items-center gap-2 text-xl font-semibold tracking-tight">
             <span className="icon-badge h-7 w-7">
               <ScrollText size={14} strokeWidth={1.75} />
             </span>
@@ -284,22 +302,29 @@ export default async function PreIpoCompanyPage({ params }: Props) {
 
       <CompanyStories name={c.name} stories={stories} now={now} />
 
-      {/* Our own measurement: how the premium moved */}
-      <section className="card p-5 sm:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-semibold">The premium, last two days</h3>
-          <span className="text-muted text-xs">
-            from our own snapshots, every minute
+      {/* What we measured ourselves, on black, as one block */}
+      <section
+        className="card-dark rise p-5 sm:p-6"
+        style={{ "--i": 4 } as React.CSSProperties}
+      >
+        <p className="label-micro text-blue-light">Measured by us</p>
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-xl font-semibold tracking-tight">
+            The premium, last two days
+          </h3>
+          <span className="text-on-dark-muted text-xs">
+            our own snapshots, one a minute
           </span>
         </div>
-        <p className="text-muted mt-1 max-w-2xl text-sm">
+        <p className="text-on-dark-muted mt-1 max-w-2xl text-sm">
           How far the onchain price sat from {MARK}.{" "}
-          <span className="text-blue">Blue</span> means the market paid less
-          than the issuer&apos;s mark, <span className="text-down">red</span>{" "}
-          means more.
+          <span className="text-blue-light">Blue</span> means the market paid
+          less than the issuer&apos;s mark,{" "}
+          <span className="text-down">red</span> means more.
         </p>
-        <div className="mt-3">
+        <div className="mt-4">
           <GapChart
+            dark
             series={c.premiumHistory.map((p) => ({
               ts: p.ts,
               gapPct: p.premiumPct,
@@ -309,13 +334,7 @@ export default async function PreIpoCompanyPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="card p-5 sm:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-semibold">Price, last seven days</h3>
-          <span className="text-muted num text-xs">
-            the line is {MARK}, {formatUsd(c.mark)}
-          </span>
-        </div>
+      <div className="rise" style={{ "--i": 5 } as React.CSSProperties}>
         <PriceChart
           candles={c.candles}
           reference={c.mark}
@@ -324,12 +343,18 @@ export default async function PreIpoCompanyPage({ params }: Props) {
           symbol={c.symbol}
           sessions={false}
         />
-      </section>
+      </div>
 
       {/* Where to go next */}
       {c.others.length > 0 && (
-        <section className="card p-5 sm:p-6">
-          <h3 className="font-semibold">The other companies</h3>
+        <section
+          className="card rise p-5 sm:p-6"
+          style={{ "--i": 6 } as React.CSSProperties}
+        >
+          <p className="label-micro text-muted-2">Keep looking</p>
+          <h3 className="mt-1 text-xl font-semibold tracking-tight">
+            The other companies
+          </h3>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {c.others.map((o) => (
               <OtherRow key={o.underlying} o={o} />
@@ -357,18 +382,18 @@ function Fact({
   pill?: string;
 }) {
   return (
-    <div className="card flex flex-col gap-1 p-4">
-      <div className="text-muted flex items-center gap-2 text-xs font-medium">
+    <div className="flex flex-col gap-1.5 p-5">
+      <div className="text-muted-2 label-micro flex items-center gap-2">
         <span className="icon-badge h-6 w-6">{icon}</span>
         {label}
       </div>
-      <div className={`num text-lg leading-tight font-semibold ${tone}`}>
+      <div className={`num text-xl leading-tight font-semibold ${tone}`}>
         {value}
       </div>
       {pill ? (
         <span className={`pill mt-1 w-fit ${pill}`}>{detail}</span>
       ) : (
-        <div className="text-muted text-xs">{detail}</div>
+        <div className="text-muted text-xs leading-relaxed">{detail}</div>
       )}
     </div>
   );

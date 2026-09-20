@@ -8,12 +8,26 @@ const W = 600;
 const H = 120;
 const PAD = { top: 12, bottom: 20, left: 4, right: 44 };
 
-const timeLabel = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric" });
+const timeLabel = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  weekday: "short",
+  hour: "numeric",
+});
 
-export function GapChart({ series, referencePhrase }: { series: GapPoint[]; referencePhrase: string }) {
+export function GapChart({
+  series,
+  referencePhrase,
+  dark = false,
+}: {
+  series: GapPoint[];
+  referencePhrase: string;
+  dark?: boolean;
+}) {
+  const axis = dark ? "rgba(255,255,255,0.22)" : "var(--line)";
+  const label = dark ? "var(--on-dark-muted)" : "var(--muted)";
   if (series.length < 4) {
     return (
-      <p className="text-muted text-sm">
+      <p className={dark ? "text-on-dark-muted text-sm" : "text-muted text-sm"}>
         The gap history fills in as we watch this stock. Check back in an hour.
       </p>
     );
@@ -21,7 +35,9 @@ export function GapChart({ series, referencePhrase }: { series: GapPoint[]; refe
   const maxAbs = Math.max(0.5, ...series.map((p) => Math.abs(p.gapPct)));
   const from = series[0].ts;
   const to = series[series.length - 1].ts;
-  const x = (ts: number) => PAD.left + ((ts - from) / Math.max(1, to - from)) * (W - PAD.left - PAD.right);
+  const x = (ts: number) =>
+    PAD.left +
+    ((ts - from) / Math.max(1, to - from)) * (W - PAD.left - PAD.right);
   const zero = PAD.top + (H - PAD.top - PAD.bottom) / 2;
   const scale = (H - PAD.top - PAD.bottom) / 2 / maxAbs;
   const barW = Math.max(1.5, (W - PAD.left - PAD.right) / series.length - 1);
@@ -31,8 +47,19 @@ export function GapChart({ series, referencePhrase }: { series: GapPoint[]; refe
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Gap between onchain and reference price">
-        <line x1={PAD.left} x2={W - PAD.right} y1={zero} y2={zero} stroke="var(--line)" />
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-auto w-full"
+        role="img"
+        aria-label="Gap between onchain and reference price"
+      >
+        <line
+          x1={PAD.left}
+          x2={W - PAD.right}
+          y1={zero}
+          y2={zero}
+          stroke={axis}
+        />
         {series.map((p) => {
           const h = Math.abs(p.gapPct) * scale;
           const up = p.gapPct >= 0;
@@ -48,21 +75,40 @@ export function GapChart({ series, referencePhrase }: { series: GapPoint[]; refe
             />
           );
         })}
-        <text x={W - PAD.right + 6} y={PAD.top + 8} fontSize="10" fill="var(--muted)">
+        <text x={W - PAD.right + 6} y={PAD.top + 8} fontSize="10" fill={label}>
           +{maxAbs.toFixed(1)}%
         </text>
-        <text x={W - PAD.right + 6} y={H - PAD.bottom} fontSize="10" fill="var(--muted)">
+        <text
+          x={W - PAD.right + 6}
+          y={H - PAD.bottom}
+          fontSize="10"
+          fill={label}
+        >
           -{maxAbs.toFixed(1)}%
         </text>
         {ticks.map((t) => (
-          <text key={t.ts} x={x(t.ts)} y={H - 6} fontSize="10" fill="var(--muted)" textAnchor="middle">
+          <text
+            key={t.ts}
+            x={x(t.ts)}
+            y={H - 6}
+            fontSize="10"
+            fill={label}
+            textAnchor="middle"
+          >
             {timeLabel.format(new Date(t.ts))}
           </text>
         ))}
       </svg>
-      <p className="text-muted mt-2 text-sm">
-        Right now <span className={`num font-medium ${gapTone(last.gapPct)}`}>{gapSentence(last.gapPct, referencePhrase)}</span>; on
-        average <span className={`num ${gapTone(avg)}`}>{gapWords(avg)}</span> over the last two days.
+      <p
+        className={`mt-2 text-sm ${dark ? "text-on-dark-muted" : "text-muted"}`}
+      >
+        Right now{" "}
+        <span className={`num font-medium ${gapTone(last.gapPct)}`}>
+          {gapSentence(last.gapPct, referencePhrase)}
+        </span>
+        ; on average{" "}
+        <span className={`num ${gapTone(avg)}`}>{gapWords(avg)}</span> over the
+        last two days.
       </p>
     </div>
   );

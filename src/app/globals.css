@@ -179,6 +179,13 @@ body {
     box-shadow: inset 2px 0 0 var(--blue);
   }
 
+  .label-micro {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
   .icon-badge {
     display: inline-flex;
     align-items: center;

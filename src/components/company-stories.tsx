@@ -15,14 +15,20 @@ export function CompanyStories({
 }) {
   if (stories.length === 0) return null;
   return (
-    <section className="card p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 font-semibold">
-          <span className="icon-badge h-7 w-7">
-            <Newspaper size={14} strokeWidth={1.75} />
-          </span>
-          What is being written about {name}
-        </h3>
+    <section
+      className="card rise p-5 sm:p-6"
+      style={{ "--i": 3 } as React.CSSProperties}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="label-micro text-muted-2">Elsewhere</p>
+          <h3 className="mt-1 flex items-center gap-2 text-xl font-semibold tracking-tight">
+            <span className="icon-badge h-7 w-7">
+              <Newspaper size={14} strokeWidth={1.75} />
+            </span>
+            What is being written about {name}
+          </h3>
+        </div>
         <a
           href={`https://hn.algolia.com/?query=${encodeURIComponent(name)}&type=story&sort=byDate`}
           target="_blank"
