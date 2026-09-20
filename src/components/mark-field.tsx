@@ -12,6 +12,12 @@
 // Pure SVG, rendered on the server. The drift is a CSS animation rather than
 // SMIL so that a reader who asked for less motion actually gets a still
 // picture: SMIL cannot be turned off from a media query.
+//
+// There is deliberately no blur filter here. A feGaussianBlur under a moving
+// transform has to be rasterised again every frame, and on a phone that is
+// what made this stutter. A wide, round-capped, low-opacity stroke gives the
+// same softness for nothing. The back layer is also dropped below the sm
+// breakpoint, so a phone animates two paths rather than three.
 
 const W = 800;
 const H = 320;
@@ -55,10 +61,11 @@ function pathOf(harmonics: Harmonic[]): string {
 type Layer = {
   harmonics: Harmonic[];
   width: number;
-  blur: number;
   opacity: number;
   /** Seconds for one tile to pass. Slower reads as further away. */
   dur: number;
+  /** Dropped on small screens, where every animated layer costs a frame. */
+  wideOnly?: boolean;
 };
 
 const LAYERS: Layer[] = [
@@ -68,10 +75,10 @@ const LAYERS: Layer[] = [
       [2, 24, 2.1],
       [3, 10, 4.2],
     ],
-    width: 30,
-    blur: 16,
-    opacity: 0.1,
+    width: 46,
+    opacity: 0.07,
     dur: 132,
+    wideOnly: true,
   },
   {
     harmonics: [
@@ -79,9 +86,8 @@ const LAYERS: Layer[] = [
       [3, 17, 0.9],
       [5, 6, 3.3],
     ],
-    width: 2.2,
-    blur: 3,
-    opacity: 0.45,
+    width: 7,
+    opacity: 0.2,
     dur: 78,
   },
   {
@@ -90,9 +96,8 @@ const LAYERS: Layer[] = [
       [3, 11, 5.0],
       [7, 4, 2.0],
     ],
-    width: 1.1,
-    blur: 0,
-    opacity: 0.7,
+    width: 1.4,
+    opacity: 0.6,
     dur: 46,
   },
 ];
@@ -136,20 +141,6 @@ export function MarkField({ className = "" }: { className?: string }) {
           <stop offset="0" stopColor="#8fb3ff" stopOpacity="0.55" />
           <stop offset="1" stopColor="#8fb3ff" stopOpacity="0" />
         </radialGradient>
-        {LAYERS.map((l, i) =>
-          l.blur > 0 ? (
-            <filter
-              key={i}
-              id={`mf-blur-${i}`}
-              x="-10%"
-              y="-40%"
-              width="120%"
-              height="180%"
-            >
-              <feGaussianBlur stdDeviation={l.blur} />
-            </filter>
-          ) : null,
-        )}
         {/* Nothing arrives at an edge, it is already gone by then. */}
         <linearGradient id="mf-edge" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#000" />
@@ -169,7 +160,7 @@ export function MarkField({ className = "" }: { className?: string }) {
           cy={MARK_Y - 72}
           r={120}
           fill="url(#mf-orb-up)"
-          className="mf-pulse"
+          className="mf-pulse mf-wide"
           style={{ animationDuration: "17s" }}
         />
         <circle
@@ -177,14 +168,14 @@ export function MarkField({ className = "" }: { className?: string }) {
           cy={MARK_Y + 84}
           r={140}
           fill="url(#mf-orb-down)"
-          className="mf-pulse"
+          className="mf-pulse mf-wide"
           style={{ animationDuration: "23s", animationDelay: "-8s" }}
         />
 
         {LAYERS.map((l, i) => (
           <g
             key={i}
-            className="mf-drift"
+            className={`mf-drift${l.wideOnly ? " mf-wide" : ""}`}
             style={{ animationDuration: `${l.dur}s` }}
           >
             <path
@@ -194,7 +185,7 @@ export function MarkField({ className = "" }: { className?: string }) {
               strokeWidth={l.width}
               strokeOpacity={l.opacity}
               strokeLinecap="round"
-              filter={l.blur > 0 ? `url(#mf-blur-${i})` : undefined}
+              strokeLinejoin="round"
             />
           </g>
         ))}

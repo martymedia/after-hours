@@ -604,6 +604,13 @@
     opacity: 1;
   }
 }
+/* A phone animates two paths and no lights. The layer it loses is the
+   slowest and widest one, which is the least visible and the most expensive. */
+@media (max-width: 639px) {
+  .mf-wide {
+    display: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .mf-drift,
   .mf-pulse {

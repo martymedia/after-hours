@@ -210,9 +210,12 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
             `We cannot read a mark for ${r.name} right now, so there is no premium to show.`
           )}
         </p>
-        <span className="text-muted-2 group-hover:text-ink relative inline-flex items-center gap-1 text-xs transition">
-          Price, cost to trade and the premium over time
-          <ArrowRight size={13} strokeWidth={2} />
+        <span className="btn btn-sm relative mt-1 w-full group-hover:bg-black">
+          Trade {r.symbol}
+          <ArrowRight size={14} strokeWidth={2} />
+        </span>
+        <span className="text-muted-2 relative text-[11px]">
+          price, cost to trade and the premium over time
         </span>
       </div>
 
