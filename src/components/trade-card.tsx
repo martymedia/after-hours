@@ -106,6 +106,18 @@ export function TradeCard(props: Props) {
 
   const vs = estimate?.vsReferencePct ?? null;
   const tone = gapTone(vs);
+  // Two numbers sit next to each other on these pages and they are not the
+  // same question. The headline above is the last trade against the
+  // reference; this card is what a real quote for this size would fill at,
+  // price impact and fee included. The difference is the cost of being the
+  // one who trades, and on a thin pool it is the more useful number, so it
+  // is worth naming rather than leaving someone to wonder.
+  const lastVs =
+    price != null && reference ? (price / reference - 1) * 100 : null;
+  const spread =
+    vs != null && lastVs != null && Math.abs(vs - lastVs) >= 0.15
+      ? `The last trade alone sat ${gapWords(lastVs)}. The difference is what your own order costs.`
+      : null;
   const checks = estimate
     ? buildChecks(
         estimate,
@@ -152,6 +164,13 @@ export function TradeCard(props: Props) {
                     ? `${referencePhrase} is missing for this stock. Quote for a ${formatUsd(PREVIEW_USD, 0)} buy, price impact included.`
                     : `${gapWords(vs) === "in line" ? "with" : "than"} ${referencePhrase} for a ${formatUsd(PREVIEW_USD, 0)} buy, price impact included.`}
                 </div>
+                {spread && (
+                  <div
+                    className={`mt-2 text-xs leading-relaxed ${vs == null ? "text-muted-2" : "text-white/70"}`}
+                  >
+                    {spread}
+                  </div>
+                )}
               </>
             ) : (
               <>
