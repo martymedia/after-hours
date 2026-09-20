@@ -116,13 +116,16 @@ export default async function PreIpoCompanyPage({ params }: Props) {
                 <h2 className="truncate text-2xl leading-tight font-semibold tracking-tight sm:text-3xl">
                   {c.name}
                 </h2>
-                <p className="text-on-dark-muted num flex flex-wrap items-center gap-x-1.5 text-sm">
-                  <span>
-                    {c.symbol} · {c.issuerName} · private company
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <MintLink mint={c.mint} dark />
+                <p className="text-on-dark-muted num text-sm">
+                  {c.symbol} · {c.issuerName} · private company
                 </p>
+                <MintLink
+                  mint={c.mint}
+                  address
+                  pill
+                  dark
+                  className="mt-2"
+                />
               </div>
             </div>
 

@@ -239,9 +239,13 @@ export default async function StockPage({ params }: Props) {
                       <div className="text-sm font-medium">{t.issuerName}</div>
                       <div className="text-muted text-xs">
                         {t.symbol} ·{" "}
-                        <Tip text={t.structure}>{t.structureShort}</Tip> ·{" "}
-                        <MintLink mint={t.mint} />
+                        <Tip text={t.structure}>{t.structureShort}</Tip>
                       </div>
+                      <MintLink
+                        mint={t.mint}
+                        address
+                        className="mt-1 text-xs"
+                      />
                     </div>
                   </div>
                   {t.tradability === "none" ? (

@@ -170,7 +170,7 @@ export function YourCurves({ owner }: { owner: string }) {
                     <CopyField label="Token mint" value={c.baseMint} dark />
                     <MintLink
                       mint={c.baseMint}
-                      label="Open the token on Solscan"
+                      label="View the token on Solscan"
                       dark
                       className="text-xs"
                     />

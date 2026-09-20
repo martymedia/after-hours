@@ -123,25 +123,26 @@ export function PoolRow({
       </span>
       <span className="col-span-2 flex items-center justify-end gap-3 sm:col-span-1">
         {/* Verification belongs on a phone too, so this does not hide. */}
-        <span className="text-muted-2 whitespace-nowrap text-xs">
+        <span className="text-muted-2 text-xs whitespace-nowrap">
+          <span className="hidden sm:inline">On Solscan: </span>
           <a
             href={solscanToken(p.baseMint)}
             target="_blank"
             rel="noreferrer"
             title={`${p.baseMint} on Solscan`}
-            className="hover:text-ink"
+            className="hover:text-ink underline-offset-2 hover:underline"
           >
-            Token
+            token
           </a>
-          {" · "}
+          {", "}
           <a
             href={solscanAccount(p.pool)}
             target="_blank"
             rel="noreferrer"
             title={`${p.pool} on Solscan`}
-            className="hover:text-ink"
+            className="hover:text-ink underline-offset-2 hover:underline"
           >
-            Pool
+            pool
           </a>
         </span>
         {stock && (

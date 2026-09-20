@@ -798,7 +798,11 @@ function HoldingRow({ h, onSell }: { h: Holding; onSell?: () => void }) {
           </span>
         </span>
       </Link>
-      <MintLink mint={h.mint} label="Token" className="shrink-0 text-xs" />
+      <MintLink
+        mint={h.mint}
+        label="Solscan"
+        className="shrink-0 text-xs"
+      />
       {onSell && (
         <button
           type="button"
