@@ -80,6 +80,9 @@ export function GapChart({
   const card = dark ? "#ffffff" : "var(--ink)";
   const cardInk = dark ? "var(--ink)" : "#ffffff";
   const cardMuted = dark ? "var(--muted)" : "rgba(255,255,255,0.65)";
+  // The card is white on the dark chart and near-black on the light one, so
+  // the blue has to flip with it to stay legible.
+  const cardBlue = dark ? "var(--blue)" : "var(--blue-light)";
 
   return (
     <div>
@@ -164,8 +167,21 @@ export function GapChart({
               <text x="11" y="17" fontSize="11" fill={cardMuted}>
                 {readoutLabel.format(new Date(hover.ts))} ET
               </text>
-              <text x="11" y="32" fontSize="12.5" fontWeight="600" fill={cardInk}>
-                {gapWords(hover.gapPct)}
+              <text
+                x="11"
+                y="32"
+                fontSize="12.5"
+                fontWeight="600"
+                fill={
+                  Math.abs(hover.gapPct) < 0.05
+                    ? cardInk
+                    : hover.gapPct > 0
+                      ? "var(--down)"
+                      : cardBlue
+                }
+              >
+                {hover.gapPct > 0 ? "+" : ""}
+                {hover.gapPct.toFixed(2)}%
               </text>
             </g>
           </g>
