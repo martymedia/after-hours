@@ -1,17 +1,25 @@
 "use client";
 
 // Gap radar: onchain price versus the reference over the last 48 hours as
-// bars around a zero line. Red above (onchain higher), blue below. Pointing
-// at a bar reads out the hour it covers and what the gap was then, because
-// "on average 26% over two days" hides every hour that was not average.
+// bars around the reference line. Red above, blue below. Pointing at a bar
+// reads out the hour it covers and what the gap was then, because "on
+// average 26% over two days" hides every hour that was not average.
+//
+// Two things about how this is drawn. The bars live in an SVG that stretches
+// to the container, but every piece of text sits in HTML on top of it: text
+// inside a stretched viewBox grows with the container, and at full width the
+// labels came out about twice the size of the prose next to them.
+//
+// And the scale follows the data instead of straddling zero symmetrically. A
+// series that never goes below the mark spent half the picture on empty space
+// under the line, which squashed the part anyone came to look at.
 
 import { useState } from "react";
 import type { GapPoint } from "@/lib/stock-types";
 import { gapSentence, gapTone, gapWords } from "@/lib/format";
 
 const W = 600;
-const H = 120;
-const PAD = { top: 12, bottom: 20, left: 4, right: 44 };
+const H = 100;
 
 const timeLabel = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York",
@@ -26,6 +34,8 @@ const readoutLabel = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
+const signed = (pct: number) => `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
+
 export function GapChart({
   series,
   referencePhrase,
@@ -36,8 +46,9 @@ export function GapChart({
   dark?: boolean;
 }) {
   const [hover, setHover] = useState<GapPoint | null>(null);
-  const axis = dark ? "rgba(255,255,255,0.22)" : "var(--line)";
-  const label = dark ? "var(--on-dark-muted)" : "var(--muted)";
+  const axis = dark ? "rgba(255,255,255,0.28)" : "var(--line)";
+  const faint = dark ? "text-on-dark-muted" : "text-muted-2";
+
   if (series.length < 4) {
     return (
       <p className={dark ? "text-on-dark-muted text-sm" : "text-muted text-sm"}>
@@ -45,148 +56,145 @@ export function GapChart({
       </p>
     );
   }
-  const maxAbs = Math.max(0.5, ...series.map((p) => Math.abs(p.gapPct)));
+
+  const values = series.map((p) => p.gapPct);
+  // Zero always stays in the picture, because the distance to it is the whole
+  // point, but it does not have to sit in the middle.
+  const top = Math.max(0, ...values);
+  const bottom = Math.min(0, ...values);
+  const pad = Math.max(0.6, top - bottom) * 0.12;
+  const hi = top + pad;
+  const lo = bottom - pad;
+
   const from = series[0].ts;
   const to = series[series.length - 1].ts;
-  const x = (ts: number) =>
-    PAD.left +
-    ((ts - from) / Math.max(1, to - from)) * (W - PAD.left - PAD.right);
-  const zero = PAD.top + (H - PAD.top - PAD.bottom) / 2;
-  const scale = (H - PAD.top - PAD.bottom) / 2 / maxAbs;
-  const barW = Math.max(1.5, (W - PAD.left - PAD.right) / series.length - 1);
-  const last = series[series.length - 1];
-  const avg = series.reduce((a, p) => a + p.gapPct, 0) / series.length;
-  const ticks = [series[0], series[Math.floor(series.length / 2)], last];
+  /** Position along the chart, 0 to 1, so HTML and SVG can share it. */
+  const at = (ts: number) => (ts - from) / Math.max(1, to - from);
+  const y = (v: number) => H - ((v - lo) / (hi - lo)) * H;
+  const zero = y(0);
+  const slot = W / series.length;
+  const barW = Math.max(1.2, slot * 0.76);
 
-  function pick(target: SVGSVGElement, clientX: number) {
-    const rect = target.getBoundingClientRect();
-    const px = ((clientX - rect.left) / rect.width) * W;
-    const ts =
-      from + ((px - PAD.left) / (W - PAD.left - PAD.right)) * (to - from);
+  const last = series[series.length - 1];
+  const avg = values.reduce((a, v) => a + v, 0) / series.length;
+  const mid = series[Math.floor(series.length / 2)];
+
+  function pick(clientX: number, el: HTMLElement) {
+    const rect = el.getBoundingClientRect();
+    const f = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    const ts = from + f * (to - from);
     let best = series[0];
     for (const p of series)
       if (Math.abs(p.ts - ts) < Math.abs(best.ts - ts)) best = p;
     setHover(best);
   }
   // A finger gets the same readout as a pointer, and it stays after lifting.
-  const onTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+  const onTouch = (e: React.TouchEvent<HTMLDivElement>) => {
     const t = e.touches[0];
-    if (t) pick(e.currentTarget, t.clientX);
+    if (t) pick(t.clientX, e.currentTarget);
   };
 
-  // Near the right edge the card would hang off the chart, so it flips.
-  const flip = hover ? x(hover.ts) > W * 0.6 : false;
-  const box = { w: 166, h: 42 };
-  const card = dark ? "#ffffff" : "var(--ink)";
-  const cardInk = dark ? "var(--ink)" : "#ffffff";
-  const cardMuted = dark ? "var(--muted)" : "rgba(255,255,255,0.65)";
-  // The card is white on the dark chart and near-black on the light one, so
-  // the blue has to flip with it to stay legible.
-  const cardBlue = dark ? "var(--blue)" : "var(--blue-light)";
+  const pos = hover ? at(hover.ts) : 0;
+  const flip = pos > 0.6;
+  const tone = (v: number) =>
+    Math.abs(v) < 0.05
+      ? dark
+        ? "#ffffff"
+        : "var(--ink)"
+      : v > 0
+        ? "var(--down)"
+        : "var(--blue)";
 
   return (
     <div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full cursor-crosshair touch-pan-y"
-        role="img"
-        aria-label="Gap between onchain and reference price"
-        onMouseMove={(e) => pick(e.currentTarget, e.clientX)}
+      <div
+        className="relative h-32 cursor-crosshair touch-pan-y select-none sm:h-36"
+        onMouseMove={(e) => pick(e.clientX, e.currentTarget)}
         onMouseLeave={() => setHover(null)}
         onTouchStart={onTouch}
         onTouchMove={onTouch}
       >
-        <line
-          x1={PAD.left}
-          x2={W - PAD.right}
-          y1={zero}
-          y2={zero}
-          stroke={axis}
-        />
-        {series.map((p) => {
-          const h = Math.abs(p.gapPct) * scale;
-          const up = p.gapPct >= 0;
-          return (
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          className="h-full w-full"
+          role="img"
+          aria-label={`Gap against ${referencePhrase} over the last two days`}
+        >
+          {series.map((p) => (
             <rect
               key={p.ts}
-              x={x(p.ts) - barW / 2}
-              y={up ? zero - h : zero}
+              x={at(p.ts) * (W - slot) + (slot - barW) / 2}
+              y={p.gapPct >= 0 ? y(p.gapPct) : zero}
               width={barW}
-              height={Math.max(1, h)}
-              rx={1}
-              fill={up ? "var(--down)" : "var(--blue)"}
-              opacity={hover && hover.ts !== p.ts ? 0.4 : 1}
+              height={Math.max(0.8, Math.abs(y(p.gapPct) - zero))}
+              fill={p.gapPct >= 0 ? "var(--down)" : "var(--blue)"}
+              opacity={hover && hover.ts !== p.ts ? 0.35 : 1}
             />
-          );
-        })}
-        <text x={W - PAD.right + 6} y={PAD.top + 8} fontSize="10" fill={label}>
-          +{maxAbs.toFixed(1)}%
-        </text>
-        <text
-          x={W - PAD.right + 6}
-          y={H - PAD.bottom}
-          fontSize="10"
-          fill={label}
+          ))}
+          <line x1={0} x2={W} y1={zero} y2={zero} stroke={axis} />
+        </svg>
+
+        {/* Every label below is HTML, so it keeps its size at any width. */}
+        <span
+          className={`${faint} pointer-events-none absolute top-0 right-0 text-[10px] leading-none`}
         >
-          -{maxAbs.toFixed(1)}%
-        </text>
-        {ticks.map((t) => (
-          <text
-            key={t.ts}
-            x={x(t.ts)}
-            y={H - 6}
-            fontSize="10"
-            fill={label}
-            textAnchor="middle"
-          >
-            {timeLabel.format(new Date(t.ts))}
-          </text>
-        ))}
+          {signed(top)}
+        </span>
+        <span
+          className={`${faint} pointer-events-none absolute right-0 text-[10px] leading-none`}
+          style={{ top: `${(zero / H) * 100}%`, transform: "translateY(-130%)" }}
+        >
+          the mark
+        </span>
 
         {hover && (
-          <g>
-            <line
-              x1={x(hover.ts)}
-              x2={x(hover.ts)}
-              y1={PAD.top}
-              y2={H - PAD.bottom}
-              stroke={axis}
+          <>
+            <span
+              className="pointer-events-none absolute inset-y-0 w-px"
+              style={{ left: `${pos * 100}%`, background: axis }}
             />
-            <circle
-              cx={x(hover.ts)}
-              cy={zero - hover.gapPct * scale}
-              r="3.5"
-              fill={hover.gapPct >= 0 ? "var(--down)" : "var(--blue)"}
-              stroke={dark ? "var(--ink)" : "#ffffff"}
-              strokeWidth="1.5"
+            <span
+              className="pointer-events-none absolute h-2 w-2 rounded-full"
+              style={{
+                left: `${pos * 100}%`,
+                top: `${(y(hover.gapPct) / H) * 100}%`,
+                transform: "translate(-50%, -50%)",
+                background: tone(hover.gapPct),
+                boxShadow: `0 0 0 2px ${dark ? "var(--ink)" : "#ffffff"}`,
+              }}
             />
-            <g
-              transform={`translate(${flip ? x(hover.ts) - box.w - 8 : x(hover.ts) + 8}, ${PAD.top})`}
+            <div
+              className={`pointer-events-none absolute top-1 rounded-xl px-2.5 py-1.5 shadow-sm ${dark ? "bg-white" : "bg-ink"}`}
+              style={{
+                left: `${pos * 100}%`,
+                transform: flip
+                  ? "translateX(calc(-100% - 10px))"
+                  : "translateX(10px)",
+              }}
             >
-              <rect width={box.w} height={box.h} rx="12" fill={card} />
-              <text x="11" y="17" fontSize="11" fill={cardMuted}>
-                {readoutLabel.format(new Date(hover.ts))} ET
-              </text>
-              <text
-                x="11"
-                y="32"
-                fontSize="12.5"
-                fontWeight="600"
-                fill={
-                  Math.abs(hover.gapPct) < 0.05
-                    ? cardInk
-                    : hover.gapPct > 0
-                      ? "var(--down)"
-                      : cardBlue
-                }
+              <div
+                className={`text-[10px] leading-tight ${dark ? "text-muted" : "text-on-dark-muted"}`}
               >
-                {hover.gapPct > 0 ? "+" : ""}
-                {hover.gapPct.toFixed(2)}%
-              </text>
-            </g>
-          </g>
+                {readoutLabel.format(new Date(hover.ts))} ET
+              </div>
+              <div
+                className="num text-[13px] leading-tight font-semibold"
+                style={{ color: tone(hover.gapPct) }}
+              >
+                {signed(hover.gapPct)}
+              </div>
+            </div>
+          </>
         )}
-      </svg>
+      </div>
+
+      <div className={`${faint} num mt-1.5 flex justify-between text-[11px]`}>
+        <span>{timeLabel.format(new Date(from))}</span>
+        <span>{timeLabel.format(new Date(mid.ts))}</span>
+        <span>{timeLabel.format(new Date(to))}</span>
+      </div>
+
       <p
         className={`mt-2 text-sm ${dark ? "text-on-dark-muted" : "text-muted"}`}
       >

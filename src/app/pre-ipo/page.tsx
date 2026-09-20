@@ -128,6 +128,8 @@ export default async function PreIpoPage() {
 
 function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
   const up = (r.premiumPct ?? 0) > 0;
+  // A wash of either colour overstates a company sitting on its mark.
+  const flat = r.premiumPct == null || Math.abs(r.premiumPct) < 0.25;
   const known = r.premiumPct != null && r.markValuation != null;
   return (
     <Link
@@ -199,7 +201,7 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
 
       {/* What we measured, along the bottom */}
       {r.premiumSpark.length > 2 && (
-        <div className={`px-5 py-4 ${up ? "bg-soft-down" : "bg-blue-soft"}`}>
+        <div className={`px-5 py-4 ${flat ? "bg-soft" : up ? "bg-soft-down" : "bg-blue-soft"}`}>
           <PremiumSpark values={r.premiumSpark} strip />
           <p className="text-muted mt-1 text-[11px]">
             the premium, last two days, against the dashed mark
