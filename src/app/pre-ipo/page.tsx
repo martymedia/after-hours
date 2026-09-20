@@ -1,16 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getPreIpo, TEST_USD, type PreIpoRow } from "@/lib/pre-ipo";
-import { TRADABILITY_LABEL, type Tradability } from "@/lib/radar-types";
-import {
-  formatAgo,
-  formatCompactUsd,
-  formatPct,
-  formatUsd,
-  gapTone,
-  gapWords,
-} from "@/lib/format";
+import { getPreIpo, type PreIpoRow } from "@/lib/pre-ipo";
+import { formatCompactUsd, gapTone } from "@/lib/format";
 import { PremiumBars } from "@/components/premium-bars";
 import { PremiumSpark } from "@/components/premium-spark";
 import { TickerBadge } from "@/components/ticker-badge";
@@ -20,17 +12,28 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Pre-IPO",
   description:
-    "OpenAI, SpaceX, Anthropic and Neuralink as tokens on Solana: what the market pays against the mark PreStocks carries them at, what the whole company is worth at that price, and what a small buy really costs.",
+    "OpenAI, SpaceX, Anthropic and Neuralink as tokens on Solana: what buyers pay against the mark PreStocks carries them at, and what that says the whole company is worth.",
   alternates: { canonical: "/pre-ipo" },
 };
 
-const PILL: Record<Tradability, string> = {
-  easy: "bg-soft-up text-up",
-  ok: "bg-soft text-ink",
-  thin: "bg-soft-warn text-warn",
-  stale: "bg-soft-warn text-warn",
-  none: "bg-soft text-muted",
-};
+/** "27.0% above the mark", "3.6% below the mark", "at the mark". */
+function premiumWords(pct: number | null): string {
+  if (pct == null || !Number.isFinite(pct)) return "no price yet";
+  if (Math.abs(pct) < 0.25) return "at the mark";
+  return `${Math.abs(pct).toFixed(1)}% ${pct > 0 ? "above" : "below"} the mark`;
+}
+
+/** The card's whole explanation, in one sentence a person can read out loud. */
+function premiumSentence(r: PreIpoRow): string {
+  const market = formatCompactUsd(r.marketValuation);
+  const mark = formatCompactUsd(r.markValuation);
+  if (r.premiumPct == null || r.markValuation == null)
+    return `${r.issuerName} has not published a mark for ${r.name} that we can read right now.`;
+  if (Math.abs(r.premiumPct) < 0.25)
+    return `Buyers are paying about what ${r.issuerName} marks ${r.name} at, roughly ${mark} for the company either way.`;
+  const more = r.premiumPct > 0 ? "more" : "less";
+  return `Buyers are paying ${Math.abs(r.premiumPct).toFixed(0)}% ${more} than ${r.issuerName} marks ${r.name} at, which values the company at ${market} instead of ${mark}.`;
+}
 
 export default async function PreIpoPage() {
   const data = await getPreIpo();
@@ -47,38 +50,41 @@ export default async function PreIpoPage() {
             <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
               Companies that never opened on an exchange, priced anyway.
             </h2>
-            <p className="text-on-dark-muted mt-3 leading-relaxed">
-              OpenAI, SpaceX and six others trade on Solana as PreStocks tokens:
-              SPV exposure to a private company, not shares. There is no closing
-              bell to compare them with, so the reference is the mark their
-              issuer carries them at. What the market pays above or below it is
-              the premium, and it is what these pages are about.
+            <p className="text-on-dark-muted mt-4 leading-relaxed">
+              OpenAI, SpaceX and six others trade on Solana as PreStocks tokens.
+              Each one is SPV exposure to a private company, not a share, and
+              none of them has a closing bell to be measured against. What they
+              do have is a mark: the value their issuer carries the company at.
+              Buyers can pay more than that mark or less, and how far they stray
+              is the only honest number here.
             </p>
             {widest?.premiumPct != null && (
-              <p className="mt-4 text-lg font-medium">
-                Widest today: {widest.name} at{" "}
+              <p className="mt-4 text-lg leading-snug font-medium">
+                Today the market is furthest from the mark on {widest.name},
+                paying{" "}
                 <span
                   className={
                     widest.premiumPct < 0 ? "text-blue-light" : "text-white"
                   }
                 >
-                  {gapWords(widest.premiumPct)}
-                </span>{" "}
-                than its mark.
+                  {premiumWords(widest.premiumPct)}
+                </span>
+                .
               </p>
             )}
-            <p className="text-on-dark-muted num mt-2 text-sm">
-              {t.above} above, {t.below} below, {t.companies} companies,{" "}
-              {formatCompactUsd(t.liquidity)} in pools.
-            </p>
           </div>
           <div className="text-white lg:col-span-6">
             <PremiumBars rows={data.rows} />
+            <p className="text-on-dark-muted mt-4 text-xs">
+              Left of the line the market pays less than the mark, right of it
+              more. {t.above} above, {t.below} below, {t.companies} companies in
+              total.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* One box per company */}
+      {/* One box per company: a number, a picture, a sentence */}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.rows.map((r, i) => (
           <CompanyCard key={r.underlying} r={r} index={i} />
@@ -88,14 +94,14 @@ export default async function PreIpoPage() {
       {/* The honesty, spelled out once */}
       <section className="card p-5 sm:p-6">
         <h3 className="font-semibold">What you are actually holding</h3>
-        <p className="text-muted mt-2 max-w-3xl text-sm leading-relaxed">
+        <p className="text-muted mt-2 max-w-3xl leading-relaxed">
           A PreStocks token is backed one to one by SPV exposure that tracks a
           private company. It is not a share: no ownership, no voting, no
           dividend, no information rights, and no guaranteed buyer when you want
           out. The mark is the issuer&apos;s own number, not an exchange print
-          and not our valuation, so treat the premium as the distance to their
-          mark and nothing more. Prices here are the median of our last three
-          readings, and a price older than an hour is labelled stale.
+          and not our valuation, so read the premium as the distance to their
+          mark and nothing more. Open a company to see the price, what a trade
+          would cost, how deep the pool is and how the premium moved.
         </p>
       </section>
     </div>
@@ -103,7 +109,6 @@ export default async function PreIpoPage() {
 }
 
 function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
-  const tone = gapTone(r.premiumPct);
   return (
     <Link
       href={`/pre-ipo/${r.underlying}`}
@@ -122,61 +127,24 @@ function CompanyCard({ r, index }: { r: PreIpoRow; index: number }) {
         <span className="pill shrink-0 bg-white/10 text-white">private</span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="flex flex-1 flex-col gap-3 p-5">
         {/* The one number, and the two days behind it */}
         <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className={`num text-3xl leading-none font-semibold ${tone}`}>
-              {gapWords(r.premiumPct)}
-            </div>
-            <div className="text-muted mt-1 text-xs">
-              than the {r.issuerName} mark
-            </div>
+          <div
+            className={`num text-2xl leading-none font-semibold ${gapTone(r.premiumPct)}`}
+          >
+            {premiumWords(r.premiumPct)}
           </div>
           <PremiumSpark values={r.premiumSpark} />
         </div>
 
-        {/* The whole company, at both numbers */}
-        {r.markValuation != null && (
-          <div className="grid grid-cols-2 gap-3 rounded-2xl bg-soft p-3">
-            <div>
-              <div className="text-muted text-xs">Market says</div>
-              <div className="num font-semibold">
-                {formatCompactUsd(r.marketValuation)}
-              </div>
-            </div>
-            <div>
-              <div className="text-muted text-xs">Mark says</div>
-              <div className="num font-semibold">
-                {formatCompactUsd(r.markValuation)}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="text-muted num mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
-          <span className="text-ink font-medium">{formatUsd(r.price)}</span>
-          {r.change24hPct != null && (
-            <span className={gapTone(-r.change24hPct)}>
-              {formatPct(r.change24hPct, 1)} 24h
-            </span>
-          )}
-          {r.impactPct != null && (
-            <span>
-              {formatUsd(TEST_USD, 0)} buy costs{" "}
-              <span className={r.impactPct > 1 ? "text-warn" : ""}>
-                {r.impactPct.toFixed(2)}%
-              </span>
-            </span>
-          )}
-          <span>{r.ageMs == null ? "–" : formatAgo(r.ageMs)}</span>
-          <span className={`pill ${PILL[r.tradability]}`}>
-            {TRADABILITY_LABEL[r.tradability]}
-          </span>
-        </div>
+        {/* What that actually means */}
+        <p className="text-muted flex-1 text-sm leading-relaxed">
+          {premiumSentence(r)}
+        </p>
 
         <span className="text-muted-2 group-hover:text-ink inline-flex items-center gap-1 text-xs transition">
-          Price, premium and a way in
+          Price, cost to trade and the premium over time
           <ArrowRight size={13} strokeWidth={2} />
         </span>
       </div>
