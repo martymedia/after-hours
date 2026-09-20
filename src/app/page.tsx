@@ -8,7 +8,7 @@ import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
 import { getPreIpo } from "@/lib/pre-ipo";
-import { PremiumScale } from "@/components/premium-scale";
+import { PremiumBars } from "@/components/premium-bars";
 import {
   formatDuration,
   formatPct,
@@ -263,7 +263,7 @@ export default async function OverviewPage() {
               </Link>
             </div>
             <div className="text-on-dark-muted lg:col-span-7">
-              <PremiumScale rows={preIpo.rows} />
+              <PremiumBars rows={preIpo.rows} />
             </div>
           </div>
         </section>

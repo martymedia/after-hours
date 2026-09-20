@@ -14,7 +14,7 @@ import { Tilt } from "@/components/motion";
 import { snapshotsSince } from "@/lib/db";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CurveShape } from "@/components/curve-shape";
-import { PremiumScale } from "@/components/premium-scale";
+import { PremiumBars } from "@/components/premium-bars";
 import { getPreIpo } from "@/lib/pre-ipo";
 
 export const dynamic = "force-dynamic";
@@ -281,7 +281,7 @@ export default async function HowPage() {
         >
           <div className="rounded-2xl bg-soft p-4">
             <div className="text-muted">
-              <PremiumScale rows={preIpo.rows} />
+              <PremiumBars rows={preIpo.rows} />
             </div>
             <Link href="/pre-ipo" className="btn btn-sm mt-3 w-full">
               See the premiums
