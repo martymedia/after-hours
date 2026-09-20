@@ -13,6 +13,22 @@ export type GapPoint = { t: number; onchain: number; ref: number };
 const W = 640;
 const H = 220;
 const PAD = { top: 14, right: 88, bottom: 22, left: 8 };
+// The two end labels sit to the right of the last point, so the room they
+// need is the room the plot has to give up. A fixed 88 was enough for
+// "close $6.05" and cut "Friday close $6.05" off at the edge.
+const LABEL_GAP = 8;
+const CHAR_W = 6.15; // Outfit at 11px, measured against the widest label.
+// Six spare units, because CHAR_W is an average and a label of wide glyphs
+// would otherwise land a pixel or two past the edge.
+const SLACK = 6;
+const rightRoomFor = (...labels: string[]) =>
+  Math.min(
+    212,
+    Math.max(
+      88,
+      LABEL_GAP + Math.max(...labels.map((l) => l.length)) * CHAR_W + SLACK,
+    ),
+  );
 
 const clock = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York",
@@ -57,8 +73,12 @@ export function GapDraw({
   const margin = Math.max((hi - lo) * 0.12, hi * 0.002);
   lo -= margin;
   hi += margin;
+  const last = points[points.length - 1];
+  const onchainLabel = `onchain ${formatUsd(last.onchain)}`;
+  const refLabel = `${referenceShort} ${formatUsd(last.ref)}`;
+  const padRight = rightRoomFor(onchainLabel, refLabel);
   const x = (i: number) =>
-    PAD.left + (i / (points.length - 1)) * (W - PAD.left - PAD.right);
+    PAD.left + (i / (points.length - 1)) * (W - PAD.left - padRight);
   const y = (v: number) =>
     PAD.top + (1 - (v - lo) / (hi - lo)) * (H - PAD.top - PAD.bottom);
 
@@ -78,7 +98,6 @@ export function GapDraw({
       delay: j * 9,
     };
   });
-  const last = points[points.length - 1];
   const gaps = points.map((p) => (p.onchain / p.ref - 1) * 100);
   const deepest = Math.min(...gaps);
   const highest = Math.max(...gaps);
@@ -137,7 +156,7 @@ export function GapDraw({
           fill="var(--color-blue)"
           fontWeight={600}
         >
-          onchain {formatUsd(last.onchain)}
+          {onchainLabel}
         </text>
         <text
           x={x(points.length - 1) + 8}
@@ -146,7 +165,7 @@ export function GapDraw({
           fontSize={11}
           fill="var(--color-muted)"
         >
-          {referenceShort} {formatUsd(last.ref)}
+          {refLabel}
         </text>
         {ticks.map((i) => (
           <text
