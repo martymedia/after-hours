@@ -14,6 +14,8 @@ export type IssuerInfo = {
   tag: string;
   /** The issuer's own site, linked wherever we name them. */
   url: string;
+  /** Private companies: there is no exchange price to compare against. */
+  preIpo?: boolean;
   /** Search queries that surface this issuer's tokens on Jupiter. */
   searchQueries: string[];
   /** Listed public companies only in v1: pre-IPO tokens have no Wall Street
@@ -48,12 +50,13 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
     id: "prestocks",
     name: "PreStocks",
     structure:
-      "Synthetic exposure to a private company via an SPV. No enforceable claim on shares. Higher risk.",
-    structureShort: "Synthetic pre-IPO",
+      "A token backed one to one by SPV exposure that tracks the price of a private company. It carries no ownership, voting, dividend or information rights, and its liquidity is not guaranteed.",
+    structureShort: "SPV exposure, pre-IPO",
     tag: "prestocks",
     url: "https://prestocks.com",
     searchQueries: ["PreStocks"],
-    enabled: false,
+    preIpo: true,
+    enabled: true,
   },
   tessera: {
     id: "tessera",
@@ -64,6 +67,7 @@ export const ISSUERS: Record<IssuerId, IssuerInfo> = {
     tag: "tessera",
     url: "https://app.tessera.pe",
     searchQueries: ["Tessera", "T-"],
+    preIpo: true,
     enabled: false,
   },
   ondo: {
@@ -94,3 +98,10 @@ export function issuerFromTags(tags: string[] | undefined): IssuerId | null {
   }
   return null;
 }
+
+/** Issuers whose companies are private: no exchange price, so they live on their own page. */
+export const PRE_IPO_ISSUERS = new Set(
+  ISSUER_ORDER.filter((id) => ISSUERS[id].preIpo),
+);
+export const isPreIpo = (id: string): boolean =>
+  PRE_IPO_ISSUERS.has(id as IssuerId);

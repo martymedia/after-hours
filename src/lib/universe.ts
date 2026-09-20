@@ -2,10 +2,16 @@
 // the real-world stock they represent. Sources: the xStocks public API (full
 // list with Solana mints) and Jupiter token search (other issuers, tagged).
 
-import { ISSUERS, ISSUER_ORDER, issuerFromTags, type IssuerId } from "./issuers.ts";
+import {
+  ISSUERS,
+  ISSUER_ORDER,
+  issuerFromTags,
+  type IssuerId,
+} from "./issuers.ts";
 import { getPrices, searchTokens, type JupiterSearchToken } from "./jupiter.ts";
 
 const XSTOCKS_API = "https://api.backed.fi/api/v2/public";
+const PRESTOCKS_API = "https://prestocks.com/api/prestocks";
 
 /** Below this we do not list a token at all; the price would be noise. */
 export const MIN_LIQUIDITY_USD = 50_000;
@@ -41,7 +47,10 @@ async function fetchXStocksAssets(): Promise<XStocksAsset[]> {
       signal: AbortSignal.timeout(20000),
     });
     if (!res.ok) throw new Error(`xStocks assets ${res.status}`);
-    const body = (await res.json()) as { nodes: XStocksAsset[]; page: { hasNextPage: boolean } };
+    const body = (await res.json()) as {
+      nodes: XStocksAsset[];
+      page: { hasNextPage: boolean };
+    };
     out.push(...body.nodes);
     if (!body.page.hasNextPage) break;
   }
@@ -60,8 +69,13 @@ const UNDERLYING_ALIASES: Record<string, string> = {
 function underlyingFor(token: JupiterSearchToken, issuer: IssuerId): string {
   let sym = token.symbol.toUpperCase();
   if (issuer === "ondo" && sym.endsWith("ON")) sym = sym.slice(0, -2);
-  if (issuer === "tessera" && sym.startsWith("T") && token.symbol[0] === "t") sym = sym.slice(1);
-  return UNDERLYING_ALIASES[sym] ?? UNDERLYING_ALIASES[token.symbol.toUpperCase()] ?? sym;
+  if (issuer === "tessera" && sym.startsWith("T") && token.symbol[0] === "t")
+    sym = sym.slice(1);
+  return (
+    UNDERLYING_ALIASES[sym] ??
+    UNDERLYING_ALIASES[token.symbol.toUpperCase()] ??
+    sym
+  );
 }
 
 const NAME_OVERRIDES: Record<string, string> = {
@@ -85,6 +99,30 @@ function cleanName(name: string): string {
     .trim();
 }
 
+export type PreStocksAsset = {
+  name: string;
+  symbol: string;
+  description: string;
+  image: string;
+  external_url: string;
+  contract_address: string;
+  markPrice: number;
+  markValuation: number;
+  tokenPrice: number;
+  impliedValuation: number;
+  supply: number;
+};
+
+/** The issuer's own list: mint, logo and the company blurb, straight from them. */
+export async function fetchPreStocks(): Promise<PreStocksAsset[]> {
+  const res = await fetch(PRESTOCKS_API, {
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`PreStocks ${res.status}`);
+  const body = (await res.json()) as PreStocksAsset[];
+  return Array.isArray(body) ? body : [];
+}
+
 export async function buildUniverse(): Promise<UniverseToken[]> {
   const byMint = new Map<string, UniverseToken>();
 
@@ -103,7 +141,9 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
     byMint.set(mint, {
       mint,
       symbol: asset.symbol,
-      name: NAME_OVERRIDES[asset.underlyingSymbol.toUpperCase()] ?? cleanName(asset.name),
+      name:
+        NAME_OVERRIDES[asset.underlyingSymbol.toUpperCase()] ??
+        cleanName(asset.name),
       underlying: asset.underlyingSymbol.toUpperCase(),
       issuer: "xstocks",
       decimals: p.decimals ?? 8,
@@ -112,7 +152,34 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
     });
   }
 
-  // 2. Other issuers via Jupiter search, identified by tag.
+  // 2. PreStocks from their own API: private companies, so the "underlying"
+  //    is the company itself and never an exchange ticker. Kept out of the
+  //    alias map on purpose: SpaceX as a PreStock is not the SPCX tracker.
+  if (ISSUERS.prestocks.enabled) {
+    try {
+      const assets = await fetchPreStocks();
+      const prices = await getPrices(assets.map((a) => a.contract_address));
+      for (const a of assets) {
+        const mint = a.contract_address;
+        const price = prices[mint];
+        if (byMint.has(mint) || !price?.usdPrice) continue;
+        byMint.set(mint, {
+          mint,
+          symbol: a.symbol.toUpperCase(),
+          name: cleanName(a.name),
+          underlying: a.symbol.toUpperCase(),
+          issuer: "prestocks",
+          decimals: price.decimals ?? 9,
+          logo: a.image ?? null,
+          liquidity: price.liquidity ?? 0,
+        });
+      }
+    } catch {
+      // Their API being down must not empty the universe.
+    }
+  }
+
+  // 3. Other issuers via Jupiter search, identified by tag.
   for (const issuerId of ISSUER_ORDER) {
     const issuer = ISSUERS[issuerId];
     if (!issuer.enabled) continue;
@@ -141,10 +208,12 @@ export async function buildUniverse(): Promise<UniverseToken[]> {
     }
   }
 
-  // 3. Keep every stock that has at least one token with a real pool, and
+  // 4. Keep every stock that has at least one token with a real pool, and
   //    all issuers of it (so the comparison view can say "no liquidity").
   const listedUnderlyings = new Set(
-    [...byMint.values()].filter((t) => t.liquidity >= MIN_LIST_LIQUIDITY_USD).map((t) => t.underlying),
+    [...byMint.values()]
+      .filter((t) => t.liquidity >= MIN_LIST_LIQUIDITY_USD)
+      .map((t) => t.underlying),
   );
   return [...byMint.values()]
     .filter((t) => listedUnderlyings.has(t.underlying))

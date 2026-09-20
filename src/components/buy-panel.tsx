@@ -10,10 +10,15 @@ import type { Phase } from "@/lib/market-phase";
 import { formatAgo, formatPct, formatUsd } from "@/lib/format";
 import { Tip } from "./tip";
 
-const BuyButton = dynamic(() => import("./buy-button").then((m) => m.BuyButton), {
-  ssr: false,
-  loading: () => <span className="btn w-full opacity-50">Checking wallets…</span>,
-});
+const BuyButton = dynamic(
+  () => import("./buy-button").then((m) => m.BuyButton),
+  {
+    ssr: false,
+    loading: () => (
+      <span className="btn w-full opacity-50">Checking wallets…</span>
+    ),
+  },
+);
 
 type Props = {
   mint: string;
@@ -23,6 +28,8 @@ type Props = {
   ageMs: number | null;
   liquidity: number;
   disabled?: boolean;
+  /** Private company: no session, and no reopening to gap into. */
+  sessionless?: boolean;
   /** Rendered inside a modal: no card frame and no title. */
   embedded?: boolean;
 };
@@ -32,7 +39,17 @@ const PRESETS = [5, 25, 100, 500];
 export type Level = "good" | "ok" | "warn";
 export type Check = { label: string; detail: string; level: Level };
 
-export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidity, disabled, embedded = false }: Props) {
+export function BuyPanel({
+  mint,
+  symbol,
+  referencePhrase,
+  phase,
+  ageMs,
+  liquidity,
+  disabled,
+  sessionless = false,
+  embedded = false,
+}: Props) {
   const [usd, setUsd] = useState(5);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
@@ -43,7 +60,9 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
     const timer = setTimeout(async () => {
       setState("loading");
       try {
-        const res = await fetch(`/api/quote?mint=${mint}&usd=${usd}`, { cache: "no-store" });
+        const res = await fetch(`/api/quote?mint=${mint}&usd=${usd}`, {
+          cache: "no-store",
+        });
         if (!res.ok) throw new Error(String(res.status));
         const body = (await res.json()) as CostEstimate;
         if (!cancelled) {
@@ -60,7 +79,16 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
     };
   }, [mint, usd, disabled]);
 
-  const checks = estimate ? buildChecks(estimate, phase, ageMs, liquidity, referencePhrase) : [];
+  const checks = estimate
+    ? buildChecks(
+        estimate,
+        phase,
+        ageMs,
+        liquidity,
+        referencePhrase,
+        sessionless,
+      )
+    : [];
   const verdict = summarize(checks);
 
   return (
@@ -79,7 +107,9 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
           min={1}
           max={250000}
           value={usd}
-          onChange={(e) => setUsd(Math.max(1, Math.min(250000, Number(e.target.value) || 0)))}
+          onChange={(e) =>
+            setUsd(Math.max(1, Math.min(250000, Number(e.target.value) || 0)))
+          }
           className="num w-full bg-transparent text-2xl font-semibold outline-none"
           aria-label="Amount in USD"
         />
@@ -99,19 +129,29 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
 
       <div className="mt-5">
         {disabled ? (
-          <p className="text-muted text-sm">This token has no onchain market to quote.</p>
+          <p className="text-muted text-sm">
+            This token has no onchain market to quote.
+          </p>
         ) : state === "error" ? (
-          <p className="text-warn text-sm">No route found for this amount right now. Try a smaller amount.</p>
+          <p className="text-warn text-sm">
+            No route found for this amount right now. Try a smaller amount.
+          </p>
         ) : estimate ? (
           <>
             {estimate.vsReferencePct != null && (
-              <div className={`mb-4 rounded-2xl p-4 ${estimate.vsReferencePct <= 0 ? "bg-blue text-white" : "bg-down text-white"}`}>
+              <div
+                className={`mb-4 rounded-2xl p-4 ${estimate.vsReferencePct <= 0 ? "bg-blue text-white" : "bg-down text-white"}`}
+              >
                 <div className="num text-2xl font-semibold">
-                  {Math.abs(estimate.vsReferencePct).toFixed(2)}% {estimate.vsReferencePct <= 0 ? "cheaper" : "pricier"}
+                  {Math.abs(estimate.vsReferencePct).toFixed(2)}%{" "}
+                  {estimate.vsReferencePct <= 0 ? "cheaper" : "pricier"}
                 </div>
                 <div className="mt-0.5 text-sm text-white/80">
-                  than {referencePhrase}, for this amount and including price impact.
-                  {estimate.vsReferencePct > 0 ? " You would overpay right now." : ""}
+                  than {referencePhrase}, for this amount and including price
+                  impact.
+                  {estimate.vsReferencePct > 0
+                    ? " You would overpay right now."
+                    : ""}
                 </div>
               </div>
             )}
@@ -127,28 +167,41 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
             </div>
             <div className="mt-1 flex items-baseline justify-between text-sm">
               <span className="text-muted">
-                <Tip text="How much your order alone moves the pool price. Small is good; above 1% means the pool is too thin for this size.">Price impact</Tip>
+                <Tip text="How much your order alone moves the pool price. Small is good; above 1% means the pool is too thin for this size.">
+                  Price impact
+                </Tip>
               </span>
               <span className="num">{formatPct(estimate.impactPct)}</span>
             </div>
             {estimate.feeBps ? (
               <div className="mt-1 flex items-baseline justify-between text-sm">
                 <span className="text-muted">
-                  <Tip text={`After Hours keeps ${(estimate.feeBps / 100).toFixed(2)}% of each swap. It is already inside the shares and price shown here; nothing comes on top.`}>Our fee</Tip>
+                  <Tip
+                    text={`After Hours keeps ${(estimate.feeBps / 100).toFixed(2)}% of each swap. It is already inside the shares and price shown here; nothing comes on top.`}
+                  >
+                    Our fee
+                  </Tip>
                 </span>
-                <span className="num">{(estimate.feeBps / 100).toFixed(2)}% · included</span>
+                <span className="num">
+                  {(estimate.feeBps / 100).toFixed(2)}% · included
+                </span>
               </div>
             ) : null}
 
-            <div className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}>
+            <div
+              className={`mt-4 rounded-2xl px-4 py-3 text-sm font-medium ${VERDICT_STYLE[verdict.level]}`}
+            >
               {verdict.text}
             </div>
             <ul className="mt-3 space-y-2">
               {checks.map((c) => (
                 <li key={c.label} className="flex items-start gap-2.5 text-sm">
-                  <span className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${DOT[c.level]}`} />
+                  <span
+                    className={`mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full ${DOT[c.level]}`}
+                  />
                   <span>
-                    <span className="font-medium">{c.label}.</span> <span className="text-muted">{c.detail}</span>
+                    <span className="font-medium">{c.label}.</span>{" "}
+                    <span className="text-muted">{c.detail}</span>
                   </span>
                 </li>
               ))}
@@ -163,8 +216,8 @@ export function BuyPanel({ mint, symbol, referencePhrase, phase, ageMs, liquidit
         <BuyButton mint={mint} symbol={symbol} usd={usd} disabled={disabled} />
       </div>
       <p className="text-muted mt-3 text-xs leading-relaxed">
-        Signed in your own wallet. After Hours never holds your funds. Not investment advice. Not available to
-        US persons.
+        Signed in your own wallet. After Hours never holds your funds. Not
+        investment advice. Not available to US persons.
       </p>
     </section>
   );
@@ -182,18 +235,37 @@ export const DOT: Record<Level, string> = {
   warn: "bg-warn",
 };
 
-export function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null, liquidity: number, ref: string): Check[] {
+export function buildChecks(
+  e: CostEstimate,
+  phase: Phase,
+  ageMs: number | null,
+  liquidity: number,
+  ref: string,
+  sessionless = false,
+): Check[] {
   const checks: Check[] = [];
 
   if (e.vsReferencePct == null) {
-    checks.push({ label: "Price", detail: "No reference price available.", level: "ok" });
+    checks.push({
+      label: "Price",
+      detail: "No reference price available.",
+      level: "ok",
+    });
   } else {
     const abs = Math.abs(e.vsReferencePct);
     const dir = e.vsReferencePct >= 0 ? "above" : "below";
     if (abs < 0.5) {
-      checks.push({ label: "Price", detail: `Your effective price is ${abs.toFixed(2)}% ${dir} ${ref}. That is in line.`, level: "good" });
+      checks.push({
+        label: "Price",
+        detail: `Your effective price is ${abs.toFixed(2)}% ${dir} ${ref}. That is in line.`,
+        level: "good",
+      });
     } else if (e.vsReferencePct > 0) {
-      checks.push({ label: "Price", detail: `You would pay ${abs.toFixed(2)}% above ${ref}. Waiting may be cheaper.`, level: abs > 2 ? "warn" : "ok" });
+      checks.push({
+        label: "Price",
+        detail: `You would pay ${abs.toFixed(2)}% above ${ref}. Waiting may be cheaper.`,
+        level: abs > 2 ? "warn" : "ok",
+      });
     } else {
       checks.push({
         label: "Price",
@@ -209,27 +281,72 @@ export function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null,
   if (ageMs == null) {
     checks.push({ label: "Freshness", detail: "Unknown.", level: "ok" });
   } else if (ageMs < 5 * 60_000) {
-    checks.push({ label: "Freshness", detail: `Last trade ${formatAgo(ageMs)}. The price is current.`, level: "good" });
+    checks.push({
+      label: "Freshness",
+      detail: `Last trade ${formatAgo(ageMs)}. The price is current.`,
+      level: "good",
+    });
   } else if (ageMs < 60 * 60_000) {
-    checks.push({ label: "Freshness", detail: `Last trade ${formatAgo(ageMs)}. Fine, but not a busy market.`, level: "ok" });
+    checks.push({
+      label: "Freshness",
+      detail: `Last trade ${formatAgo(ageMs)}. Fine, but not a busy market.`,
+      level: "ok",
+    });
   } else {
-    checks.push({ label: "Freshness", detail: `Last trade ${formatAgo(ageMs)}. The price may be out of date.`, level: "warn" });
+    checks.push({
+      label: "Freshness",
+      detail: `Last trade ${formatAgo(ageMs)}. The price may be out of date.`,
+      level: "warn",
+    });
   }
 
   if (e.impactPct < 0.3) {
-    checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Easily absorbed.`, level: "good" });
+    checks.push({
+      label: "Size",
+      detail: `This amount moves the pool ${formatPct(e.impactPct)}. Easily absorbed.`,
+      level: "good",
+    });
   } else if (e.impactPct < 1) {
-    checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Acceptable; splitting it would be cheaper.`, level: "ok" });
+    checks.push({
+      label: "Size",
+      detail: `This amount moves the pool ${formatPct(e.impactPct)}. Acceptable; splitting it would be cheaper.`,
+      level: "ok",
+    });
   } else {
-    checks.push({ label: "Size", detail: `This amount moves the pool ${formatPct(e.impactPct)}. Too big for the pool (${formatUsd(liquidity, 0)}). Split it.`, level: "warn" });
+    checks.push({
+      label: "Size",
+      detail: `This amount moves the pool ${formatPct(e.impactPct)}. Too big for the pool (${formatUsd(liquidity, 0)}). Split it.`,
+      level: "warn",
+    });
   }
 
-  if (phase === "open") {
-    checks.push({ label: "Market", detail: "Wall Street is open. Onchain prices track the exchange closely.", level: "good" });
+  if (sessionless) {
+    checks.push({
+      label: "Market",
+      detail:
+        "This company is private and never opens on an exchange. Its mark moves when the issuer restates it; the onchain price moves all the time.",
+      level: "ok",
+    });
+  } else if (phase === "open") {
+    checks.push({
+      label: "Market",
+      detail: "Wall Street is open. Onchain prices track the exchange closely.",
+      level: "good",
+    });
   } else if (phase === "after_hours") {
-    checks.push({ label: "Market", detail: "Wall Street is closed but overnight venues are quoting. The reference is live, just thinner.", level: "ok" });
+    checks.push({
+      label: "Market",
+      detail:
+        "Wall Street is closed but overnight venues are quoting. The reference is live, just thinner.",
+      level: "ok",
+    });
   } else {
-    checks.push({ label: "Market", detail: "Wall Street is closed. The price can gap when it reopens, in either direction.", level: "ok" });
+    checks.push({
+      label: "Market",
+      detail:
+        "Wall Street is closed. The price can gap when it reopens, in either direction.",
+      level: "ok",
+    });
   }
 
   return checks;
@@ -237,7 +354,9 @@ export function buildChecks(e: CostEstimate, phase: Phase, ageMs: number | null,
 
 export function summarize(checks: Check[]): { text: string; level: Level } {
   if (checks.length === 0) return { text: "", level: "ok" };
-  if (checks.some((c) => c.level === "warn")) return { text: "Better to wait or change the amount.", level: "warn" };
-  if (checks.every((c) => c.level === "good")) return { text: "Looks like a fair moment to buy.", level: "good" };
+  if (checks.some((c) => c.level === "warn"))
+    return { text: "Better to wait or change the amount.", level: "warn" };
+  if (checks.every((c) => c.level === "good"))
+    return { text: "Looks like a fair moment to buy.", level: "good" };
   return { text: "Reasonable, with a caveat below.", level: "ok" };
 }

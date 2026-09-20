@@ -14,6 +14,7 @@ import {
   latestCandleTs,
   latestSnapshots,
   listTokens,
+  listStockTokens,
   pruneSnapshots,
   replaceEarnings,
   setMeta,
@@ -113,7 +114,7 @@ async function refreshCandles(): Promise<void> {
 }
 
 async function refreshEarnings(): Promise<void> {
-  const symbols = new Set(listTokens().map((t) => t.underlying));
+  const symbols = new Set(listStockTokens().map((t) => t.underlying));
   const events = await fetchEarnings(symbols, 60);
   replaceEarnings(events);
   setMeta("earnings_updated_at", String(Date.now()));

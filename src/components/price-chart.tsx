@@ -17,6 +17,8 @@ type Props = {
   referenceLabel: string;
   now: number;
   symbol: string;
+  /** A private company keeps no session, so the closed bands mean nothing. */
+  sessions?: boolean;
 };
 
 type Range = "24h" | "7d";
@@ -53,6 +55,7 @@ export function PriceChart({
   referenceLabel,
   now,
   symbol,
+  sessions = true,
 }: Props) {
   const [range, setRange] = useState<Range>("7d");
   const [hover, setHover] = useState<Candle | null>(null);
@@ -69,9 +72,16 @@ export function PriceChart({
           <h2 className="font-semibold">Onchain price</h2>
           <p className="text-on-dark-muted text-xs">
             {symbol} on Solana.{" "}
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue/35 align-middle" />{" "}
-            Wall Street closed all day (weekends, holidays), onchain still
-            trading. Hover for details.
+            {sessions ? (
+              <>
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue/35 align-middle" />{" "}
+                Wall Street closed all day (weekends, holidays), onchain still
+                trading.{" "}
+              </>
+            ) : (
+              "Trading never stops and never opened on an exchange. "
+            )}
+            Hover for details.
           </p>
         </div>
         <Seg
@@ -98,6 +108,7 @@ export function PriceChart({
           hover={hover}
           setHover={setHover}
           range={range}
+          sessions={sessions}
         />
       )}
     </section>
@@ -113,6 +124,7 @@ function Chart({
   hover,
   setHover,
   range,
+  sessions,
 }: {
   visible: Candle[];
   from: number;
@@ -122,6 +134,7 @@ function Chart({
   hover: Candle | null;
   setHover: (c: Candle | null) => void;
   range: Range;
+  sessions: boolean;
 }) {
   const values = visible.map((c) => c.close);
   const lo = Math.min(...values, reference ?? Infinity);
@@ -137,7 +150,7 @@ function Chart({
 
   const bands: { start: number; end: number }[] = [];
   let open: number | null = null;
-  for (let ts = from; ts <= to; ts += 3600_000) {
+  for (let ts = sessions ? from : to + 1; ts <= to; ts += 3600_000) {
     const closed = getPhase(new Date(ts)).phase === "closed";
     if (closed && open == null) open = ts;
     if (!closed && open != null) {

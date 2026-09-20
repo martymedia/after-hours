@@ -14,6 +14,8 @@ import { Tilt } from "@/components/motion";
 import { snapshotsSince } from "@/lib/db";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CurveShape } from "@/components/curve-shape";
+import { PremiumScale } from "@/components/premium-scale";
+import { getPreIpo } from "@/lib/pre-ipo";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "Tokenized stocks from xStocks, Backpack and Ondo trade on Solana around the clock. How the after-hours market works, what the price gap means, and how a buy settles in your own wallet.",
+    "Tokenized stocks from xStocks and Backpack, and private companies from PreStocks, trade on Solana around the clock. How the after-hours market works, what the price gap means, and how a buy settles in your own wallet.",
   alternates: { canonical: "/how" },
 };
 
@@ -34,8 +36,9 @@ const PILL: Record<Tradability, string> = {
   none: "bg-soft text-muted",
 };
 
-export default function HowPage() {
+export default async function HowPage() {
   const data = getRadar();
+  const preIpo = await getPreIpo();
   const across = gapStatsAcross(data.rows.map((r) => r.mint));
   const sample = data.rows[0];
   const discount = [...data.rows]
@@ -269,6 +272,20 @@ export default function HowPage() {
                 Build one
               </Link>
             </div>
+          </div>
+        </Step>
+        <Step
+          n="05"
+          title="Or a company that never listed"
+          text={`OpenAI, SpaceX and six other private companies trade as PreStocks tokens: SPV exposure, not shares. They have no closing bell, so the only honest reference is the mark their issuer carries them at. We show the distance to it, what a small buy really costs, and we say plainly that this is not a share.`}
+        >
+          <div className="rounded-2xl bg-soft p-4">
+            <div className="text-muted">
+              <PremiumScale rows={preIpo.rows} />
+            </div>
+            <Link href="/pre-ipo" className="btn btn-sm mt-3 w-full">
+              See the premiums
+            </Link>
           </div>
         </Step>
       </section>

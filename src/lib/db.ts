@@ -2,6 +2,7 @@
 // read by the web app. No ORM: three tables and a handful of queries.
 
 import { DatabaseSync } from "node:sqlite";
+import { isPreIpo } from "./issuers.ts";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
@@ -157,6 +158,16 @@ export function listTokens(): TokenRow[] {
       "SELECT * FROM tokens WHERE active = 1 ORDER BY underlying, issuer",
     )
     .all() as TokenRow[];
+}
+
+/** Companies with an exchange listing: what every stock page works with. */
+export function listStockTokens(): TokenRow[] {
+  return listTokens().filter((t) => !isPreIpo(t.issuer));
+}
+
+/** Private companies, which have no exchange price and their own pages. */
+export function listPreIpoTokens(): TokenRow[] {
+  return listTokens().filter((t) => isPreIpo(t.issuer));
 }
 
 export function insertSnapshots(rows: SnapshotRow[]): void {

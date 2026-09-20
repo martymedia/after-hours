@@ -16,6 +16,9 @@ export function SiteFooter() {
           <Link href="/earnings" className="hover:text-ink">
             Earnings
           </Link>
+          <Link href="/pre-ipo" className="hover:text-ink">
+            Pre-IPO
+          </Link>
           <Link href="/curves" className="hover:text-ink">
             Curves
           </Link>

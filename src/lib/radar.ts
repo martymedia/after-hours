@@ -4,14 +4,19 @@
 import {
   candlesSince,
   latestSnapshots,
-  listTokens,
+  listStockTokens,
   sparkSeries,
   upcomingEarnings,
   type SnapshotRow,
   type TokenRow,
 } from "./db.ts";
 import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
+import {
+  getPhase,
+  hasLiveReference,
+  nyYmd,
+  referenceLabel,
+} from "./market-phase.ts";
 import { MIN_LIQUIDITY_USD, MIN_LIST_LIQUIDITY_USD } from "./universe.ts";
 import type { RadarData, RadarRow, Tradability } from "./radar-types.ts";
 
@@ -22,7 +27,11 @@ const SLOT_MS = 400; // approximate Solana slot time
 const STALE_AFTER_MS = 60 * 60_000;
 const EASY_LIQUIDITY_USD = 500_000;
 
-export function tradabilityOf(liquidity: number, ageMs: number | null, price: number | null): Tradability {
+export function tradabilityOf(
+  liquidity: number,
+  ageMs: number | null,
+  price: number | null,
+): Tradability {
   if (price == null || liquidity < MIN_LIST_LIQUIDITY_USD) return "none";
   if (liquidity < MIN_LIQUIDITY_USD) return "thin";
   if (ageMs != null && ageMs > STALE_AFTER_MS) return "stale";
@@ -30,9 +39,14 @@ export function tradabilityOf(liquidity: number, ageMs: number | null, price: nu
   return "ok";
 }
 
-export function ageOf(snap: SnapshotRow | undefined, maxBlock: number, now: number): number | null {
+export function ageOf(
+  snap: SnapshotRow | undefined,
+  maxBlock: number,
+  now: number,
+): number | null {
   if (!snap) return null;
-  const slotAge = snap.block_id != null ? (maxBlock - snap.block_id) * SLOT_MS : 0;
+  const slotAge =
+    snap.block_id != null ? (maxBlock - snap.block_id) * SLOT_MS : 0;
   return Math.max(0, now - snap.ts + slotAge);
 }
 
@@ -42,7 +56,8 @@ const RADAR_CACHE_MS = 15_000;
 let radarCache: { ts: number; data: RadarData } | null = null;
 
 export function getRadar(): RadarData {
-  if (radarCache && Date.now() - radarCache.ts < RADAR_CACHE_MS) return radarCache.data;
+  if (radarCache && Date.now() - radarCache.ts < RADAR_CACHE_MS)
+    return radarCache.data;
   const data = computeRadar();
   radarCache = { ts: Date.now(), data };
   return data;
@@ -51,12 +66,18 @@ export function getRadar(): RadarData {
 function computeRadar(): RadarData {
   const now = Date.now();
   const phase = getPhase(new Date(now));
-  const tokens = listTokens();
+  const tokens = listStockTokens();
   const snaps = new Map(latestSnapshots().map((s) => [s.mint, s]));
-  const maxBlock = Math.max(0, ...[...snaps.values()].map((s) => s.block_id ?? 0));
+  const maxBlock = Math.max(
+    0,
+    ...[...snaps.values()].map((s) => s.block_id ?? 0),
+  );
 
   // Pick the most liquid token per stock.
-  const byUnderlying = new Map<string, { token: TokenRow; snap: SnapshotRow | undefined; count: number }>();
+  const byUnderlying = new Map<
+    string,
+    { token: TokenRow; snap: SnapshotRow | undefined; count: number }
+  >();
   for (const t of tokens) {
     const snap = snaps.get(t.mint);
     const liq = snap?.liquidity ?? 0;
@@ -110,7 +131,12 @@ function computeRadar(): RadarData {
   const todayNy = nyYmd(new Date(now));
   const earnings = upcomingEarnings(todayNy, 6)
     .filter((e) => nameOf.has(e.symbol))
-    .map((e) => ({ underlying: e.symbol, name: nameOf.get(e.symbol) ?? e.symbol, date: e.date, timing: e.timing }));
+    .map((e) => ({
+      underlying: e.symbol,
+      name: nameOf.get(e.symbol) ?? e.symbol,
+      date: e.date,
+      timing: e.timing,
+    }));
 
   return {
     generatedAt: new Date(now).toISOString(),

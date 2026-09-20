@@ -93,6 +93,23 @@ with the stock token or sell it back to the curve, quoted with the SDK's
 curve sees the trading fees it has earned and can claim them. Pools whose
 name or symbol carries slurs or crude words are hidden (`src/lib/profanity.ts`).
 
+## Pre-IPO (PreStocks)
+
+ lists the private companies PreStocks tokenizes: OpenAI, SpaceX,
+Anthropic, Neuralink and four more. They have no exchange price, so the
+reference is the mark their issuer carries the SPV at, which Jupiter returns
+as  alongside the onchain price; the collector already stores it
+as the reference, so these tokens flow through the same snapshots, sparklines
+and alerts as the stocks. What we add is the distance to that mark, its
+history from our own snapshots, and the real cost of a small buy: pool size
+flatters these markets, and a 25 USD buy can cost three percent in price
+impact on a token showing 280k in pools, so we quote it per company.
+
+They stay off the stock pages on purpose ( versus
+): the copy there is about Wall Street, and none of it is
+true here. Every page says what the token is, in the issuer's own terms: SPV
+exposure, no ownership, no voting, no dividend, no guaranteed buyer.
+
 ## Honesty rules
 
 - A token with less than 50k USD of onchain liquidity is not listed.

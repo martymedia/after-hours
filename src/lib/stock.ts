@@ -2,9 +2,21 @@
 // price history of the most liquid one, the gap history, similar stocks and
 // the market phase.
 
-import { candlesSince, getDb, latestSnapshots, nextEarningsFor, snapshotsSince, type TokenRow } from "./db.ts";
-import { ISSUERS, type IssuerId } from "./issuers.ts";
-import { getPhase, hasLiveReference, nyYmd, referenceLabel } from "./market-phase.ts";
+import {
+  candlesSince,
+  getDb,
+  latestSnapshots,
+  nextEarningsFor,
+  snapshotsSince,
+  type TokenRow,
+} from "./db.ts";
+import { ISSUERS, isPreIpo, type IssuerId } from "./issuers.ts";
+import {
+  getPhase,
+  hasLiveReference,
+  nyYmd,
+  referenceLabel,
+} from "./market-phase.ts";
 import { ageOf, getRadar, tradabilityOf } from "./radar.ts";
 import { companyFor } from "./companies.ts";
 import { gapStats } from "./gap-stats.ts";
@@ -13,11 +25,18 @@ import type { GapPoint, StockData, StockToken } from "./stock-types.ts";
 export function getStock(underlying: string): StockData | null {
   const now = Date.now();
   const key = underlying.toUpperCase();
-  const tokens = getDb().prepare("SELECT * FROM tokens WHERE active = 1 AND underlying = ?").all(key) as TokenRow[];
+  const tokens = (
+    getDb()
+      .prepare("SELECT * FROM tokens WHERE active = 1 AND underlying = ?")
+      .all(key) as TokenRow[]
+  ).filter((t) => !isPreIpo(t.issuer));
   if (tokens.length === 0) return null;
 
   const snaps = new Map(latestSnapshots().map((s) => [s.mint, s]));
-  const maxBlock = Math.max(0, ...[...snaps.values()].map((s) => s.block_id ?? 0));
+  const maxBlock = Math.max(
+    0,
+    ...[...snaps.values()].map((s) => s.block_id ?? 0),
+  );
 
   const list: StockToken[] = tokens.map((t) => {
     const snap = snaps.get(t.mint);
@@ -46,7 +65,10 @@ export function getStock(underlying: string): StockData | null {
   list.sort((a, b) => b.liquidity - a.liquidity);
   const primary = list[0];
 
-  const candles = candlesSince(primary.mint, now - 7 * 86400_000).map((c) => ({ ts: c.ts, close: c.close }));
+  const candles = candlesSince(primary.mint, now - 7 * 86400_000).map((c) => ({
+    ts: c.ts,
+    close: c.close,
+  }));
 
   // Gap history from our own snapshots, bucketed to 15 minutes.
   const bucket = 15 * 60_000;
@@ -65,7 +87,11 @@ export function getStock(underlying: string): StockData | null {
 
   const company = companyFor(key);
   const similar = getRadar()
-    .rows.filter((r) => r.underlying !== key && companyFor(r.underlying).sector === company.sector)
+    .rows.filter(
+      (r) =>
+        r.underlying !== key &&
+        companyFor(r.underlying).sector === company.sector,
+    )
     .slice(0, 6);
 
   const phase = getPhase(new Date(now));

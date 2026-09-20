@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/brand";
-import { listTokens } from "@/lib/db";
+import { listStockTokens } from "@/lib/db";
 import { curvesOverview } from "@/lib/curves";
+import { getPreIpo } from "@/lib/pre-ipo";
 
 // Built per request: the stock list lives in the collector's database.
 export const dynamic = "force-dynamic";
@@ -11,12 +12,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // the explainers cannot, so they carry no date at all rather than a
   // fresh one on every fetch.
   const now = new Date();
-  const stocks = [...new Set(listTokens().map((t) => t.underlying))].sort();
+  const stocks = [
+    ...new Set(listStockTokens().map((t) => t.underlying)),
+  ].sort();
   // The same source the curve pages read, so we never list one that 404s:
   // a stock whose only pools are hidden has no page.
   const withCurves = (await curvesOverview()).stocks
     .map((s) => s.underlying)
     .sort();
+  const preIpo = (await getPreIpo()).rows.map((r) => r.underlying).sort();
 
   return [
     {
@@ -38,6 +42,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${SITE_URL}/pre-ipo`,
+      lastModified: now,
+      changeFrequency: "hourly",
+      priority: 0.8,
+    },
+    {
       url: `${SITE_URL}/earnings`,
       lastModified: now,
       changeFrequency: "daily",
@@ -54,6 +64,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "hourly" as const,
       priority: 0.8,
+    })),
+    ...preIpo.map((s) => ({
+      url: `${SITE_URL}/pre-ipo/${s}`,
+      lastModified: now,
+      changeFrequency: "hourly" as const,
+      priority: 0.7,
     })),
     ...withCurves.map((s) => ({
       url: `${SITE_URL}/curves/${s}`,

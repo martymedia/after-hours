@@ -44,6 +44,8 @@ type Props = {
   reference: number | null;
   price: number | null;
   disabled?: boolean;
+  /** Private company: no session to open, and no gap to warn about. */
+  sessionless?: boolean;
 };
 
 const PREVIEW_USD = 25;
@@ -111,6 +113,7 @@ export function TradeCard(props: Props) {
         props.ageMs,
         props.liquidity,
         referencePhrase,
+        props.sessionless,
       )
     : [];
   const verdict = checks.length ? summarize(checks) : null;

@@ -7,6 +7,8 @@ import { TrendCard } from "@/components/trend-card";
 import { TickerBadge } from "@/components/ticker-badge";
 import { CountUp } from "@/components/count-up";
 import { getRadar } from "@/lib/radar";
+import { getPreIpo } from "@/lib/pre-ipo";
+import { PremiumScale } from "@/components/premium-scale";
 import {
   formatDuration,
   formatPct,
@@ -40,8 +42,9 @@ const earningsDate = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
-export default function OverviewPage() {
+export default async function OverviewPage() {
   const data = getRadar();
+  const preIpo = await getPreIpo();
   const now = Date.parse(data.generatedAt);
   const rows = data.rows.slice(0, 10);
   // Rankings only use stocks with a real market and a gap that is a signal,
@@ -240,6 +243,31 @@ export default function OverviewPage() {
           </ul>
         </section>
       </div>
+
+      {preIpo.rows.length > 0 && (
+        <section className="card-dark order-4 overflow-hidden p-6 sm:p-8">
+          <div className="grid items-center gap-8 lg:grid-cols-12">
+            <div className="lg:col-span-5">
+              <p className="text-blue-light text-sm font-medium">Pre-IPO</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                Companies that never opened on an exchange trade here too.
+              </h2>
+              <p className="text-on-dark-muted mt-3 leading-relaxed">
+                OpenAI, SpaceX and six others, as SPV exposure rather than
+                shares. With no closing bell to compare them with, the reference
+                is the mark their issuer carries them at, and the distance to it
+                is the whole story.
+              </p>
+              <Link href="/pre-ipo" className="btn btn-white mt-5">
+                See the premiums
+              </Link>
+            </div>
+            <div className="text-on-dark-muted lg:col-span-7">
+              <PremiumScale rows={preIpo.rows} />
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
